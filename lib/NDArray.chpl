@@ -1612,6 +1612,40 @@ inline proc type ndarray.fromRanges(type eltType = real, rngs: range...?rank): n
     return a;
 }
 
+proc type ndarray.nllLoss(
+    input: ndarray(2,?eltType), 
+    target: ndarray(1,eltType), 
+    weight: ndarray(1, eltType),
+    ignoreIndex: int = -1,
+    red = bool = true,
+    reduction: string = "mean"
+): ndarray(1,eltType) {
+    const (N,C) = input.shape;
+    assert(target.shape[0] == N, "Target shape must match batch size.");
+    assert(weights.shape[0] == C, "Weights shape must match number of classes.");
+    
+    const dom = util.domainFromShape(N);
+    var loss = new ndarray(dom, eltType);
+    ref x = input.data;
+    ref y = target.data;
+    ref w = weights.data;
+    ref lossD = loss.data;
+    var wynSum: eltType = 0.0;
+
+    forall n in 0..<N {
+        const yn = y[n];
+        if yn == ignoreIndex then
+            lossD[n] = 0.0;
+        else
+            lossD[n] = -w[yn]*x[n,yn]
+            wynSum += w[y_n]
+    }
+
+    if !red then return loss;
+    if reduction == "mean" then return sum(lossD) / wynSum;
+    if reduction == "sum" then return sum(lossD);
+}
+
 module ndarrayRandom {
     private import Random;
 

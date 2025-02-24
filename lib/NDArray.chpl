@@ -1617,7 +1617,7 @@ proc type ndarray.nllLoss(
     target: ndarray(1,eltType), 
     weight: ndarray(1, eltType),
     ignoreIndex: int = -1,
-    red = bool = true,
+    red: bool = true,
     reduction: string = "mean"
 ): ndarray(1,eltType) {
     const (N,C) = input.shape;

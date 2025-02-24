@@ -653,6 +653,25 @@ proc dynamicTensor.flatten(): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
+proc type dynamicTensor.nllLoss(
+    input: dynamicTensor(2,?eltType), 
+    target: dynamicTensor(1,eltType), 
+    weight: dynamicTensor(1, eltType),
+    ignoreIndex: int = -1,
+    red = bool = true,
+    reduction: string = "mean"
+) {
+    for param rankIn in 2..2 {
+        if input.checkRank(rankIn) {
+            for param rank in 1..1 {
+                if target.checkRank(rank) && weight.checkRank(rank) {
+                    return staticTensor.nllLoss(input.forceRank(rankIn),target.forceRank(rank),weight.forceRank(rank),ignoreIndex,red,reduction);
+                }
+            }
+        }
+    }
+}
+
 proc type dynamicTensor.matvecmul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
     for param rankM in 2..2 {
         if m.checkRank(rankM) {

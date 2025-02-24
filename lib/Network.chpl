@@ -736,8 +736,7 @@ class Module {
             const modName = m.moduleName;
             if var p = m : borrowed Parameter(eltType)? {
                 loadSingleParameter(p, mod, modelPath, prefix, indent+"\t", debug, dtype);
-            }
-            else if var sm = m : borrowed Sequential(eltType)? {
+            } else if var sm = m : borrowed Sequential(eltType)? {
                 // Split the modName by the first period
                 // And add the second part to the prefix
                 const msplit = modName.split(".", maxsplit=2);

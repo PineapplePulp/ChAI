@@ -1,9 +1,0 @@
-{
-  "name": "features.7.bias",
-  "shape": [
-    128
-  ],
-  "rank": 1,
-  "size": 128,
-  "dtype": "float32"
-}

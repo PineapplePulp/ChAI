@@ -917,6 +917,10 @@ record maxOp : serializable {
 
 }
 
+record matVecMulOp : serializable {
+    
+}
+
 // https://www.adityaagrawal.net/blog/deep_learning/bprop_strided_conv
 record conv2DOp : serializable {
     type eltType = defaultEltType;

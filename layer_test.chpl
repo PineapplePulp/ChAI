@@ -25,7 +25,9 @@ var net2 = new Sequential(
     new shared ReLU(),
     new shared Flatten(),
     new shared Linear(6,6),
-    new shared ReLU()
+    new shared ReLU(),
+    new shared GELU(),
+    new shared ELU()
 );
 
 y = net2(x);

@@ -233,7 +233,7 @@ record optional {
 
 proc moduleFromSpec(
     ms_: borrowed ModuleSpecification?,
-    type dtype = real(32),
+    type dtype = defaultEltType,
     targetLocales: [] locale = empty_locales,
     inputShape: optional(?) = optional.empty(1*int)
 ): owned Module(dtype) {
@@ -304,7 +304,7 @@ proc moduleFromSpec(
     halt("This should not happen");
 }
 
-proc modelFromSpecFile(path: string, type dtype=real(32), targetLocales: [] locale = empty_locales, inputShape: optional(?), debug = false) : owned Module(dtype) {
+proc modelFromSpecFile(path: string, type dtype=defaultEltType, targetLocales: [] locale = empty_locales, inputShape: optional(?), debug = false) : owned Module(dtype) {
     import IO;
     import JSON;
     var fl = IO.open(path, IO.ioMode.r);
@@ -618,7 +618,7 @@ class Module {
     var moduleName: string;
     var ownedModules: list(shared Module(eltType));
 
-    proc init(type eltType = real) {
+    proc init(type eltType = defaultEltType) {
         this.eltType = eltType;
         this.subModules = new moduleChildren(eltType);
         this.moduleId = moduleInstances;
@@ -627,7 +627,7 @@ class Module {
         moduleInstances += 1;
     }
 
-    proc init(type eltType = real,ma: moduleAttributes) do
+    proc init(type eltType = defaultEltType,ma: moduleAttributes) do
         this.init(eltType);
 
     proc setup() { }
@@ -821,15 +821,11 @@ class Sequential : Module(?) {
                 if isOwnedClass(ms[i].type) && isNilableClass(ms[i].type) then
                     m_ = shared.adopt(owned.release(ms[i])!);
                 else
-                    m_ = ms[i];
+                    m_ = ms[i] : shared Module(eltType);
                 var m: shared Module(eltType) = m_ : shared Module(eltType);
-                writeln(m.moduleName);
                 addModule(i: string,m);
                 localOwnedModules.pushBack(m);
             }
-        }
-        for m in localOwnedModules {
-            writeln(m.moduleName);
         }
     }
 
@@ -848,11 +844,21 @@ class Sequential : Module(?) {
         }
     }
 
-    proc init(in ms: (owned Module(?)?)...?rank) do
-        try! this.init(ms(0)!.eltType, ms);
+    proc init(in ms...) where isTuple(ms) && isSharedClass(ms(0).type) do
+        this.init(ms(0).eltType, ms);
+
+    // proc init(ms...) where isTuple(ms) && isNilableClassType(ms(0).type) do
+    //     this.init(ms(0)!.eltType, ms);
     
-    proc init(in ms: (shared Module(?))...?rank) do
-        try! this.init(ms(0).eltType, ms);
+    // proc init(ms...)
+    //     where isHomogeneousTuple(ms) && isNilableClassType(ms(0).type) && isOwnedClass(ms(0).type) do
+    //     this.init(ms(0)!.eltType, ms);
+
+    // proc init(in ms: (shared Module(?))...?rank) do
+    //     try! this.init(ms(0).eltType, ms);
+
+    // proc init(in ms: (owned Module(?)?)...?rank) do
+    //     try! this.init(ms(0)!.eltType, ms);
 
     proc init(type eltType, moduleName: string = "sequential") {
         super.init(eltType);
@@ -888,8 +894,6 @@ class Sequential : Module(?) {
     override proc attributes(): moduleAttributes {
         var ms = new dict(string,moduleAttributes);
         for (n,m) in subModules.items() {
-            // writeln("got here");
-            // writeln((n,m.type:string));
             ms.insert(n,m.attributes());
         }
         return new moduleAttributes(
@@ -897,20 +901,6 @@ class Sequential : Module(?) {
             moduleName,
             ms
         );
-        // var ms = new dict(string,moduleAttributes);
-        // for m in localOwnedModules {
-        //     writeln(m.moduleName);
-        //     // writeln(m.signature);
-        //     writeln("got here 1");
-        //     var ma = m.attributes();
-        //     writeln("got here 2");
-        //     ms.insert(m.moduleName,ma);
-        // }
-        // return new moduleAttributes(
-        //     "Sequential",
-        //     moduleName,
-        //     ms
-        // );
     }
 }
 
@@ -919,7 +909,7 @@ class Linear : Module(?) {
     var weight: owned Parameter(eltType);
     var bias: owned Parameter(eltType);
 
-    proc init(type eltType, m: int, n: int) {
+    proc init(type eltType = defaultEltType, m: int, n: int) {
         super.init(eltType);
         this.m = m;
         this.n = n;
@@ -935,7 +925,7 @@ class Linear : Module(?) {
     }
 
     proc init(m: int, n: int) {
-        this.init(real,m,n);
+        this.init(defaultEltType,m,n);
     }
 
     override proc forward(input: Tensor(eltType)): Tensor(eltType) do
@@ -957,7 +947,7 @@ class Conv2D : Module(?) {
     var kernel: owned Parameter(eltType);
     var bias: owned Parameter(eltType)?;
 
-    proc init(type eltType = real,channels: int, features: int, kernel: int, stride: int = 1, padding: int = 0, bias: bool = true) {
+    proc init(type eltType = defaultEltType,channels: int, features: int, kernel: int, stride: int = 1, padding: int = 0, bias: bool = true) {
         super.init(eltType);
         this.kernelShape = (features,channels,kernel,kernel);
         this.stride = stride;
@@ -970,7 +960,7 @@ class Conv2D : Module(?) {
         init this;
     }
 
-    proc init(type eltType = real,ma: moduleAttributes) {
+    proc init(type eltType = defaultEltType,ma: moduleAttributes) {
         this.init(eltType,
                   ma.getInt("in_channels"),
                   ma.getInt("out_channels"),
@@ -1001,7 +991,7 @@ class Conv2D : Module(?) {
     }
 
     proc init(channels: int, features: int, kernel: int, stride: int = 1, padding: int = 0) {
-        this.init(real,channels,features,kernel,stride,padding);
+        this.init(defaultEltType,channels,features,kernel,stride,padding);
     }
 
     override proc forward(input: Tensor(eltType)): Tensor(eltType) {
@@ -1029,7 +1019,7 @@ class MaxPool : Module(?) {
     var padding: int;
     var dilation: int;
 
-    proc init(type eltType = real, poolSize: int, stride: int = -1, padding: int = 0, dilation: int = 1) {
+    proc init(type eltType = defaultEltType, poolSize: int, stride: int = -1, padding: int = 0, dilation: int = 1) {
         super.init(eltType);
         this.poolSize = poolSize;
         if stride == -1 then
@@ -1041,7 +1031,7 @@ class MaxPool : Module(?) {
     }
 
     proc init(poolSize: int, stride: int = -1, padding: int = 0, dilation: int = 1) do
-        this.init(real,poolSize, stride, padding, dilation);
+        this.init(defaultEltType,poolSize, stride, padding, dilation);
 
     override proc forward(input: Tensor(eltType)): Tensor(eltType) {
         return input.maxPool(poolSize, stride, padding, dilation);
@@ -1065,7 +1055,7 @@ class BatchNorm : Module(?) {
     var bias: owned Parameter(eltType);
     var num_features: int;
 
-    proc init(type eltType = real, num_features: int) {
+    proc init(type eltType = defaultEltType, num_features: int) {
         super.init(eltType);
         this.movingAvg = Tensor.zeros(num_features);
         this.movingVar = Tensor.ones(num_features);
@@ -1088,13 +1078,13 @@ class AdaptiveAvgPool2D : Module(?) {
   // only handles square pooling
   var outputSize: int;
 
-  proc init(type eltType = real, outputSize: int) {
+  proc init(type eltType = defaultEltType, outputSize: int) {
         super.init(eltType);
         this.outputSize = outputSize;
     }
 
     proc init(outputSize: int) do
-        this.init(real,outputSize);
+        this.init(defaultEltType,outputSize);
 
     override proc forward(input: Tensor(eltType)): Tensor(eltType) {
         return input.adaptiveAvgPool2d(outputSize);
@@ -1109,7 +1099,7 @@ class AdaptiveAvgPool2D : Module(?) {
 }
 
 class Flatten : Module(?) {
-    proc init(type eltType = real) do
+    proc init(type eltType = defaultEltType) do
         super.init(eltType);
     
     override proc forward(input: Tensor(eltType)): Tensor(eltType) do
@@ -1120,7 +1110,7 @@ class Flatten : Module(?) {
 }
 
 class ReLU : Module(?) {
-    proc init(type eltType = real) do
+    proc init(type eltType = defaultEltType) do
         super.init(eltType);
     
     override proc forward(input: Tensor(eltType)): Tensor(eltType) do
@@ -1132,7 +1122,7 @@ class ReLU : Module(?) {
 
 class Softmax : Module(?) {
 
-    proc init(type eltType = real) {
+    proc init(type eltType = defaultEltType) {
         super.init(eltType);
     }
 
@@ -1145,7 +1135,7 @@ class Softmax : Module(?) {
 
 // TODO: dropout is only valid for inference, since its a noop
 class Dropout : Module(?) {
-    proc init(type eltType = real,freq: real = 0.5) do
+    proc init(type eltType = defaultEltType,freq: defaultEltType = 0.5) do
         super.init(eltType);
 
     override proc forward(input: Tensor(eltType)): Tensor(eltType) do
@@ -1170,7 +1160,7 @@ proc chain(m: borrowed Module(?), modNames: string...?n, input: Tensor(?eltType)
 }
 
 class Net : Module(?) {
-    proc init(type eltType = real) {
+    proc init(type eltType = defaultEltType) {
         super.init(eltType);
         init this;
         addModule("conv1",new Conv2D(eltType,3,32,3,stride=1));

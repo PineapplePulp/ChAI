@@ -19,3 +19,15 @@ var net = new Sequential(
 var y = net(x);
 writeln(y);
 writeln(net.signature);
+
+
+var net2 = new Sequential(
+    new shared ReLU(),
+    new shared Flatten(),
+    new shared Linear(6,6),
+    new shared ReLU()
+);
+
+y = net2(x);
+writeln(y);
+writeln(net2.signature);

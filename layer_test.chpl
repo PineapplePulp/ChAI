@@ -1,12 +1,21 @@
 use Tensor;
 use Layer;
+use Network except ReLU;
 
 
 var x = Tensor.arange(2,3);
 writeln(x);
 
-var relu = new Activation("relu");
+var relu = new ReLU();
 
-writeln("Debug: ",relu.activationName);
-var y = relu(x);
+// var y = relu(x);
+// writeln(y);
+
+// writeln(relu.signature);
+
+var net = new Sequential(
+    new shared ReLU()
+);
+var y = net(x);
 writeln(y);
+writeln(net.signature);

@@ -7,7 +7,7 @@
 
 // use DynamicTensor
 
-prototype module Network {
+module Network {
 use Tensor;
 
 use Map; // only map;
@@ -44,11 +44,11 @@ proc helpFindParamDataByName(arg, x: string) ref : Tensor(?) {
 }
 
 record moduleChildren {
-    type eltType = real;
+    type eltType = defaultEltType;
     var childDict: map(string,borrowed Module(eltType));
     var order: list(string);
 
-    proc init(type eltType = real) {
+    proc init(type eltType = defaultEltType) {
         this.eltType = eltType;
         this.childDict = new map(string,borrowed Module(eltType),initialCapacity=1);
         this.order = new list(string);
@@ -60,7 +60,9 @@ record moduleChildren {
 
     iter ref items(): (string,borrowed Module(eltType)) do
         for n in 0..<order.size do
-            yield (order(n),childDict[order(n)]);
+            try! {
+                yield (order(n),childDict[order(n)]);
+            }
 
     iter ref itemsPar(): (string,borrowed Module(eltType)) do
         foreach n in 0..<order.size do
@@ -157,7 +159,7 @@ record moduleAttributes : serializable {
         init this;
         for i in 0..<order.size {
             const k = order(i);
-            attributes.insert(k,attrs[k] : string + "\n\t");
+            try! attributes.insert(k,attrs[k] : string + "\n\t");
         }
     }
 
@@ -185,7 +187,8 @@ record moduleAttributes : serializable {
         var s: string = layerType + "(";
         const size = attributes.size;
         var idx = 0;
-        for (k,v) in attributes {
+        for k in attributes.keys() {
+            const v = try! attributes[k];
             s += k + " = " + v;
             if idx < size - 1 then
                 s += ", ";
@@ -760,8 +763,10 @@ class Module {
 
     proc attributes(): moduleAttributes {
         var ms = new map(string,moduleAttributes);
-        for (n,m) in subModules.items() {
-            ms.addOrReplace(n,m.attributes());
+        try! {
+            for (n,m) in subModules.items() {
+                ms.addOrReplace(n,m.attributes());
+            }
         }
         return new moduleAttributes(
             "Module",
@@ -791,62 +796,76 @@ class Parameter : Module(?) {
 }
 
 class Sequential : Module(?) {
-    var mds: list(shared Module(eltType));
+    var localOwnedModules: list(shared Module(eltType));
 
-    proc init(type eltType = real, ms: dict(string,shared Module(eltType)), moduleName: string = "sequential") {
+    proc init(type eltType = defaultEltType, ms: dict(string,shared Module(eltType)), moduleName: string = "sequential") {
         super.init(eltType);
-        this.mds = new list(shared Module(eltType));
+        this.localOwnedModules = new list(shared Module(eltType));
         init this;
 
         this.moduleName = moduleName;
         for (name,m) in ms {
             addModule(name,m.borrow());
-            mds.pushBack(m);
+            localOwnedModules.pushBack(m);
         }
     }
 
-    proc init(type eltType = real, in ms, moduleName: string = "sequential") {
+    proc init(type eltType, in ms, moduleName: string = "sequential") {
         super.init(eltType);
-        this.mds = new list(shared Module(eltType));
+        this.localOwnedModules = new list(shared Module(eltType));
         init this;
         this.moduleName = moduleName;
         for param i in 0..<ms.size {
-            var m : shared Module(eltType) = shared.adopt(owned.release(ms[i])!);
-            addModule(i: string,m.borrow());
-            mds.pushBack(m);
+            try! {
+                var m_: shared Module(eltType)? = nil;
+                if isOwnedClass(ms[i].type) && isNilableClass(ms[i].type) then
+                    m_ = shared.adopt(owned.release(ms[i])!);
+                else
+                    m_ = ms[i];
+                var m: shared Module(eltType) = m_ : shared Module(eltType);
+                writeln(m.moduleName);
+                addModule(i: string,m);
+                localOwnedModules.pushBack(m);
+            }
+        }
+        for m in localOwnedModules {
+            writeln(m.moduleName);
         }
     }
 
-    proc init(type eltType = real, order: list(string), in ms: map(string,owned Module(eltType)?)) {
+    proc init(type eltType = defaultEltType, order: list(string), in ms: map(string,owned Module(eltType)?)) {
         super.init(eltType);
-        this.mds = new list(shared Module(eltType));
+        this.localOwnedModules = new list(shared Module(eltType));
         init this;
         this.moduleName = "sequential";
         for (i,k) in zip(0..<ms.size,ms.keys()) {
             // var m : owned Module(eltType) = owned.adopt(owned.release(ms[order[i]])!);
             var m : shared Module(eltType) = shared.adopt(owned.release(ms[k])!);
-            const j = mds.pushBack(m);
-            var b = mds[j].borrow();
+            const j = localOwnedModules.pushBack(m);
+            var b = localOwnedModules[j].borrow();
             addModule(order[i],b);
             compilerWarning("Iain you need to fix this after the demo.");
         }
     }
 
-    proc init(in ms: (owned Module(real)?)...?rank) do
-        this.init(real, ms);
+    proc init(in ms: (owned Module(?)?)...?rank) do
+        try! this.init(ms(0)!.eltType, ms);
+    
+    proc init(in ms: (shared Module(?))...?rank) do
+        try! this.init(ms(0).eltType, ms);
 
     proc init(type eltType, moduleName: string = "sequential") {
         super.init(eltType);
-        this.mds = new list(shared Module(eltType));
+        this.localOwnedModules = new list(shared Module(eltType));
         init this;
 
         this.moduleName = moduleName;
     }
 
-    proc addModule(name: string, m: shared Module(eltType)) {
-        mds.pushBack(m);
-        addModule(name,m.borrow());
-    }
+    // override proc addModule(name: string, m: shared Module(eltType)) {
+    //     mds.pushBack(m);
+    //     super.addModule(name,mds[mds.size-1]);
+    // }
 
 
     override proc forward(input: Tensor(eltType)): Tensor(eltType) {
@@ -857,11 +876,11 @@ class Sequential : Module(?) {
         // for (n,m) in this.namedModules() {
         //     writeln((n,m.moduleName,))
         // }
-        if mds.size < 1 then
+        if localOwnedModules.size < 1 then
             halt("Sequential must have submodules! moduleName: ", moduleName);
-        var x = mds[0](input);
-        for i in 1..<mds.size {
-            x = mds[i](x);
+        var x = localOwnedModules[0](input);
+        for i in 1..<localOwnedModules.size {
+            x = localOwnedModules[i](x);
         }
         return x;
     }
@@ -869,6 +888,8 @@ class Sequential : Module(?) {
     override proc attributes(): moduleAttributes {
         var ms = new dict(string,moduleAttributes);
         for (n,m) in subModules.items() {
+            // writeln("got here");
+            // writeln((n,m.type:string));
             ms.insert(n,m.attributes());
         }
         return new moduleAttributes(
@@ -876,6 +897,20 @@ class Sequential : Module(?) {
             moduleName,
             ms
         );
+        // var ms = new dict(string,moduleAttributes);
+        // for m in localOwnedModules {
+        //     writeln(m.moduleName);
+        //     // writeln(m.signature);
+        //     writeln("got here 1");
+        //     var ma = m.attributes();
+        //     writeln("got here 2");
+        //     ms.insert(m.moduleName,ma);
+        // }
+        // return new moduleAttributes(
+        //     "Sequential",
+        //     moduleName,
+        //     ms
+        // );
     }
 }
 

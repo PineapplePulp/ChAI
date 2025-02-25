@@ -5,14 +5,17 @@ module Layer {
 
     class ReLU : Module(?) {
 
-        proc init(type eltType = defaultEltType) do
+        proc init(type eltType = defaultEltType) {
             super.init(eltType);
+            init this;
+            this.moduleName = "ReLU";
+        }
 
         override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) do
             return input.relu();
 
         override proc attributes(): moduleAttributes do
-            return moduleAttributes("ReLU",moduleName);
+            return new moduleAttributes("ReLU",moduleName);
     }
 
     class GELU : Module(?) {
@@ -24,7 +27,7 @@ module Layer {
             return input.gelu();
 
         override proc attributes(): moduleAttributes do
-            return moduleAttributes("GELU",moduleName);
+            return new moduleAttributes("GELU",moduleName);
     }
 
 

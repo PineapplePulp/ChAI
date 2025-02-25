@@ -95,7 +95,7 @@ module Layer {
     class Parameter : Module(?) {
         var data: dynamicTensor(eltType);
 
-        proc init(data: dynamicTensor(eltType)) {
+        proc init(data: dynamicTensor(?eltType)) {
             super.init(eltType);
             this.data = data;
             init this;
@@ -143,16 +143,15 @@ module Layer {
                 util.err("Weights output dimension must match bias input dimension");
 
             init this;
-            this.moduleName = "Linear"
+            this.moduleName = "Linear";
         }
 
         proc init(type eltType = defaultEltType, inFeatures: int, outFeatures: int) {
-            super.init(eltType);
-            this.weights = 
+            this.init(new dynamicTensor(eltType,inFeatures,outFeatures),new dynamicTensor(eltType,outFeatures));
         }
 
         proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) do
-            return input.matmul(this.weights.data) + this.bias.data;
+            return input.matVecMul(this.weights.data,input) + this.bias.data;
     }
 
 

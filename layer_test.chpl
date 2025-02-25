@@ -1,6 +1,6 @@
 use Tensor;
 use Layer;
-use Network except ReLU;
+use Network except ReLU, Linear, Flatten;
 
 
 var x = Tensor.arange(2,3);

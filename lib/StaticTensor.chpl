@@ -461,30 +461,37 @@ proc type staticTensor.batchNorm(
     return tensorFromCtx(featureRank, eltType, ctx);
 }
 
-proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
-    const (n,) = vec.array.domain.shape;
-    const (m,_n) = mat.array.domain.shape;
-    if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
-    var vec_ = vec.reshape(1,n);
-    var v = vec_.expand(m,n);
-    var Mv = mat * v;
-    return Mv.sum(1);
+// proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+//     const (n,) = vec.array.domain.shape;
+//     const (m,_n) = mat.array.domain.shape;
+//     if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
+//     var vec_ = vec.reshape(1,n);
+//     var v = vec_.expand(m,n);
+//     var Mv = mat * v;
+//     return Mv.sum(1);
+// }
+
+// proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+//     const (b,n) = vec.array.domain.shape;
+//     const (m,_n) = mat.array.domain.shape;
+//     if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
+//     var vec_ = vec.reshape(b,1,n);
+//     var v = vec_.expand(b,m,n);
+//     var M_ = mat.reshape(1,m,n);
+//     var M = M_.expand(b,m,n);
+//     var Mv = M * v;
+//     return Mv.sum(2);
+// }
+
+
+proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+    var ctx = new matVecMulOp(mat.meta,vec.meta);
+    return tensorFromCtx(1,eltType,ctx);
 }
 
-proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
-    const (b,n) = vec.array.domain.shape;
-    const (m,_n) = mat.array.domain.shape;
-    if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
-    var vec_ = vec.reshape(b,1,n);
-    var v = vec_.expand(b,m,n);
-    var M_ = mat.reshape(1,m,n);
-    var M = M_.expand(b,m,n);
-    var Mv = M * v;
-    return Mv.sum(2);
-}
-
-proc type staticTensor.matvecmul(m,v) {
-    return matvec(m,v);
+proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+    var ctx = new matVecMulOp(mat.meta,vec.meta);
+    return tensorFromCtx(2,eltType,ctx);
 }
 
 proc type staticTensor.convolve(features: staticTensor(3,?eltType),kernel: staticTensor(4,eltType), stride: int, padding: int): staticTensor(3,eltType) {

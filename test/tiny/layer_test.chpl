@@ -27,7 +27,8 @@ var net2 = new Sequential(
     new shared Linear(6,6),
     new shared ReLU(),
     new shared GELU(),
-    new shared ELU()
+    new shared ELU(),
+    new shared ResidualBlock(new shared ReLU())
 );
 
 y = net2(x);

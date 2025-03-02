@@ -2,6 +2,8 @@ module Layer {
     private use Tensor;
     private use Network;
     private use Env;
+    private import Utilities as util;
+    private use OrderedDict;
 
     class ReLU : Module(?) {
 
@@ -166,20 +168,39 @@ module Layer {
             }
             halt("Unreachable");
         }
+
+        override proc attributes(): moduleAttributes do
+            return new moduleAttributes(
+                "Linear",
+                moduleName,
+                ("inFeatures",this.inFeatures),
+                ("outFeatures",this.outFeatures)
+            );
     }
 
 
 
     class ResidualBlock : Module(?) {
-        var innerModule : Module(eltType);
+        var innerModule : shared Module(eltType);
 
-        proc init(innerModule: Module(?)) {
+        proc init(innerModule: shared Module(?)) {
             super.init(innerModule.eltType);
             this.innerModule = innerModule;
         }
 
         override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) do
             return this.innerModule(input) + input;
+
+        override proc attributes(): moduleAttributes {
+            // Java moment! (sorry)
+            var innerModuleAttributesDict: dict(string,moduleAttributes) = new dict(string,moduleAttributes);
+            innerModuleAttributesDict.insert("innerModule",innerModule.attributes());
+            return new moduleAttributes(
+                "ResidualBlock",
+                moduleName,
+                innerModuleAttributesDict
+            );
+        }
     }
 
 }

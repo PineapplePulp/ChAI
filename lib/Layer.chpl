@@ -109,12 +109,12 @@ module Layer {
             this.init(new staticTensor(data));
         
 
-        proc forward(input: dynamicTensor(eltType)) {
+        override proc forward(input: dynamicTensor(eltType)) {
             compilerWarning("Should not be calling forward on a Parameter module");
             return this.data;
         }
 
-        proc attributes(): moduleAttributes do
+        override proc attributes(): moduleAttributes do
             return new moduleAttributes(
                 "Parameter",
                 moduleName,
@@ -137,9 +137,9 @@ module Layer {
             if !bias.checkRank(1) then
                 util.err("Bias tensor must have rank 1");
             
-            const weightsShape = weights.forceRank(2).shape;
+            const weightsShape = weights.forceRank(2).domain.shape;
             const (inFeatures,outFeatures) = weightsShape;
-            if outFeatures != bias.forceRank(1).shape[0] then
+            if outFeatures != bias.forceRank(1).domain.shape[0] then
                 util.err("Weights output dimension must match bias input dimension");
 
             init this;
@@ -147,11 +147,25 @@ module Layer {
         }
 
         proc init(type eltType = defaultEltType, inFeatures: int, outFeatures: int) {
-            this.init(new dynamicTensor(eltType,inFeatures,outFeatures),new dynamicTensor(eltType,outFeatures));
+            var weights = dynamicTensor.zeros(eltType=eltType,outFeatures,inFeatures);
+            var bias = dynamicTensor.zeros(eltType=eltType,outFeatures);
+            this.init(weights,bias);
         }
 
-        proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) do
-            return input.matVecMul(this.weights.data,input) + this.bias.data;
+        proc init(inFeatures: int, outFeatures: int) do
+            this.init(defaultEltType,inFeatures,outFeatures);
+
+        override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) {
+            if input.checkRank(1) {
+                compilerWarning("This could be written faster using a fused operation that includes the bias.");
+                return dynamicTensor.matVecMul(this.weights.data,input) + this.bias.data;
+            } else if input.checkRank(2) {
+                util.err("Broadcasted input not yet implemented.");
+            } else {
+                util.err("Input tensor must have rank 1 or 2");
+            }
+            halt("Unreachable");
+        }
     }
 
 

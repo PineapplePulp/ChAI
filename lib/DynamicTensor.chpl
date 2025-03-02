@@ -658,7 +658,7 @@ proc type dynamicTensor.nllLoss(
     target: dynamicTensor(1,eltType), 
     weight: dynamicTensor(1, eltType),
     ignoreIndex: int = -1,
-    red = bool = true,
+    red: bool = true,
     reduction: string = "mean"
 ) {
     for param rankIn in 2..2 {

@@ -1622,23 +1622,25 @@ proc type ndarray.nllLoss(
 ): ndarray(1,eltType) {
     const (N,C) = input.shape;
     assert(target.shape[0] == N, "Target shape must match batch size.");
-    assert(weights.shape[0] == C, "Weights shape must match number of classes.");
+    assert(weight.shape[0] == C, "Weights shape must match number of classes.");
     
     const dom = util.domainFromShape(N);
     var loss = new ndarray(dom, eltType);
     ref x = input.data;
     ref y = target.data;
-    ref w = weights.data;
+    ref w = weight.data;
     ref lossD = loss.data;
     var wynSum: eltType = 0.0;
 
     forall n in 0..<N {
         const yn = y[n];
-        if yn == ignoreIndex then
+        if yn == ignoreIndex {
             lossD[n] = 0.0;
-        else
-            lossD[n] = -w[yn]*x[n,yn]
-            wynSum += w[y_n]
+        }
+        else {
+            lossD[n] = -w[yn]*x[n,yn];
+            wynSum += w[yn];
+        }
     }
 
     if !red then return loss;

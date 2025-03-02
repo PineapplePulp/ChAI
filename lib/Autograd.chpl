@@ -533,17 +533,6 @@ record addOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","Add"));
 }
 
-record squareOp : serializable {
-    var input: shared BaseTensorResource(?);
-
-    proc children do return (input,);
-
-    proc forward() do
-        return input.array.square();
-
-    proc spec : GradOpSpec do return new dict(("operation","Square"));
-}
-
 record subOp : serializable {
     var lhs: shared BaseTensorResource(?);
     var rhs: shared BaseTensorResource(?);
@@ -1000,9 +989,9 @@ record nllLossOp : serializable {
     var input: shared BaseTensorResource(?);
     var target: shared BaseTensorResource(?);
     var weight: shared BaseTensorResource(?);
-    ignoreIndex: int;
-    red = bool;
-    reduction: string;
+    var ignoreIndex: int;
+    var red: bool;
+    var reduction: string;
     
     proc children do return (input,target,weight,);
 

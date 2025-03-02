@@ -449,15 +449,15 @@ proc type staticTensor.matvecmul(m,v) {
 }
 
 proc type staticTensor.nllLoss(
-    input: staticTensor(2,?eltType), 
-    target: staticTensor(1,eltType), 
-    weight: staticTensor(1, eltType),
+    input: staticTensor(2,?eltType),
+    target: staticTensor(1,eltType),
+    weight: staticTensor(1, eltType) = ones(),
     ignoreIndex: int = -1,
-    red = bool = true,
+    red: bool = true,
     reduction: string = "mean"
 ) {
-    var ctx = new nLLLossOp(input.meta,target.meta,weight.meta,ignoreIndex,red,reduction);
-    return new tensorFromCtx(1,eltType,ctx);
+    var ctx = new nllLossOp(input.meta,target.meta,weight.meta,ignoreIndex,red,reduction);
+    return tensorFromCtx(1,eltType,ctx);
 }
 
 proc type staticTensor.convolve(features: staticTensor(3,?eltType),kernel: staticTensor(4,eltType), stride: int, padding: int): staticTensor(3,eltType) {

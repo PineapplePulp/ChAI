@@ -166,6 +166,14 @@ module Layer {
             }
             halt("Unreachable");
         }
+
+        override proc attributes(): moduleAttributes do
+            return new moduleAttributes(
+                "Linear",
+                moduleName,
+                ("inFeatures",this.inFeatures),
+                ("outFeatures",this.outFeatures)
+            );
     }
 
 
@@ -180,6 +188,17 @@ module Layer {
 
         override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) do
             return this.innerModule(input) + input;
+
+        override proc attributes(): moduleAttributes {
+            // Java moment! (sorry)
+            var innerModuleAttributesDict: dict(string,moduleAttributes) = new dict(string,moduleAttributes);
+            innerModuleAttributesDict.insert("innerModule",innerModule.attributes());
+            return new moduleAttributes(
+                "ResidualBlock",
+                moduleName,
+                innerModuleAttributesDict
+            );
+        }
     }
 
 }

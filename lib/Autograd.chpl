@@ -917,6 +917,18 @@ record maxOp : serializable {
 
 }
 
+record matVecMulOp : serializable {
+    var mat: shared BaseTensorResource(?);
+    var vec: shared BaseTensorResource(mat.eltType,?);
+
+    proc children do return (mat,vec);
+
+    proc forward() do
+        return ndarray.matvecmul(mat.array,vec.array);
+
+    proc spec : GradOpSpec do return new dict(("operation","MatVecMul"));
+}
+
 // https://www.adityaagrawal.net/blog/deep_learning/bprop_strided_conv
 record conv2DOp : serializable {
     type eltType = defaultEltType;

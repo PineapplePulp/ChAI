@@ -683,20 +683,6 @@ proc dynamicTensor.flatten(): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
-proc type dynamicTensor.matvecmul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
-    for param rankM in 2..2 {
-        if m.checkRank(rankM) {
-            for param rankV in 1..2 {
-                if v.checkRank(rankV) {
-                    return staticTensor.matvecmul(m.forceRank(rankM),v.forceRank(rankV)).eraseRank();
-                }
-            }
-        }
-    }
-    halt("Could not determine rank in dynamicTensor.matvecmul.");
-    return new dynamicTensor(eltType);
-}
-
 proc type dynamicTensor.matvecmulFast(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
     return staticTensor.matvecmulFast(m.forceRank(2),v.forceRank(1)).eraseRank();
 }
@@ -711,6 +697,20 @@ proc dynamicTensor.argmax(): int {
     return a.argmax();
 }
 
+proc type dynamicTensor.matVecMul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
+    for param rankM in 2..2 {
+        if m.checkRank(rankM) {
+            for param rankV in 1..1 {
+                if v.checkRank(rankV) {
+                    return staticTensor.matVecMul(m.forceRank(rankM),v.forceRank(rankV)).eraseRank();
+                }
+            }
+        }
+    }
+    halt("Could not determine rank in dynamicTensor.matVecMul.");
+    return new dynamicTensor(eltType);
+}
+
 // Right now, the supported shapes are (3,4) -> 3
 proc type dynamicTensor.convolve(features: dynamicTensor(?eltType), kernel: dynamicTensor(eltType), stride: int, padding: int): dynamicTensor(eltType) do
     return staticTensor.convolve(features.forceRank(3),kernel.forceRank(4),stride, padding).eraseRank();
@@ -722,11 +722,20 @@ proc type dynamicTensor.convolve(features: dynamicTensor(?eltType), kernel: dyna
 proc type dynamicTensor.arange(args...) do
     return staticTensor.arange((...args)).eraseRank();
 
+proc type dynamicTensor.arange(type eltType,args...) do
+    return staticTensor.arange(eltType,(...args)).eraseRank();
+
 proc type dynamicTensor.ones(args...) do
     return staticTensor.ones((...args)).eraseRank();
 
+proc type dynamicTensor.ones(type eltType,args...) do
+    return staticTensor.ones(eltType,(...args)).eraseRank();
+
 proc type dynamicTensor.zeros(args...) do
     return staticTensor.zeros((...args)).eraseRank();
+
+proc type dynamicTensor.zeros(type eltType,args...) do
+    return staticTensor.zeros(eltType,(...args)).eraseRank();
 
 proc type dynamicTensor.valueLike(t: dynamicTensor(?eltType), value: eltType): dynamicTensor(eltType) {
     for param rank in 1..maxRank {

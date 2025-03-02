@@ -186,6 +186,8 @@ module Layer {
         proc init(innerModule: shared Module(?)) {
             super.init(innerModule.eltType);
             this.innerModule = innerModule;
+            init this;
+            this.moduleName = "ResidualBlock";
         }
 
         override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) do

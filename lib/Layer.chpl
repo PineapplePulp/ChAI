@@ -2,6 +2,8 @@ module Layer {
     private use Tensor;
     private use Network;
     private use Env;
+    private import Utilities as util;
+    private use OrderedDict;
 
     class ReLU : Module(?) {
 
@@ -179,9 +181,9 @@ module Layer {
 
 
     class ResidualBlock : Module(?) {
-        var innerModule : Module(eltType);
+        var innerModule : shared Module(eltType);
 
-        proc init(innerModule: Module(?)) {
+        proc init(innerModule: shared Module(?)) {
             super.init(innerModule.eltType);
             this.innerModule = innerModule;
         }

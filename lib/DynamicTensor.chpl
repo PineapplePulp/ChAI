@@ -330,6 +330,7 @@ operator ==(a: dynamicTensor(?eltType),b: dynamicTensor(eltType)): bool {
     }
     halt("Could not determine rank in dynamicTensor == dynamicTensor.");
 }
+
 proc dynamicTensor.sum(axes: ?axesCount*int, keepDim: bool = true): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if this.checkRank(rank) then
@@ -354,19 +355,27 @@ proc dynamicTensor.sum(axes: int...?axesCount): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
-proc dynamicTensor.sum(axes: int...?r): dynamicTensor(eltType) {
+proc dynamicTensor.mean(axes: ?axesCount*int, keepDim: bool = true): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if this.checkRank(rank) then
-            return this.forceRank(rank).sum((...axes)).eraseRank();
-    halt("Could not determine rank in dynamicTensor.sum.");
+            return this.forceRank(rank).mean(axes,keepDim).eraseRank();
+    halt("Could not determine rank in dynamicTensor.mean.");
     return new dynamicTensor(eltType);
 }
 
-proc dynamicTensor.sum(axes: int...?r): dynamicTensor(eltType) {
+proc dynamicTensor.mean(keepDim: bool = true): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if this.checkRank(rank) then
-            return this.forceRank(rank).sum((...axes)).eraseRank();
-    halt("Could not determine rank in dynamicTensor.sum.");
+            return this.forceRank(rank).mean(keepDim=true).eraseRank();
+    halt("Could not determine rank in dynamicTensor.mean.");
+    return new dynamicTensor(eltType);
+}
+
+proc dynamicTensor.mean(axes: int...?axesCount): dynamicTensor(eltType) {
+    for param rank in 1..maxRank do
+        if this.checkRank(rank) then
+            return this.forceRank(rank).mean((...axes)).eraseRank();
+    halt("Could not determine rank in dynamicTensor.mean.");
     return new dynamicTensor(eltType);
 }
 

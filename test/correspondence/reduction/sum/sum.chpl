@@ -1,6 +1,6 @@
 use Tensor;
 
-var a = Tensor.arange(2,3);
+var a = staticTensor.arange(2,3);
 
 Testing.numericPrint(a.sum(0));
 
@@ -8,7 +8,7 @@ Testing.numericPrint(a.sum(1));
 
 Testing.numericPrint(a.sum());
 
-var b = Tensor.arange(2,3,4);
+var b = staticTensor.arange(2,3,4);
 
 Testing.numericPrint(b.sum(0));
 

@@ -858,28 +858,33 @@ proc dynamicTensor.unsqueeze(dim: int): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
-proc dynamicTensor.unsqueeze(dShape: dynamicShape): dynamicTensor(eltType) {
-        // return this.unsqueeze(dShape.sizes.first).unsqueeze(dShape.tail);
-    if dShape.size == 1 then
-        return this.unsqueeze(dShape.head);
-    else {
-            // return this.unsqueeze(dShape.sizes.tail).unsqueeze(dShape.sizes.first);
-        return (this.unsqueeze(dShape.tail)).unsqueeze(dShape.head);
 
-    }
+proc dynamicTensor.squeeze(): dynamicTensor(eltType) {
+    var dShape = this.shape();
+    var newSizes = new list(int);
+    for i in 0..<dShape.size do
+        if dShape.sizes[i] != 1 then
+            newSizes.pushBack(dShape.sizes[i]);
+    var newDShape = new dynamicShape(newSizes);
+    return this.reshape(newDShape);
+    
 }
 
-// proc dynamicTensor.unsqueeze(axes: int ...): dynamicTensor(eltType) do
-//     return this.unsqueeze(new dynamicShape(axes));
+// proc dynamicTensor.squeeze(dim: squee): dynamicTensor(eltType) {
+//     for param rank in 1..maxRank do
+//         for param shapeRank in 1..maxRank do
+//             if this.checkRank(rank) && dShape.checkRank(shapeRank) then
+//                 return this.forceRank(rank).squeeze(dShape.toRankedShape(shapeRank)).eraseRank();
+//     halt("Could not determine rank in dynamicTensor.squeeze.");
+//     return new dynamicTensor(eltType);
+// }
 
-proc dynamicTensor.squeeze(dShape: dynamicShape): dynamicTensor(eltType) {
-    for param rank in 1..maxRank do
-        for param shapeRank in 1..maxRank do
-            if this.checkRank(rank) && dShape.checkRank(shapeRank) then
-                return this.forceRank(rank).squeeze(dShape.toRankedShape(shapeRank)).eraseRank();
-    halt("Could not determine rank in dynamicTensor.squeeze.");
-    return new dynamicTensor(eltType);
-}
+// proc dynamicTensor.squeeze(dShape: dynamicShape): dynamicTensor(eltType) {
+//     if dShape.size == 1 then
+//         return this.squeeze(dShape.head);
+//     else 
+//         return (this.squeeze(dShape.tail)).squeeze(dShape.head);
+// }
 
 
 proc main() {

@@ -26,7 +26,9 @@ writeln(b.shape().toList());
 var c = dynamicTensor.arange(4) + 1;
 writeln(c);
 
+var d = c.unsqueeze(0).unsqueeze(1);
+writeln(d);
 
-writeln(c.unsqueeze(0));
-writeln(c.unsqueeze(1));
 
+var e = d.squeeze();
+writeln(e);

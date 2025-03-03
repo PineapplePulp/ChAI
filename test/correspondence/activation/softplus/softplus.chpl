@@ -28,3 +28,7 @@ Testing.numericPrint(b);
 
 c = (Tensor.zeros(10) + 40.0).softplus(beta=10.0);
 Testing.numericPrint(c);
+
+// beta = 0 should return infinity in all values
+a = Tensor.zeros(5).softplus(beta=0.0);
+Testing.numericPrint(a);

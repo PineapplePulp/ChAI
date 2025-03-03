@@ -355,8 +355,8 @@ proc staticTensor.slice(rngs: range...rank) {
 }
 
 proc staticTensor.sum(axes: ?axesCount * int, param keepDim: bool) {
-    if rank - axesCount < 0 then
-        compilerError("Cannot mean more axes than rank. ");
+    if rank - axesCount < 0 && !keepDim then
+        compilerError("Cannot sum more axes than rank. ");
     var ctx = new sumOp(rank,eltType,axesCount,axes,meta,keepDim);
     return tensorFromCtx(ctx.outRank,eltType,ctx);
 }
@@ -372,7 +372,7 @@ proc staticTensor.sum(axes: int...?axesCount) {
 
 
 proc staticTensor.mean(axes: ?axesCount * int, param keepDim: bool) {
-    if rank - axesCount < 0 then
+    if rank - axesCount < 0 && !keepDim then
         compilerError("Cannot mean more axes than rank. ");
     var ctx = new meanOp(rank,eltType,axesCount,axes,meta,keepDim);
     return tensorFromCtx(ctx.outRank,eltType,ctx);

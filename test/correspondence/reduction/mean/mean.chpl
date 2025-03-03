@@ -1,6 +1,6 @@
 use Tensor;
 
-var a = staticTensor.arange(2,3);
+var a = dynamicTensor.arange(2,3);
 
 Testing.numericPrint(a.mean(0));
 
@@ -8,7 +8,7 @@ Testing.numericPrint(a.mean(1));
 
 Testing.numericPrint(a.mean());
 
-var b = staticTensor.arange(2,3,4);
+var b = dynamicTensor.arange(2,3,4);
 
 Testing.numericPrint(b.mean(0));
 

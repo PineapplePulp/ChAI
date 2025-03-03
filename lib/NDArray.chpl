@@ -37,168 +37,167 @@ record ndarray : serializable {
     pragma "no copy return"
     pragma "return not owned"
     inline proc _dom do return _domain;
-
-    /* Create a new :record:`ndarray` with the requisite element type `eltType`
-       and domain `dom`.
-
-       :arg eltType: The element of type of the new :record:`ndarray`.
-       :type eltType: type
-
-       :arg dom: The domain of the new :record:`ndarray`.
-    */
-    inline
-    proc init(type eltType, const dom: ?t)
-            where isDomainType(t) {
-        this.rank = dom.rank;
-        this.eltType = eltType;
-        this._domain = dom;
-    }
-
-    /* Create a new :record:`ndarray` with the requisite element type `eltType`
-       and domain `dom`, filled with the value `fill`.
-
-       :arg eltType: The element type of the new :record:`ndarray`.
-       :type eltType: type
-
-       :arg dom: The domain of the new :record:`ndarray`.
-
-       :arg fill: The fill value of the new :record:`ndarray`. All elements
-       of the :record:`ndarray` will be initialised to a copy of this element.
-       :type fill: const in eltType
-     */
-    inline
-    proc init(type eltType, const dom: ?t, const in fill: eltType) 
-            where isDomainType(t) {
-        this.rank = dom.rank;
-        this.eltType = eltType;
-        this._domain = dom;
-        this.data = fill;
-    }
-
-    /* Create a new :record:`ndarray` with rank `rank`, element type `eltType`,
-       and domain `dom`.
-
-       The domain must have the same rank as the requested rank.
-
-       :arg rank: The rank of the new :record:`ndarray`. It must be the same value
-       as `dom.rank`.
-       :type rank: param int
-
-       :arg eltType: The element type of the new :record:`ndarray`.
-       
-       :arg dom: The domain of the new :record:`ndarray`. `dom.rank` must be the same
-       value as `rank`.
-     */
-    proc init(param rank: int, type eltType, const dom: ?t) 
-            where isDomainType(t) 
-                && dom.rank == rank {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = dom;
-    }
-
-    /* Create a new :record:`ndarray` with rank `rank`, element type `eltType`, 
-       domain `dom`, initialized with values taken from the array `arr`.
-
-       :arg rank: The rank of the new :record:`ndarray`. It must be the same value
-       as `dom.rank`.
-       :type rank: param int
-
-       :arg eltType: The element type of the new :record:`ndarray`.
-       :type eltType: type
-
-       :arg dom: The domain of the new :record:`ndarray`.
-
-       :arg arr: The values from which the new :record:`ndarray` will be initialized.
-       :type arr: const []eltType
-     */
-    proc init(param rank: int, type eltType, const dom: ?t, const arr: []eltType)
-        where isDomainType(t)
-             && dom.rank == rank {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = dom;
-        this.data = arr;
-    }
-
-    proc init(type eltType, shape: ?rank * int) {
-        var ranges: rank*range;
-        for param i in 0..<rank do
-            ranges(i) = 0..<shape(i);
-        this.init(eltType,{(...ranges)});
-    }
-
-    proc init(param rank: int, type eltType = defaultEltType) {
-        const shape: rank * int;
-        this.init(eltType,shape);
-    }
-
-    proc init(type eltType = defaultEltType, const shape: int ...?rank) do
-        this.init(eltType,shape);
-
-    proc init(const dom: rect(?rank), type eltType) do
-        this.init(eltType,dom);  // This could be optimized by refactoring whole init system. 
-
-    proc init(const dom: ?t,type eltType = defaultEltType) 
-            where isDomainType(t) {
-        this.init(eltType,dom);
-    }
-
-    proc init(const Arr: []) {
-        this.rank = Arr.rank;
-        this.eltType = Arr.eltType;
-        this._domain = Arr.domain;
-        this.data = Arr;
-    }
-    
-    proc init(const A: ndarray(?rank,?eltType)) {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = A._domain;
-        this.data = A.data;
-    }
-
-    proc init(type eltType, ref rs: Random.randomStream(eltType), const dom: ?t)
-        where isDomainType(t) {
-        this.init(eltType,dom);
-        rs.fill(data);
-    }
-
-    // proc init(it: _iteratorRecord) {
-    //     const arr = it;
-    //     this.init(arr);
-    // }
-
-    proc init=(const other: [] ?eltType) do
-        this.init(other);
-
-    proc init=(const other: ndarray(?rank,?eltType)) {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = other._domain;
-        this.data = other.data;
-    }
-
-    // proc init=(other: _iteratorRecord) do
-    //     this.init(other);
-
-    proc ref this(args: int...rank) ref {
-        return data.this((...args));
-    }
-
-    proc ref setData(const arr: [] eltType)
-            where arr.rank == rank do
-        if arr.domain == this.domain then
-            data = arr;
-        else
-            this = arr;
-
-    proc ref reshapeDomain(const dom: domain(rank,int))
-        where isRegularDomain(dom) {
-        _domain = dom;
-    }
 }
 
+/* Create a new :record:`ndarray` with the requisite element type `eltType`
+   and domain `dom`.
+
+   :arg eltType: The element of type of the new :record:`ndarray`.
+   :type eltType: type
+
+   :arg dom: The domain of the new :record:`ndarray`.
+*/
+inline
+proc ndarray.init(type eltType, const dom: ?t)
+        where isDomainType(t) {
+    this.rank = dom.rank;
+    this.eltType = eltType;
+    this._domain = dom;
+}
+
+/* Create a new :record:`ndarray` with the requisite element type `eltType`
+   and domain `dom`, filled with the value `fill`.
+
+   :arg eltType: The element type of the new :record:`ndarray`.
+   :type eltType: type
+
+   :arg dom: The domain of the new :record:`ndarray`.
+
+   :arg fill: The fill value of the new :record:`ndarray`. All elements
+   of the :record:`ndarray` will be initialised to a copy of this element.
+   :type fill: const in eltType
+*/
+inline
+proc ndarray.init(type eltType, const dom: ?t, const in fill: eltType) 
+        where isDomainType(t) {
+    this.rank = dom.rank;
+    this.eltType = eltType;
+    this._domain = dom;
+    this.data = fill;
+}
+
+/* Create a new :record:`ndarray` with rank `rank`, element type `eltType`,
+   and domain `dom`.
+
+   The domain must have the same rank as the requested rank.
+
+   :arg rank: The rank of the new :record:`ndarray`. It must be the same value
+   as `dom.rank`.
+   :type rank: param int
+
+   :arg eltType: The element type of the new :record:`ndarray`.
+   
+   :arg dom: The domain of the new :record:`ndarray`. `dom.rank` must be the same
+   value as `rank`.
+*/
+proc ndarray.init(param rank: int, type eltType, const dom: ?t) 
+        where isDomainType(t) 
+            && dom.rank == rank {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = dom;
+}
+
+/* Create a new :record:`ndarray` with rank `rank`, element type `eltType`, 
+   domain `dom`, initialized with values taken from the array `arr`.
+
+   :arg rank: The rank of the new :record:`ndarray`. It must be the same value
+   as `dom.rank`.
+   :type rank: param int
+
+   :arg eltType: The element type of the new :record:`ndarray`.
+   :type eltType: type
+
+   :arg dom: The domain of the new :record:`ndarray`.
+
+   :arg arr: The values from which the new :record:`ndarray` will be initialized.
+   :type arr: const []eltType
+*/
+proc ndarray.init(param rank: int, type eltType, const dom: ?t, const arr: []eltType)
+    where isDomainType(t)
+            && dom.rank == rank {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = dom;
+    this.data = arr;
+}
+
+proc ndarray.init(type eltType, shape: ?rank * int) {
+    var ranges: rank*range;
+    for param i in 0..<rank do
+        ranges(i) = 0..<shape(i);
+    this.init(eltType,{(...ranges)});
+}
+
+proc ndarray.init(param rank: int, type eltType = defaultEltType) {
+    const shape: rank * int;
+    this.init(eltType,shape);
+}
+
+proc ndarray.init(type eltType = defaultEltType, const shape: int ...?rank) do
+    this.init(eltType,shape);
+
+proc ndarray.init(const dom: rect(?rank), type eltType) do
+    this.init(eltType,dom);  // This could be optimized by refactoring whole init system. 
+
+proc ndarray.init(const dom: ?t,type eltType = defaultEltType) 
+        where isDomainType(t) {
+    this.init(eltType,dom);
+}
+
+proc ndarray.init(const Arr: []) {
+    this.rank = Arr.rank;
+    this.eltType = Arr.eltType;
+    this._domain = Arr.domain;
+    this.data = Arr;
+}
+
+proc ndarray.init(const A: ndarray(?rank,?eltType)) {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = A._domain;
+    this.data = A.data;
+}
+
+proc ndarray.init(type eltType, ref rs: Random.randomStream(eltType), const dom: ?t)
+    where isDomainType(t) {
+    this.init(eltType,dom);
+    rs.fill(data);
+}
+
+// proc init(it: _iteratorRecord) {
+//     const arr = it;
+//     this.init(arr);
+// }
+
+proc ndarray.init=(const other: [] ?eltType) do
+    this.init(other);
+
+proc ndarray.init=(const other: ndarray(?rank,?eltType)) {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = other._domain;
+    this.data = other.data;
+}
+
+// proc init=(other: _iteratorRecord) do
+//     this.init(other);
+
+proc ref ndarray.this(args: int...rank) ref {
+    return data.this((...args));
+}
+
+proc ref ndarray.setData(const arr: [] eltType)
+        where arr.rank == rank do
+    if arr.domain == this.domain then
+        data = arr;
+    else
+        this = arr;
+
+proc ref ndarray.reshapeDomain(const dom: domain(rank,int))
+    where isRegularDomain(dom) {
+    _domain = dom;
+}
 
 /* Yield the shape of an :record:`ndarray`.
 
@@ -307,6 +306,13 @@ proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {
     // return arr;
 }
 
+/* Yield a slice of an :record:`ndarray` according to the arguments.
+
+   This function behaves exactly the same as Chapel's standard
+   `slicing syntax <https://chapel-lang.org/docs/language/spec/arrays.html#array-slicing>`_.
+
+   :returns: A new :record:`ndarray` representing the slice of the :record:`ndarray`.
+ */
 proc ndarray.slice(args...) {
     const slc = data[(...args)];
     return new ndarray(slc);
@@ -436,6 +442,11 @@ proc ndarray.sum(axes: int...?axesCount): ndarray(rank,eltType) {
     return acc;
 }
 
+/* Yields the indices of all of the axes of the :record:`ndarray`, as a tuple.
+
+   :returns: A tuple representing the indices of the axes of the :record:`ndarray`
+   :rtype: rank * int
+ */
 proc ndarray.nDimTuple(): rank * int {
     var tpl: rank * int;
     for param i in 0..<rank do

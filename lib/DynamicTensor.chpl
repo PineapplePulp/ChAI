@@ -821,6 +821,15 @@ record dynamicShape : serializable {
 
     proc toList(): list(int) do
         return new list(this.sizes);
+
+    proc head: int do
+        return this.sizes.first;
+    
+    proc tail: dynamicShape {
+        var sizes = this.toList();
+        sizes.remove(this.head);
+        return new dynamicShape(sizes);
+    }
 }
 
 proc dynamicTensor.shape(): dynamicShape {
@@ -841,6 +850,36 @@ proc dynamicTensor.reshape(dShape: dynamicShape): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
+proc dynamicTensor.unsqueeze(dim: int): dynamicTensor(eltType) {
+    for param rank in 1..maxRank do
+        if this.checkRank(rank) then
+            return this.forceRank(rank).unsqueeze(dim).eraseRank();
+    halt("Could not determine rank in dynamicTensor.unsqueeze.");
+    return new dynamicTensor(eltType);
+}
+
+proc dynamicTensor.unsqueeze(dShape: dynamicShape): dynamicTensor(eltType) {
+        // return this.unsqueeze(dShape.sizes.first).unsqueeze(dShape.tail);
+    if dShape.size == 1 then
+        return this.unsqueeze(dShape.head);
+    else {
+            // return this.unsqueeze(dShape.sizes.tail).unsqueeze(dShape.sizes.first);
+        return (this.unsqueeze(dShape.tail)).unsqueeze(dShape.head);
+
+    }
+}
+
+// proc dynamicTensor.unsqueeze(axes: int ...): dynamicTensor(eltType) do
+//     return this.unsqueeze(new dynamicShape(axes));
+
+proc dynamicTensor.squeeze(dShape: dynamicShape): dynamicTensor(eltType) {
+    for param rank in 1..maxRank do
+        for param shapeRank in 1..maxRank do
+            if this.checkRank(rank) && dShape.checkRank(shapeRank) then
+                return this.forceRank(rank).squeeze(dShape.toRankedShape(shapeRank)).eraseRank();
+    halt("Could not determine rank in dynamicTensor.squeeze.");
+    return new dynamicTensor(eltType);
+}
 
 
 proc main() {

@@ -198,17 +198,17 @@ operator ==(a: staticTensor(?rank,?eltType), b: staticTensor(rank,eltType)): boo
     return flag;
 }
 
-
-proc staticTensor.reshape(dom: domain(?)) {
-    param newRank = dom.rank;
-    var ctx = new reshapeOp(rank,newRank,eltType,dom.shape,meta);
-    return tensorFromCtx(newRank,eltType,ctx);
-}
-
-proc staticTensor.reshape(newShape: int ...?newRank) {
+proc staticTensor.reshape(newShape: ?newRank*int) {
     var ctx = new reshapeOp(rank,newRank,eltType,newShape,meta);
     return tensorFromCtx(newRank,eltType,ctx);
 }
+
+proc staticTensor.reshape(newShape: int ...?newRank) do
+    return this.reshape(newShape);
+
+proc staticTensor.reshape(dom: domain(?)) do
+    return this.reshape(dom.shape);
+
 
 proc staticTensor.relu() {
     var ctx = new reluOp(meta);

@@ -860,11 +860,30 @@ record ndarray : serializable {
         const dom = this.domain;
         var rl = new ndarray(dom, eltType);
         ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            const floatMax: eltType = Types.max(eltType);
-            const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-            rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
+
+        // branching is ok here since we are still in the CPU
+
+        // beta = 0 should return inf according to PyTorch, but there is no real32 inf
+        if beta == 0 {
+            rld = Math.inf;
+        }
+
+        else if beta < 0 {
+            forall i in dom.every() {
+                const x = thisData[i];
+                const floatMax: eltType = Types.max(eltType);
+                const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
+                rld[i] = x * (1 - xgbt) + Math.log1p(Math.exp(beta * x)) / beta * xgbt;
+            }
+        }
+
+        else { // beta > 0
+            forall i in dom.every() {
+                const x = thisData[i];
+                const floatMax: eltType = Types.max(eltType);
+                const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
+                rld[i] = x * xgbt + Math.log1p(Math.exp(beta * x)) / beta * (1 - xgbt);
+            }
         }
         return rl;
     }

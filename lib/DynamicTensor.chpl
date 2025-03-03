@@ -833,13 +833,10 @@ proc dynamicTensor.shape(): dynamicShape {
 }
 
 proc dynamicTensor.reshape(dynShape: dynamicShape): dynamicTensor(eltType) {
-    for param rank in 1..maxRank {
-        for param rankDyn in 1..rank {
-            if this.checkRank(rank) && dynShape.checkRank(rankDyn) {
-                return this.forceRank(rank).reshape((...dynShape.toRankedShape(rank))).eraseRank();
-            }
-        }
-    }
+    for param rank in 1..maxRank do
+        for param rankDyn in 1..rank do
+            if this.checkRank(rank) && dynShape.checkRank(rankDyn) do
+                return this.forceRank(rank).reshape(dynShape.toRankedShape(rank)).eraseRank();
     halt("Could not determine rank in dynamicTensor.reshape.");
     return new dynamicTensor(eltType);
 }

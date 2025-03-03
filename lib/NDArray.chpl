@@ -447,9 +447,6 @@ record ndarray : serializable {
         return dilated;
     }
 
-    proc squeeze(param newRank: int): ndarray(rank,eltType) where newRank == rank do
-        return this;
-
     proc squeeze(param newRank: int): ndarray(newRank,eltType) where newRank < rank {
         // I think this will work: (a member of the chapel team needs to review this)
         // I suspect heavy performance hits will happen when running this on CUDA. 

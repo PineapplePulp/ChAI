@@ -331,7 +331,7 @@ operator ==(a: dynamicTensor(?eltType),b: dynamicTensor(eltType)): bool {
     halt("Could not determine rank in dynamicTensor == dynamicTensor.");
 }
 
-proc dynamicTensor.reduceOpAxes(param opName: string, axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) {
+inline proc dynamicTensor.reduceOpAxes(param opName: string, axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if this.checkRank(rank) then
             select opName {
@@ -344,7 +344,7 @@ proc dynamicTensor.reduceOpAxes(param opName: string, axes: ?axesCount*int, para
     return new dynamicTensor(eltType);
 }
 
-proc dynamicTensor.reduceOpNoAxes(param opName: string, param keepDim: bool): dynamicTensor(eltType) {
+inline proc dynamicTensor.reduceOpNoAxes(param opName: string, param keepDim: bool): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if this.checkRank(rank) then
             select opName {
@@ -357,63 +357,23 @@ proc dynamicTensor.reduceOpNoAxes(param opName: string, param keepDim: bool): dy
     return new dynamicTensor(eltType);
 }
 
-proc dynamicTensor.sum(axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) {
+proc dynamicTensor.sum(axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) do
     return this.reduceOpAxes("sum",axes,keepDim);
 
-    // for param rank in 1..maxRank do
-    //     if this.checkRank(rank) then
-    //         return this.forceRank(rank).sum(axes,keepDim).eraseRank();
-    // halt("Could not determine rank in dynamicTensor.sum.");
-    // return new dynamicTensor(eltType);
-}
-
-proc dynamicTensor.sum(param keepDim: bool = true): dynamicTensor(eltType) {
+proc dynamicTensor.sum(param keepDim: bool = true): dynamicTensor(eltType) do
     return this.reduceOpNoAxes("sum",keepDim);
 
-    // for param rank in 1..maxRank do
-    //     if this.checkRank(rank) then
-    //         return this.forceRank(rank).sum(keepDim=true).eraseRank();
-    // halt("Could not determine rank in dynamicTensor.sum.");
-    // return new dynamicTensor(eltType);
-}
-
-proc dynamicTensor.sum(axes: int...?axesCount): dynamicTensor(eltType) {
+proc dynamicTensor.sum(axes: int...?axesCount): dynamicTensor(eltType) do
     return this.sum(axes,keepDim=true);
 
-    // for param rank in 1..maxRank do
-    //     if this.checkRank(rank) then
-    //         return this.forceRank(rank).sum((...axes)).eraseRank();
-    // halt("Could not determine rank in dynamicTensor.sum.");
-    // return new dynamicTensor(eltType);
-}
-
-proc dynamicTensor.mean(axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) {
+proc dynamicTensor.mean(axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) do
     return this.reduceOpAxes("mean",axes,keepDim);
 
-    // for param rank in 1..maxRank do
-    //     if this.checkRank(rank) then
-    //         return this.forceRank(rank).mean(axes,keepDim).eraseRank();
-    // halt("Could not determine rank in dynamicTensor.mean.");
-    // return new dynamicTensor(eltType);
-}
-
-proc dynamicTensor.mean(param keepDim: bool = true): dynamicTensor(eltType) {
+proc dynamicTensor.mean(param keepDim: bool = true): dynamicTensor(eltType) do
     return this.reduceOpNoAxes("mean",keepDim);
-    // for param rank in 1..maxRank do
-    //     if this.checkRank(rank) then
-    //         return this.forceRank(rank).mean(keepDim=true).eraseRank();
-    // halt("Could not determine rank in dynamicTensor.mean.");
-    // return new dynamicTensor(eltType);
-}
 
-proc dynamicTensor.mean(axes: int...?axesCount): dynamicTensor(eltType) {
+proc dynamicTensor.mean(axes: int...?axesCount): dynamicTensor(eltType) do
     return this.mean(axes,keepDim=true);
-    // for param rank in 1..maxRank do
-    //     if this.checkRank(rank) then
-    //         return this.forceRank(rank).mean((...axes)).eraseRank();
-    // halt("Could not determine rank in dynamicTensor.mean.");
-    // return new dynamicTensor(eltType);
-}
 
 proc dynamicTensor.relu(): dynamicTensor(eltType) {
     for param rank in 1..maxRank {

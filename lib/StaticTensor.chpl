@@ -103,6 +103,12 @@ proc staticTensor.shapeArray(): [] int {
     return sa;
 }
 
+proc staticTensor.shapeTuple(): rank*int {
+    var st: rank * int;
+    on this.device do
+        st = this.array.shape;
+    return st;
+}
 proc tensorFromCtx(param rank: int, type eltType, ctx: ?ctxType): staticTensor(rank,eltType) {
     var newMeta = new owned TensorResource(eltType,rank,ctx);
     newMeta.forward();
@@ -192,17 +198,17 @@ operator ==(a: staticTensor(?rank,?eltType), b: staticTensor(rank,eltType)): boo
     return flag;
 }
 
-
-proc staticTensor.reshape(dom: domain(?)) {
-    param newRank = dom.rank;
-    var ctx = new reshapeOp(rank,newRank,eltType,dom.shape,meta);
-    return tensorFromCtx(newRank,eltType,ctx);
-}
-
-proc staticTensor.reshape(newShape: int ...?newRank) {
+proc staticTensor.reshape(newShape: ?newRank*int) {
     var ctx = new reshapeOp(rank,newRank,eltType,newShape,meta);
     return tensorFromCtx(newRank,eltType,ctx);
 }
+
+proc staticTensor.reshape(newShape: int ...?newRank) do
+    return this.reshape(newShape);
+
+proc staticTensor.reshape(dom: domain(?)) do
+    return this.reshape(dom.shape);
+
 
 proc staticTensor.relu() {
     var ctx = new reluOp(meta);
@@ -354,32 +360,16 @@ proc staticTensor.slice(rngs: range...rank) {
     return tensorFromCtx(rank,eltType,ctx);
 }
 
-proc staticTensor.sum(axes: ?axesCount * int, param keepDim: bool = true) {
-    if rank - axesCount < 0 then
-        compilerError("Cannot mean more axes than rank. ");
+proc staticTensor.sum(axes: ?axesCount * int, param keepDim: bool) {
+    if rank - axesCount < 0 && !keepDim then
+        compilerError("Cannot sum more axes than rank. ");
     var ctx = new sumOp(rank,eltType,axesCount,axes,meta,keepDim);
     return tensorFromCtx(ctx.outRank,eltType,ctx);
 }
 
-proc staticTensor.sum(axes: ?axesCount * int, keepDim: bool = true) {
-    if rank - axesCount < 0 then
-        compilerError("Cannot mean more axes than rank. ");
-    const bools = (true,false);
-    for param i in 0..<bools.size do
-        if keepDim then
-            return this.sum(axes,keepDim=true);
-        else
-            return this.sum(axes,keepDim=false);
-}
-
-proc staticTensor.sum(keepDim: bool = true) {
+proc staticTensor.sum(param keepDim: bool = true) {
     const axes = this.array.nDimTuple();
-    const bools = (true,false);
-    for param i in 0..<bools.size do
-        if keepDim then
-            return this.sum(axes,keepDim=true);
-        else
-            return this.sum(axes,keepDim=false);
+    return this.sum(axes,keepDim);
 }
 
 proc staticTensor.sum(axes: int...?axesCount) {
@@ -387,8 +377,8 @@ proc staticTensor.sum(axes: int...?axesCount) {
 }
 
 
-proc staticTensor.mean(axes: ?axesCount * int, param keepDim: bool = true) {
-    if rank - axesCount < 0 then
+proc staticTensor.mean(axes: ?axesCount * int, param keepDim: bool) {
+    if rank - axesCount < 0 && !keepDim then
         compilerError("Cannot mean more axes than rank. ");
     var ctx = new meanOp(rank,eltType,axesCount,axes,meta,keepDim);
     return tensorFromCtx(ctx.outRank,eltType,ctx);

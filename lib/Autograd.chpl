@@ -593,6 +593,24 @@ record multOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","Mul"));
 }
 
+// record scalarMapOp : serializable {
+//     param opName: string;
+//     enum scalarMapOpSide { ScalarMapOpLeft, ScalarMapOpRight }
+//     param opSide: scalarMapOpSide;
+
+//     var input: shared BaseTensorResource(?);
+//     var scalar: input.eltType;
+
+//     proc init(param opName: string, scalar: ?scalarType, input: shared BaseTensorResource(?))
+//             where isNumericType(scalarType) {
+//         this.opSide = ScalarMapOpLeft;
+//         this.input = input;
+//         this.scalar = scalar;
+//     }
+
+//     proc forward() { compilerError("TODO!"); }
+
+// }
 
 record reshapeOp : serializable {
     param oldRank: int;

@@ -1630,10 +1630,10 @@ proc type ndarray.nllLoss(
     ref y = target.data;
     ref w = weight.data;
     ref lossD = loss.data;
-    var wynSum: eltType = 0.0;
+    var wynSum: real = 0.0;
 
-    forall n in 0..<N {
-        const yn = y[n];
+    forall n in 0..<N with (+ reduce wynSum) {
+        const yn: int = y[n]:int;
         if yn == ignoreIndex {
             lossD[n] = 0.0;
         }
@@ -1644,8 +1644,9 @@ proc type ndarray.nllLoss(
     }
 
     if !red then return loss;
-    if reduction == "mean" then return sum(lossD) / wynSum;
-    if reduction == "sum" then return sum(lossD);
+    if reduction == "mean" then return loss.sum(0) / wynSum;
+    if reduction == "sum" then return loss.sum(0);
+    halt("Invalid reduction mode: " + reduction);
 }
 
 module ndarrayRandom {

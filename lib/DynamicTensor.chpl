@@ -654,9 +654,9 @@ proc dynamicTensor.flatten(): dynamicTensor(eltType) {
 }
 
 proc type dynamicTensor.nllLoss(
-    input: dynamicTensor(2,?eltType), 
-    target: dynamicTensor(1,eltType), 
-    weight: dynamicTensor(1, eltType),
+    input: dynamicTensor(?eltType), 
+    target: dynamicTensor(int), 
+    weight: dynamicTensor(eltType),
     ignoreIndex: int = -1,
     red: bool = true,
     reduction: string = "mean"
@@ -670,6 +670,25 @@ proc type dynamicTensor.nllLoss(
             }
         }
     }
+}
+
+proc type dynamicTensor.nllLoss(
+    input: dynamicTensor(?eltType), 
+    target: dynamicTensor(eltType), 
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+) {
+    for param rankIn in 2..2 {
+        if input.checkRank(rankIn) {
+            for param rank in 1..1 {
+                if target.checkRank(rank) {
+                    return staticTensor.nllLoss(input.forceRank(rankIn),target.forceRank(rank),staticTensor.ones(eltType,1),ignoreIndex,red,reduction);
+                }
+            }
+        }
+    }
+    return staticTensor.zeros(eltType, 1);
 }
 
 proc type dynamicTensor.matvecmul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {

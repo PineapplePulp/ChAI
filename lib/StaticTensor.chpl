@@ -451,7 +451,7 @@ proc type staticTensor.matvecmul(m,v) {
 proc type staticTensor.nllLoss(
     input: staticTensor(2,?eltType),
     target: staticTensor(1,eltType),
-    weight: staticTensor(1, eltType) = ones(),
+    weight: staticTensor(1,eltType),
     ignoreIndex: int = -1,
     red: bool = true,
     reduction: string = "mean"

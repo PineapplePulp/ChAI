@@ -993,7 +993,7 @@ record nllLossOp : serializable {
     var red: bool;
     var reduction: string;
     
-    proc children do return (input,target,weight,);
+    proc children do return (input,target,weight);
 
     proc forward() do
         return ndarray.nllLoss(input.array,target.array,weight.array,ignoreIndex,red,reduction);

@@ -10,6 +10,8 @@ use Utilities.Standard;
 
 use Env;
 
+use List only list;
+
 import LoadNumpy;
 
 param defaultDetachedMode = true;
@@ -781,6 +783,68 @@ proc dynamicTensor.degenerateFlatten(): [] eltType {
     halt("Could not determine rank in dynamicTensor.degenerateFlatten.");
     return new dynamicTensor(eltType);
 }
+
+record dynamicShape : serializable {
+
+    var size: int;
+    var sizes: [0..<size] int;
+
+    proc init(shape: ?rank*int) {
+        this.size = rank;
+        init this;
+        for param i in 0..<rank do
+            this.sizes[i] = shape(i);
+    }
+
+    proc init(dt: staticTensor(?rank,?eltType)) do
+        this.init(dt.shapeTuple());
+
+    proc init(sizes: [] int) do
+        this.init(sizes.shape);
+    
+    proc init(sizes: list(int)) do
+        this.init(sizes.toArray());
+
+    proc checkRank(param rank: int): bool do
+        return rank == size;
+    
+    proc toRankedShape(param rank: int): rank*int {
+        var shape: rank*int;
+        if this.checkRank(rank) {
+            for param i in 0..<rank do
+                shape(i) = this.sizes[i];
+            return shape;
+        }
+        halt("DynamicShape rank is not given rank " + rank : string + ".");
+        return shape;
+    }
+
+    proc toList(): list(int) do
+        return new list(this.sizes);
+}
+
+proc dynamicTensor.shape(): dynamicShape {
+    for param rank in 1..maxRank do
+        if this.checkRank(rank) then
+            return new dynamicShape(this.forceRank(rank));
+
+    halt("Could not determine rank in dynamicTensor.shape.");
+    return new dynamicShape((0,));
+}
+
+proc dynamicTensor.reshape(dynShape: dynamicShape): dynamicTensor(eltType) {
+    for param rank in 1..maxRank {
+        for param rankDyn in 1..rank {
+            if this.checkRank(rank) && dynShape.checkRank(rankDyn) {
+                return this.forceRank(rank).reshape((...dynShape.toRankedShape(rank))).eraseRank();
+            }
+        }
+    }
+    halt("Could not determine rank in dynamicTensor.reshape.");
+    return new dynamicTensor(eltType);
+}
+
+
 
 proc main() {
 

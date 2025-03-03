@@ -103,6 +103,12 @@ proc staticTensor.shapeArray(): [] int {
     return sa;
 }
 
+proc staticTensor.shapeTuple(): rank*int {
+    var st: rank * int;
+    on this.device do
+        st = this.array.shape;
+    return st;
+}
 proc tensorFromCtx(param rank: int, type eltType, ctx: ?ctxType): staticTensor(rank,eltType) {
     var newMeta = new owned TensorResource(eltType,rank,ctx);
     newMeta.forward();

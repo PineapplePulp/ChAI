@@ -862,12 +862,29 @@ proc dynamicTensor.unsqueeze(dim: int): dynamicTensor(eltType) {
 proc dynamicTensor.squeeze(): dynamicTensor(eltType) {
     var dShape = this.shape();
     var newSizes = new list(int);
+    var prod = 1;
     for i in 0..<dShape.size do
-        if dShape.sizes[i] != 1 then
-            newSizes.pushBack(dShape.sizes[i]);
+        if dShape.sizes[i] != 1 {
+            const s = dShape.sizes[i];
+            newSizes.pushBack(s * prod);
+            prod *= s;
+        }
     var newDShape = new dynamicShape(newSizes);
     return this.reshape(newDShape);
-    
+}
+
+proc dynamicTensor.squeeze(dim: int): dynamicTensor(eltType) {
+    var dShape = this.shape();
+    var newSizes = new list(int);
+    var prod = 1;
+    for i in 0..<dShape.size do
+        if dShape.sizes[i] != 1 {
+            const s = dShape.sizes[i];
+            newSizes.pushBack(s * prod);
+            prod *= s;
+        } else { break; }
+    var newDShape = new dynamicShape(newSizes);
+    return this.reshape(newDShape);
 }
 
 // proc dynamicTensor.squeeze(dim: squee): dynamicTensor(eltType) {

@@ -30,5 +30,10 @@ var d = c.unsqueeze(0).unsqueeze(1);
 writeln(d);
 
 
-var e = d.squeeze();
-writeln(e);
+writeln(d.squeeze());
+
+
+writeln(d.squeeze(1));
+
+writeln(d.reshape(new dynamicShape((2,2))));
+writeln(d.reshape(dShape=new dynamicShape((4,))));

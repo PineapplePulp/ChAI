@@ -175,18 +175,8 @@ record ndarray : serializable {
         return arr;
     }
 
-    // This can optimized such that it doesn't use two heavy utility functions...
-    proc reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {
+    proc reshape(newShape: int ...?newRank): ndarray(newRank,eltType) do
         return this.reshape(util.domainFromShape((...newShape)));
-        // const normalDomain = util.domainFromShape((...newShape));
-        // var arr = new ndarray(normalDomain, eltType);
-        // ref arrData = arr.data;
-        // const myDomain = data.domain;
-        // foreach i in 0..<min(myDomain.size,normalDomain.size) {
-        //     arrData[normalDomain.orderToIndex(i)] = data[myDomain.orderToIndex(i)];
-        // }
-        // return arr;
-    }
 
     proc slice(args...) {
         const slc = data[(...args)];

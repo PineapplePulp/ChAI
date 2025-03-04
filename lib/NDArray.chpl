@@ -150,8 +150,7 @@ record ndarray : serializable {
     }
 
     proc reshape(const dom: ?t): ndarray(dom.rank,eltType)
-            where isDomainType(t)
-                /* && dom.rank == rank */ {
+            where isDomainType(t) {
         var arr = new ndarray(eltType,dom);
 
         const arrDom = arr.domain;
@@ -175,47 +174,6 @@ record ndarray : serializable {
         }
         return arr;
     }
-/*
-    proc reshape(const dom: ?t): ndarray(dom.rank,eltType)
-            where isDomainType(t)
-                && dom.rank != rank {
-
-        var arr: ndarray(dom.rank,eltType) = new ndarray(eltType,dom);
-        compilerError("Testing. Don't call me.");
-        const selfDom = this.domain;
-        const newDom  = arr.domain;
-        const ref selfData = this.data;
-        ref arrData = arr.data;
-
-        const zero: eltType = 0;
-
-        forall (i,meIdx) in newDom.everyZip() {
-            const selfIdx = selfDom.indexAt(i);
-            const a = if selfDom.contains(selfIdx) then selfData[selfIdx] else zero;
-            arrData[meIdx] = a;
-        }
-        return arr;
-        // const minSize: int           = min(selfDom.size,newDom.size);
-        // const dataDom: rect(1)       = (minSize,);
-        // const zeroDom: rect(1)       = ((newDom.size - dataDom.size,),(dataDom.size,));
-
-        // ref arrData = arr.data;
-        // const ref selfData = data;
-
-        // // Fills in intersection. 
-        // forall i in dataDom {
-        //     const arrIdx  = newDom.indexAt(i);
-        //     const selfIdx = selfDom.indexAt(i);
-        //     arrData[arrIdx] = selfData[selfIdx];
-        // }
-
-        // const zero: eltType = 0;
-        // forall i in zeroDom do
-        //     arrData[newDom.indexAt(i)] = 0; // should this be `zero` for performance?
-        
-        // return arr;
-    }
-*/
 
     // This can optimized such that it doesn't use two heavy utility functions...
     proc reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {

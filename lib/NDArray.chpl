@@ -868,21 +868,50 @@ record ndarray : serializable {
             rld = Math.inf;
         }
 
-        else if beta < 0 {
-            forall i in dom.every() {
-                const x = thisData[i];
-                const floatMax: eltType = Types.max(eltType);
-                const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-                rld[i] = x * (1 - xgbt) + Math.log1p(Math.exp(beta * x)) / beta * xgbt;
-            }
-        }
+        // else if beta < 0 {
+        //     forall i in dom.every() {
+        //         const x = thisData[i];
+        //         const floatMax: eltType = Types.max(eltType);
+        //         const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
+        //         rld[i] = x * (1 - xgbt) + Math.log1p(Math.exp(beta * x)) / beta * xgbt;
+        //     }
+        // }
 
-        else { // beta > 0
+        // else { // beta > 0
+        //     forall i in dom.every() {
+        //         const x = thisData[i];
+        //         const floatMax: eltType = Types.max(eltType);
+        //         const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
+        //         rld[i] = x * xgbt + Math.log1p(Math.exp(beta * x)) / beta * (1 - xgbt);
+        //     }
+        // }
+
+        // beta non-zero here
+        else {
+            use CTypes only c_sizeof, c_ptrTo;
+            use OS.POSIX only memcpy;
+
+            type intType = int(numBits(eltType)); // integer w/ same #ofbits as real
             forall i in dom.every() {
                 const x = thisData[i];
-                const floatMax: eltType = Types.max(eltType);
-                const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-                rld[i] = x * xgbt + Math.log1p(Math.exp(beta * x)) / beta * (1 - xgbt);
+                
+                var func: eltType = Math.log1p(Math.exp(beta * x)) / beta; // result after applying softplus activation function
+                var lin: eltType = x;                                      // linear function
+
+                var func_bits: intType;
+                var lin_bits: intType;
+                memcpy(c_ptrTo(func_bits), c_ptrTo(func), c_sizeof(eltType));
+                memcpy(c_ptrTo(lin_bits), c_ptrTo(lin), c_sizeof(eltType));
+
+                const condition: intType = (x * beta > threshold);
+                const mask: intType = 0 - condition;
+
+                var result_bits: intType = (mask & lin_bits) | (~mask & func_bits);
+                // var output: eltType;
+                // memcpy(c_ptrTo(output), c_ptrTo(result_bits), c_sizeof(eltType));
+
+                // rld[i] = output;
+                memcpy(c_ptrTo(rld[i]), c_ptrTo(result_bits), c_sizeof(eltType));
             }
         }
         return rl;

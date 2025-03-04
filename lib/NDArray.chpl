@@ -149,24 +149,39 @@ record ndarray : serializable {
         _domain = dom;
     }
 
-    proc reshape(const dom: ?t): ndarray(rank,eltType)
+    proc reshape(const dom: ?t): ndarray(dom.rank,eltType)
             where isDomainType(t)
-                && dom.rank == rank {
+                /* && dom.rank == rank */ {
         var arr = new ndarray(eltType,dom);
-        const arrDom  = arr.domain;
-        const selfDom = _domain;
- 
-        const inter = selfDom[arrDom];
-        arr.data[inter] = data[inter];
+
+        const arrDom = arr.domain;
+        const selfDom = this.domain;
+        
+        ref arrData = arr.data;
+        const ref selfData = this.data;
+
+        const arrShape = arrDom.shape;
+        const selfShape = selfDom.shape;
+        const selfShapeDivs = util.shapeDivisors((...selfShape));
+
+        const zero: eltType = 0;
+
+        forall (i,idx) in arrDom.everyZip() {
+            const selfIdx = util.indexAtHelperMultiples(i,(...selfShapeDivs));
+            const a = if util.shapeContains(selfShape,selfIdx)
+                        then selfData[selfIdx]
+                        else zero;
+            arrData[idx] = a;
+        }
         return arr;
     }
-
+/*
     proc reshape(const dom: ?t): ndarray(dom.rank,eltType)
             where isDomainType(t)
                 && dom.rank != rank {
 
         var arr: ndarray(dom.rank,eltType) = new ndarray(eltType,dom);
-
+        compilerError("Testing. Don't call me.");
         const selfDom = this.domain;
         const newDom  = arr.domain;
         const ref selfData = this.data;
@@ -200,7 +215,7 @@ record ndarray : serializable {
         
         // return arr;
     }
-
+*/
 
     // This can optimized such that it doesn't use two heavy utility functions...
     proc reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {

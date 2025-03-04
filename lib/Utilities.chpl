@@ -193,6 +193,26 @@ module Utilities {
         return idxs;
     }
 
+    inline proc shapeDivisors(shape: int...?rank): rank*int {
+        var prod = 1;
+        var divs: rank * int;
+        for param j in 0..<rank {
+            param i = rank - j - 1;
+            divs(i) = prod;
+            prod *= shape(i);
+        }
+        return divs;
+    }
+
+    inline proc shapeProduct(shape: int...?rank): int {
+        if rank == 1 {
+            return 1;
+        } else {
+            const divs = shapeDivisors((...shape));
+            return divs(rank - 1) * shape(rank - 1);
+        }
+    }
+
     inline proc indexAtHelperProd(n: int, prod: int, shape: int ...?rank): rank * int where rank > 1 {
         var idx: rank * int;
         var order = n;
@@ -302,6 +322,14 @@ module Utilities {
         for param i in 0..<n do
             arr[i] = t(i);
         return arr;
+    }
+
+    inline proc shapeContains(shape: ?rank*int, idx: ?idxRank*int): bool
+            where rank == idxRank {
+        var contained = true;
+        for param i in 0..<rank do
+            contained &= idx(i) < shape(i);
+        return contained;
     }
 
     module Standard {

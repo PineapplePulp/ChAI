@@ -1053,19 +1053,25 @@ class BatchNorm : Module(?) {
     var movingVar: Tensor(eltType);
     var weight: owned Parameter(eltType);
     var bias: owned Parameter(eltType);
+    var eps: real;
+    var momentum: real;
+    var train: bool;
     var num_features: int;
 
-    proc init(type eltType = defaultEltType, num_features: int) {
+    proc init(type eltType = real, num_features: int, momentum: real = 0.1, eps: real = 1e-5, train: bool = false) {
         super.init(eltType);
         this.movingAvg = Tensor.zeros(num_features);
         this.movingVar = Tensor.ones(num_features);
         this.weight = new Parameter(Tensor.ones(num_features));
         this.bias = new Parameter(Tensor.zeros(num_features));
+        this.eps = 1e-5;
+        this.momentum = 0.1;
+        this.train = false;
         this.num_features = num_features;
     }
 
     override proc forward(input: Tensor(eltType)): Tensor(eltType) {
-        return Tensor.batchnorm(input, weight.data, bias.data, movingAvg, movingVar, num_features);
+        return Tensor.batchnorm(input, weight.data, bias.data, movingAvg, movingVar, eps, momentum, train, num_features);
     }
 
     override proc setup() {

@@ -603,9 +603,11 @@ proc type dynamicTensor.batchnorm(
     bias: dynamicTensor(eltType),
     movingAvg: dynamicTensor(eltType),
     movingVar: dynamicTensor(eltType),
-    numFeatures: int
+    eps: real,
+    momentum: real,
+    train: bool,
+    num_features: int
 ): dynamicTensor(eltType) {
-
     for param rankF in 2..4 {
         if features.checkRank(rankF) {
             return staticTensor.batchNorm(
@@ -614,7 +616,10 @@ proc type dynamicTensor.batchnorm(
                 bias.forceRank(1),
                 movingAvg.forceRank(1),
                 movingVar.forceRank(1),
-                numFeatures
+                eps,
+                momentum,
+                train,
+                num_features
             ).eraseRank();
         }
     }

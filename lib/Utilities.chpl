@@ -353,7 +353,7 @@ module Utilities {
 
         if rank == 1 {
             const rowData = data[low..<(low + shape(0))];
-            return "[" + " ".join(for x in rowData do format.format(x)) + "]";
+            return "[" + ", ".join(for x in rowData do format.format(x)) + "]";
         }
 
         var shapeTail: (rank - 1)*int;
@@ -374,6 +374,53 @@ module Utilities {
         const inner = (",\n" + indentStr).join(lines.toArray());
         return "[" + "\n" + indentStr + inner + "\n" + indentStr + "]";
     }
+
+
+    proc prettyPrintArray2(format: string, data: [] ?eltType, shape: ?shapeType, dim: int = 0, indx: int = 0): string {
+        import IO.FormattedIO;
+        use List only list;
+
+        const low = data.domain.low;
+
+        param shapeRank = if isTupleType(shapeType)
+                            then shape.size
+                            else 1;
+        var inShape: shapeRank * int;
+        if isTupleType(shapeType) then
+            for param i in 0..<shapeRank do
+                inShape(i) = shape(i);
+        else
+            inShape(0) = shape;
+        
+        writeln("IAIN: shapeRank: ",shapeRank);
+        writeln("IAIN: inShape: ",inShape);
+
+        if dim == shapeRank - 1 {
+            const sliceSize = shape(dim);
+            const rowData = data[indx..<(indx + sliceSize)];
+            return "[" + ", ".join(for x in rowData do format.format(x)) + "]";
+        }
+        
+        const size = shape(dim);
+        var shapeTail: (shapeRank - 1)*int;
+        for param i in 0..<shapeTail.size do
+            shapeTail(i) = shape(i + 1);
+        const subsliceSize = shapeProduct((...shapeTail));
+        var lines: list(string);
+        for i in 0..<size {
+            const subIdx = indx + i * subsliceSize;
+            const subStr = prettyPrintArray2(format,data,shape,dim + 1,subIdx);
+            lines.pushBack(subStr);
+        }
+
+        const inside = (",\n").join(lines.toArray());
+        return "[" + "\n" + inside + "\n" + "]";
+    }
+
+    proc prettyPrintArray2(format: string, data: [] numeric, shape: int,dim: int = 0, indx: int = 0): string do
+         return prettyPrintArray2(format,data,(shape,),dim,indx);
+
+
 
     module Standard {
         private use ChplConfig;

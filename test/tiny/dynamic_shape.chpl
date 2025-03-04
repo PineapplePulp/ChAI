@@ -69,7 +69,7 @@ var a = staticTensor.arange(2,3,4);
 
 writeln(a.reshape(24));
 
-writeln(a);
+// writeln(a);
 
 
 

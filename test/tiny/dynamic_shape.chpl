@@ -54,7 +54,8 @@ writeln(a.reshape(3,2).forceRank(2).array);
 
 */
 
-var a = ndarray.arange(2,3);
+/*
+var a = staticTensor.arange(2,3);
 writeln(a);
 writeln(a.reshape(3,2));
 writeln(a.reshape(3,2));
@@ -62,3 +63,13 @@ writeln(a.reshape(3,2));
 
 writeln(a.reshape(6));
 writeln(a.reshape(1,1,6));
+*/
+
+var a = staticTensor.arange(2,3,4);
+
+writeln(a.reshape(24));
+
+writeln(a);
+
+
+

@@ -968,15 +968,25 @@ proc staticTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSeria
     const prevDev = this.device;
     this.to(here);
 
-    const precision = min(3,max reduce util.roundingPrecision(this.array.data));
-    var format = "%{##";
-    for i in 0..<precision {
-        if i == 0 then
-            format += ".";
-        format += "#";
-    }
-    format += "}";
-    
+    // const precision = min(3,max reduce util.roundingPrecision(this.array.data));
+    // var format = "%{##";
+    // for i in 0..<precision {
+    //     if i == 0 then
+    //         format += ".";
+    //     format += "#";
+    // }
+    // format += "}";
+
+    const array = this.array;
+    const format = util.roundingFormat(array.data);
+    const dataStr = util.prettyPrintArray(format,array.flatten().data,array.data.shape);
+    writer.write("tensor(");
+    writer.write(dataStr);
+    writer.write(",\n       shape = ",array.data.shape);
+    writer.write(",\n       rank = ",this.rank);
+    writer.writeln(")");
+
+    return;
     writer.write("tensor(");
     const shape = this.array.shape;
     var first: bool = true;

@@ -53,15 +53,6 @@ module Utilities {
         }
     }
 
-    proc roundingPrecision(x: numeric): int {
-        for i in 0..<10 {
-            const dec = 10 ** i;
-            const ax = Math.abs(x);
-            if Math.floor(ax * dec) == Math.round(ax * dec) then
-                return i;
-        }
-        return 10;
-    }
 
     iter cartesian(X,Y) {
         for x in X {
@@ -205,12 +196,10 @@ module Utilities {
     }
 
     inline proc shapeProduct(shape: int...?rank): int {
-        if rank == 1 {
-            return 1;
-        } else {
-            const divs = shapeDivisors((...shape));
-            return divs(rank - 1) * shape(rank - 1);
-        }
+        var prod = 1;
+        for param i in 0..<rank do
+            prod *= shape(i);
+        return prod;
     }
 
     inline proc indexAtHelperProd(n: int, prod: int, shape: int ...?rank): rank * int where rank > 1 {
@@ -330,6 +319,60 @@ module Utilities {
         for param i in 0..<rank do
             contained &= idx(i) < shape(i);
         return contained;
+    }
+
+    proc roundingPrecision(x: numeric): int {
+        for i in 0..<10 {
+            const dec = 10 ** i;
+            const ax = Math.abs(x);
+            if Math.floor(ax * dec) == Math.round(ax * dec) then
+                return i;
+        }
+        return 10;
+    }
+
+    proc roundingFormat(data: [] numeric): string {
+        const precision = Math.min(3,max reduce roundingPrecision(data));
+        var format = "%{##";
+        for i in 0..<precision {
+            if i == 0 then
+                format += ".";
+            format += "#";
+        }
+        format += "}";
+        return format;
+    }
+
+    // data is a flattened array.
+    proc prettyPrintArray(format: string, data: [] numeric, shape: ?rank*int, indent: int = 0): string {
+        import IO.FormattedIO;
+        use List only list;
+
+        const size = data.size;
+        const low = data.domain.low;
+
+        if rank == 1 {
+            const rowData = data[low..<(low + shape(0))];
+            return "[" + " ".join(for x in rowData do format.format(x)) + "]";
+        }
+
+        var shapeTail: (rank - 1)*int;
+        for param i in 0..<shapeTail.size do
+            shapeTail(i) = shape(i + 1);
+        const subsliceSize = shapeProduct((...shapeTail));
+
+        var lines: list(string);
+        for i in 0..<shape(0) {
+            const start = i * subsliceSize;
+            const end = (i + 1) * subsliceSize;
+            const subData = data[(low + start)..<(low + end)];
+            const subStr = prettyPrintArray(format,subData,shapeTail,indent+1);
+            lines.pushBack(subStr);
+        }
+
+        const indentStr = "  " * indent;
+        const inner = (",\n" + indentStr).join(lines.toArray());
+        return "[" + "\n" + indentStr + inner + "\n" + indentStr + "]";
     }
 
     module Standard {

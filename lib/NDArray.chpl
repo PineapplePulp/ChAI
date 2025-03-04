@@ -885,6 +885,9 @@ record ndarray : serializable {
 
     proc shapeArray(): [] int do
         return util.tupleToArray((...this.shape));
+
+    proc flatten(): ndarray(1,eltType) do
+        return this.reshape(this.domain.size);
 }
 
 

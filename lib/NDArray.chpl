@@ -754,6 +754,21 @@ proc ndarray.kernelRot(): ndarray(3,eltType) where rank == 3 {
     return me;
 }
 
+/* Retrieves the top `k` elements from a one-dimensional :record:`ndarray`.
+
+   .. code-block::
+
+       const a = new ndarray([10, 2, 4, 7, 9, 13]);
+       a.topk(3) // [10, 9, 13]
+
+    :arg k: The number of elements to retrieve.
+    :type k: int
+
+    :returns: The top `k` elements from a one-dimensional :record:`ndarray`.
+    The return value preserves the original order of the elements in the source
+    :record:`ndarray` with respect to each other.
+    :rtype: ndarray(1, int)
+*/
 proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
     const myData = this.data;
     const myDom = this.domain;
@@ -761,6 +776,12 @@ proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
     if k > mySize then util.err("Cannot get top ", k, " from ", mySize, " elements.");
     var topK: [0..<k] int = 0..<k;
     var topKData: [0..<k] eltType = myData(0..<k);
+
+    // Repeatedly find the minimum from the elements of topKData,
+    // and then swap it out with some element from the remaining portion
+    // of the array, if that element is larger.
+
+    // The end result is that topKData will hold the k largest elements of the array.
     for i in k..<mySize {
         var minIdx = 0;
         var minVal = topKData(minIdx);
@@ -784,7 +805,16 @@ proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
     return new ndarray(res);
 }
 
+/* Retrieve the index of the largest element in a one-dimensional :record:`ndarray`.
+
+   :returns: The index of the largest element in a one-dimensional :record:`ndarray`.
+   If there are multiple indices in the array that hold the maximal element, this
+   method will return the smallest such index.
+   :rtype: int
+ */
 proc ndarray.argmax() where rank == 1 {
+    // What on earth is up with this comment...
+
     // const D__________________A______________T____________A = this.data;
     // const (_,i) = maxloc reduce zip(
     //     D__________________A______________T____________A,
@@ -817,6 +847,11 @@ inline proc ndarray.relu() {
     return rl;
 }
 
+/* Square every element of an :record:`ndarray`.
+
+   :returns: The a new :record:`ndarray` with the same data as the input,
+   squared elementwise.
+ */
 inline proc ndarray.square() {
     const ref thisData = data;
     const dom = this.domain;
@@ -1217,6 +1252,14 @@ operator +(a: ndarray(?rank, ?eltType)): ndarray(rank, eltType) {
     return a;
 }
 
+/* Add two :record:`ndarray` together elementwise.
+
+   The two input :record:`ndarray` must have the same shape and element type.
+
+   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
+   ``c[d] = a[d] + b[d]``.
+   :rtype: ndarray(rank, eltType)
+*/
 operator +(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
 
@@ -1230,6 +1273,14 @@ operator +(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
+/* Multiply two :record:`ndarray` together elementwise.
+
+   The two input :record:`ndarray` must have the same shape and element type.
+
+   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
+   ``c[d] = a[d] * b[d]``.
+   :rtype: ndarray(rank, eltType)
+*/
 operator *(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
     var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
@@ -1242,6 +1293,11 @@ operator *(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
+/* Negate an :record:`ndarray`.
+
+   :returns: A new :record:`ndarray` where every element has been negated.
+   :rtype: ndarray(rank, eltType)
+*/
 operator -(a: ndarray(?rank, ?eltType)): ndarray(rank, eltType) {
     const dom = a.domain;
     var negged = new ndarray(dom, eltType);
@@ -1254,6 +1310,14 @@ operator -(a: ndarray(?rank, ?eltType)): ndarray(rank, eltType) {
     return negged;
 }
 
+/* Subtract two :record:`ndarray`s elementwise.
+
+   The two input :record:`ndarray` must have the same shape and element type.
+
+   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
+   ``c[d] = a[d] - b[d]``.
+   :rtype: ndarray(rank, eltType)
+*/
 operator -(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
     var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
@@ -1266,6 +1330,14 @@ operator -(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
+/* Divide two :record:`ndarray`s elementwise.
+
+   The two input :record:`ndarray` must have the same shape and element type.
+
+   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
+   ``c[d] = a[d] / b[d]``.
+   :rtype: ndarray(rank, eltType)
+*/
 operator /(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
     var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
@@ -1278,6 +1350,17 @@ operator /(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
+/* Produces a new :record:`ndarray` conforming to a model shape, with all elements set to the specified `value`.
+
+   :arg a: An :record:`ndarray` whose shape will be the same as the result :record:`ndarray`.
+   :type a: ndarray(?rank, ?eltType)
+
+   :arg value: A value to fill the resulting :record:`ndarray`.
+   :type value: eltType
+
+   :returns: A new :record:`ndarray` with the same shape as `a` where every element has been substituted with `value`.
+   :rtype: ndarray(rank, eltType)
+ */
 inline proc type ndarray.valueLike(a: ndarray(?rank,?eltType),value: eltType): ndarray(rank,eltType) do
     return new ndarray(eltType=eltType,dom=a.domain,fill=value);
 

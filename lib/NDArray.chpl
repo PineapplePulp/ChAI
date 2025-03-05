@@ -235,76 +235,39 @@ proc ndarray.shape: rank * int {
    :returns: A new :record:`ndarray` with the new shape.
    :rtype: ndarray(rank, eltType)
  */
-proc ndarray.reshape(const dom: ?t): ndarray(rank,eltType)
-    where isDomainType(t)
-        && dom.rank == rank {
-    var arr = new ndarray(eltType,dom);
-    const arrDom  = arr.domain;
-    const selfDom = _domain;
-
-    const inter = selfDom[arrDom];
-    arr.data[inter] = data[inter];
-    return arr;
-}
-
 proc ndarray.reshape(const dom: ?t): ndarray(dom.rank,eltType)
-        where isDomainType(t)
-            && dom.rank != rank {
+        where isDomainType(t) {
+    var arr = new ndarray(eltType,dom);
 
-    var arr: ndarray(dom.rank,eltType) = new ndarray(eltType,dom);
-
+    const arrDom = arr.domain;
     const selfDom = this.domain;
-    const newDom  = arr.domain;
-    const ref selfData = this.data;
+    
     ref arrData = arr.data;
+    const ref selfData = this.data;
+
+    const arrShape = arrDom.shape;
+    const selfShape = selfDom.shape;
+    const selfShapeDivs = util.shapeDivisors((...selfShape));
 
     const zero: eltType = 0;
 
-    forall (i,meIdx) in newDom.everyZip() {
-        const selfIdx = selfDom.indexAt(i);
-        const a = if selfDom.contains(selfIdx) then selfData[selfIdx] else zero;
-        arrData[meIdx] = a;
+    forall (i,idx) in arrDom.everyZip() {
+        const selfIdx = util.indexAtHelperMultiples(i,(...selfShapeDivs));
+        const a = if util.shapeContains(selfShape,selfIdx)
+                    then selfData[selfIdx]
+                    else zero;
+        arrData[idx] = a;
     }
     return arr;
-    // const minSize: int           = min(selfDom.size,newDom.size);
-    // const dataDom: rect(1)       = (minSize,);
-    // const zeroDom: rect(1)       = ((newDom.size - dataDom.size,),(dataDom.size,));
-
-    // ref arrData = arr.data;
-    // const ref selfData = data;
-
-    // // Fills in intersection. 
-    // forall i in dataDom {
-    //     const arrIdx  = newDom.indexAt(i);
-    //     const selfIdx = selfDom.indexAt(i);
-    //     arrData[arrIdx] = selfData[selfIdx];
-    // }
-
-    // const zero: eltType = 0;
-    // forall i in zeroDom do
-    //     arrData[newDom.indexAt(i)] = 0; // should this be `zero` for performance?
-    
-    // return arr;
 }
-
 
 /* Reshape an :record:`ndarray` to have the shape corresponding to the arguments.
 
    :returns: A new :record:`ndarray` with the shape given by the arguments.
    :rtype: ndarray(newRank, eltType)
  */
-proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {
-    // This can optimized such that it doesn't use two heavy utility functions...
+proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) do
     return this.reshape(util.domainFromShape((...newShape)));
-    // const normalDomain = util.domainFromShape((...newShape));
-    // var arr = new ndarray(normalDomain, eltType);
-    // ref arrData = arr.data;
-    // const myDomain = data.domain;
-    // foreach i in 0..<min(myDomain.size,normalDomain.size) {
-    //     arrData[normalDomain.orderToIndex(i)] = data[myDomain.orderToIndex(i)];
-    // }
-    // return arr;
-}
 
 /* Yield a slice of an :record:`ndarray` according to the arguments.
 

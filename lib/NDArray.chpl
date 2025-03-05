@@ -1831,6 +1831,14 @@ proc type ndarray.adaptiveAvgPool2d(features: ndarray(3, ?eltType), outputSize: 
 }
 
 
+/* Compute the square root over every element of the :record:`ndarray`.
+
+   :arg array: The :record:`ndarray` to square root.
+   :type array: ndarray(?rank, ?eltType)
+
+   :returns: `array`, with all elements rooted.
+   :rtype: ndarray(rank, eltType)
+ */
 proc type ndarray.sqrt(array: ndarray(?rank,?eltType)): ndarray(rank,eltType) {
     const dom = array.domain;
     var sqrtArr = new ndarray(dom,eltType);
@@ -2108,8 +2116,6 @@ class _tensor_resource {
     param rank: int;
     type eltType = real(64);
     var data: remote(ndarray(rank,eltType));
-
-
 }
 
 // Some examples. 
@@ -2307,6 +2313,11 @@ proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b
 }
 
 
+/* Computes the softmax operation over an :record:`ndarray`.
+
+   :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
+   :rtype: ndarray(rank, eltType)
+*/
 proc ndarray.softmax(): ndarray(this.rank, this.eltType)
     where isSubtype(this.eltType, real)
 {
@@ -2328,6 +2339,11 @@ proc ndarray.softmax(): ndarray(this.rank, this.eltType)
 }
 
 
+/* Computes the softmin operation over an :record:`ndarray`.
+
+   :returns: For a tensor ``t``, :math:`\mathsc{Softmax}(-t)`.
+   :rtype: ndarray(rank, eltType)
+ */
 proc ndarray.softmin(): ndarray(this.rank, this.eltType)
     where isSubtype(this.eltType, real)
 {
@@ -2335,16 +2351,31 @@ proc ndarray.softmin(): ndarray(this.rank, this.eltType)
 }
 
 
-proc ndarray.dropout(): ndarray(this.rank, this.eltType) {
+/* Randomly zeroes elements in the :record:`ndarray` with probability 50%.
+
+   :returns: The :record:`ndarray` that was zeroed out.
+   :rtype: ndarray(rank, eltType)
+ */
+proc ndarray.dropout(param inplace: bool = false): ndarray(this.rank, this.eltType) {
     const randomData: int[this.domain];
     Random.fillRandom(randomData, 0, 1);
 
     ref thisData = this.data;
-    forall i in this.domain.every() {
-        thisData[i] *= randomData[i];
-    }
+    if inplace {
+        forall i in this.domain.every() {
+            thisData[i] *= randomData[i];
+        }
 
-    return this;
+        return this;
+    } else {
+        var dropped = new ndarray(this.eltType, this.domain);
+        ref droppedData = dropped.data;
+        forall i in this.domain.every() {
+            droppedData[i] = thisData[i] * randomData[i];
+        }
+
+        return dropped;
+    }
 }
 
 

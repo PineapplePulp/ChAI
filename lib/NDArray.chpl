@@ -1737,6 +1737,19 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
 
 // For printing. 
 proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
+    
+    const format = util.roundingFormat(this.data);
+    const name = "ndarray";
+    const header = name + "(";
+    const indent = (" " * name.size) + (" " * this.rank);
+    const dataStr = util.prettyPrintArray(indent,format,this.flatten().data,this.domain.shape);
+    writer.write(header);
+    writer.write(dataStr);
+    writer.write(",\n       shape = ",this.domain.shape);
+    writer.write(",\n       rank = ",this.rank);
+    writer.writeln(")");
+    return;
+    
     writer.write("ndarray(");
     const shape = this.data.shape;
     var first: bool = true;

@@ -72,4 +72,16 @@ writeln(a.reshape(24));
 writeln(a);
 
 
+var arr = ndarray.arange(2,3,4);
+
+writeln(arr.reshape(24));
+
+writeln(arr);
+
+var A = dynamicTensor.arange(2,3,4);
+
+writeln(A.reshape(24));
+
+writeln(A);
+
 

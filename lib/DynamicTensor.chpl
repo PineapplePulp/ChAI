@@ -967,7 +967,7 @@ import IO;
 proc dynamicTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
     for param rank in 1..maxRank {
         if this.checkRank(rank) {
-            this.forceRank(rank).serialize(writer,serializer,capitalT=true);
+            this.forceRank(rank).writeMe(writer,name="Tensor");
             return;
         }
     }

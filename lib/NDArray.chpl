@@ -235,76 +235,39 @@ proc ndarray.shape: rank * int {
    :returns: A new :record:`ndarray` with the new shape.
    :rtype: ndarray(rank, eltType)
  */
-proc ndarray.reshape(const dom: ?t): ndarray(rank,eltType)
-    where isDomainType(t)
-        && dom.rank == rank {
-    var arr = new ndarray(eltType,dom);
-    const arrDom  = arr.domain;
-    const selfDom = _domain;
-
-    const inter = selfDom[arrDom];
-    arr.data[inter] = data[inter];
-    return arr;
-}
-
 proc ndarray.reshape(const dom: ?t): ndarray(dom.rank,eltType)
-        where isDomainType(t)
-            && dom.rank != rank {
+        where isDomainType(t) {
+    var arr = new ndarray(eltType,dom);
 
-    var arr: ndarray(dom.rank,eltType) = new ndarray(eltType,dom);
-
+    const arrDom = arr.domain;
     const selfDom = this.domain;
-    const newDom  = arr.domain;
-    const ref selfData = this.data;
+    
     ref arrData = arr.data;
+    const ref selfData = this.data;
+
+    const arrShape = arrDom.shape;
+    const selfShape = selfDom.shape;
+    const selfShapeDivs = util.shapeDivisors((...selfShape));
 
     const zero: eltType = 0;
 
-    forall (i,meIdx) in newDom.everyZip() {
-        const selfIdx = selfDom.indexAt(i);
-        const a = if selfDom.contains(selfIdx) then selfData[selfIdx] else zero;
-        arrData[meIdx] = a;
+    forall (i,idx) in arrDom.everyZip() {
+        const selfIdx = util.indexAtHelperMultiples(i,(...selfShapeDivs));
+        const a = if util.shapeContains(selfShape,selfIdx)
+                    then selfData[selfIdx]
+                    else zero;
+        arrData[idx] = a;
     }
     return arr;
-    // const minSize: int           = min(selfDom.size,newDom.size);
-    // const dataDom: rect(1)       = (minSize,);
-    // const zeroDom: rect(1)       = ((newDom.size - dataDom.size,),(dataDom.size,));
-
-    // ref arrData = arr.data;
-    // const ref selfData = data;
-
-    // // Fills in intersection. 
-    // forall i in dataDom {
-    //     const arrIdx  = newDom.indexAt(i);
-    //     const selfIdx = selfDom.indexAt(i);
-    //     arrData[arrIdx] = selfData[selfIdx];
-    // }
-
-    // const zero: eltType = 0;
-    // forall i in zeroDom do
-    //     arrData[newDom.indexAt(i)] = 0; // should this be `zero` for performance?
-    
-    // return arr;
 }
-
 
 /* Reshape an :record:`ndarray` to have the shape corresponding to the arguments.
 
    :returns: A new :record:`ndarray` with the shape given by the arguments.
    :rtype: ndarray(newRank, eltType)
  */
-proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {
-    // This can optimized such that it doesn't use two heavy utility functions...
+proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) do
     return this.reshape(util.domainFromShape((...newShape)));
-    // const normalDomain = util.domainFromShape((...newShape));
-    // var arr = new ndarray(normalDomain, eltType);
-    // ref arrData = arr.data;
-    // const myDomain = data.domain;
-    // foreach i in 0..<min(myDomain.size,normalDomain.size) {
-    //     arrData[normalDomain.orderToIndex(i)] = data[myDomain.orderToIndex(i)];
-    // }
-    // return arr;
-}
 
 /* Yield a slice of an :record:`ndarray` according to the arguments.
 
@@ -1026,6 +989,9 @@ proc ndarray.degenerateFlatten(): [] eltType {
 
 proc ndarray.shapeArray(): [] int do
     return util.tupleToArray((...this.shape));
+
+proc ndarray.flatten(): ndarray(1,eltType) do
+    return this.reshape(this.domain.size);
 
 proc type ndarray.arange(type eltType = defaultEltType,shape: ?rank*int): ndarray(rank,eltType) {
     const dom = util.domainFromShape((...shape));
@@ -1871,39 +1837,18 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
 }
 
 // For printing. 
-proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
-    writer.write("ndarray(");
-    const shape = this.data.shape;
-    var first: bool = true;
-    for (x,i) in zip(data,0..) {
-        const idx = util.nbase(shape,i);
-        if idx[rank - 1] == 0 {
-            if !first {
-                writer.write("\n        ");
-                // writer.write("  ");
-            }
-            writer.write("[");
-        }
-        if eltType == int then
-            writer.writef("%{#}",x);
-        else
-            writer.writef("%{##.#}",x);
-
-        if idx[rank - 1] < shape[rank - 1] - 1 {
-            if rank == 1 then
-                writer.write("  ");
-            else
-                writer.write("  ");
-        } else {
-            writer.write("]");
-        }
-        first = false;
-    }
-    writer.write(",\n        shape = ",this.data.shape);
-    writer.write(",\n        rank = ",this.rank);
+proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) throws {
+    
+    const format = util.roundingFormat(this.data);
+    const name = "ndarray";
+    const header = name + "(";
+    const indent = (" " * name.size) + (" " * this.rank);
+    const dataStr = util.prettyPrintArray(indent,format,this.flatten().data,this.domain.shape);
+    writer.write(header);
+    writer.write(dataStr);
+    writer.write(",\n       shape = ",this.domain.shape);
+    writer.write(",\n       rank = ",this.rank);
     writer.writeln(")");
-    // writer.writeln(", shape=",this.data.shape,", rank=",this.rank,")");
-
 }
 
 proc ref ndarray.read(fr: IO.fileReader(?)) throws {

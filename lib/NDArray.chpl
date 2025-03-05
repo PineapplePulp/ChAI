@@ -1748,40 +1748,6 @@ proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer
     writer.write(",\n       shape = ",this.domain.shape);
     writer.write(",\n       rank = ",this.rank);
     writer.writeln(")");
-    return;
-    
-    writer.write("ndarray(");
-    const shape = this.data.shape;
-    var first: bool = true;
-    for (x,i) in zip(data,0..) {
-        const idx = util.nbase(shape,i);
-        if idx[rank - 1] == 0 {
-            if !first {
-                writer.write("\n        ");
-                // writer.write("  ");
-            }
-            writer.write("[");
-        }
-        if eltType == int then
-            writer.writef("%{#}",x);
-        else
-            writer.writef("%{##.#}",x);
-
-        if idx[rank - 1] < shape[rank - 1] - 1 {
-            if rank == 1 then
-                writer.write("  ");
-            else
-                writer.write("  ");
-        } else {
-            writer.write("]");
-        }
-        first = false;
-    }
-    writer.write(",\n        shape = ",this.data.shape);
-    writer.write(",\n        rank = ",this.rank);
-    writer.writeln(")");
-    // writer.writeln(", shape=",this.data.shape,", rank=",this.rank,")");
-
 }
 
 proc ref ndarray.read(fr: IO.fileReader(?)) throws {

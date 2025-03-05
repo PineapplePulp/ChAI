@@ -343,40 +343,7 @@ module Utilities {
         return format;
     }
 
-    // data is a flattened array.
-    proc prettyPrintArray(format: string, data: [] numeric, shape: ?rank*int, indent: int = 0): string {
-        import IO.FormattedIO;
-        use List only list;
-
-        const size = data.size;
-        const low = data.domain.low;
-
-        if rank == 1 {
-            const rowData = data[low..<(low + shape(0))];
-            return "[" + ", ".join(for x in rowData do format.format(x)) + "]";
-        }
-
-        var shapeTail: (rank - 1)*int;
-        for param i in 0..<shapeTail.size do
-            shapeTail(i) = shape(i + 1);
-        const subsliceSize = shapeProduct((...shapeTail));
-
-        var lines: list(string);
-        for i in 0..<shape(0) {
-            const start = i * subsliceSize;
-            const end = (i + 1) * subsliceSize;
-            const subData = data[(low + start)..<(low + end)];
-            const subStr = prettyPrintArray(format,subData,shapeTail,indent+1);
-            lines.pushBack(subStr);
-        }
-
-        const indentStr = "  " * indent;
-        const inner = (",\n" + indentStr).join(lines.toArray());
-        return "[" + "\n" + indentStr + inner + "\n" + indentStr + "]";
-    }
-
-
-    proc prettyPrintArray2(format: string, data: [] ?eltType, shape: ?shapeType, dim: int = 0, indx: int = 0): string {
+    proc prettyPrintArray(indent: string, format: string, data: [] ?eltType, shape: ?shapeType, dim: int = 0, indx: int = 0): string {
         import IO.FormattedIO;
         use List only list;
 
@@ -385,36 +352,28 @@ module Utilities {
         param shapeRank = if isTupleType(shapeType)
                             then shape.size
                             else 1;
-        var inShape: shapeRank * int;
-        if isTupleType(shapeType) then
-            for param i in 0..<shapeRank do
-                inShape(i) = shape(i);
-        else
-            inShape(0) = shape;
         
-        writeln("IAIN: shapeRank: ",shapeRank);
-        writeln("IAIN: inShape: ",inShape);
-
         if dim == shapeRank - 1 {
             const sliceSize = shape(dim);
-            const rowData = data[indx..<(indx + sliceSize)];
+            const slice = indx..<(indx + sliceSize);
+            const rowData = data[slice];
             return "[" + ", ".join(for x in rowData do format.format(x)) + "]";
         }
         
-        const size = shape(dim);
-        var shapeTail: (shapeRank - 1)*int;
-        for param i in 0..<shapeTail.size do
-            shapeTail(i) = shape(i + 1);
-        const subsliceSize = shapeProduct((...shapeTail));
+        const size: int = shape(dim);
+        var subsliceSize: int = 1;
+        for i in 0..<(shape.size - dim - 1) do
+            subsliceSize *= shape(dim + i + 1);
+
         var lines: list(string);
         for i in 0..<size {
             const subIdx = indx + i * subsliceSize;
-            const subStr = prettyPrintArray2(format,data,shape,dim + 1,subIdx);
+            const subStr = prettyPrintArray(indent,format,data,shape,dim + 1,subIdx);
             lines.pushBack(subStr);
         }
 
-        const inside = (",\n").join(lines.toArray());
-        return "[" + "\n" + inside + "\n" + "]";
+        const inside = (",\n" + indent).join(lines.toArray());
+        return "[" + inside + "]";
     }
 
     proc prettyPrintArray2(format: string, data: [] numeric, shape: int,dim: int = 0, indx: int = 0): string do

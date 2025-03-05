@@ -979,7 +979,8 @@ proc staticTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSeria
 
     const array = this.array;
     const format = util.roundingFormat(array.data);
-    const dataStr = util.prettyPrintArray2(format,array.flatten().data,array.data.shape);
+    const indent = "      " + (" " * this.rank);
+    const dataStr = util.prettyPrintArray(indent,format,array.flatten().data,array.data.shape);
     writer.write("tensor(");
     writer.write(dataStr);
     writer.write(",\n       shape = ",array.data.shape);

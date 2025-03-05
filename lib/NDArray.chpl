@@ -1,4 +1,4 @@
-
+module NDArray {
 
 import ChapelArray;
 import Math;
@@ -16,8 +16,18 @@ use Utilities.Types;
 
 type domainType = _domain(?);
 
+/* The most fundamental tensor type.
+
+   This type represents a multidimensional array, supporting a variety
+   of operations useful for machine learning.
+
+   All of the operations of this class are intended to be run on the GPU.
+ */
 record ndarray : serializable {
+    /* The rank of this :record:`ndarray`. The rank is synonymous with the number of dimensions. */
     param rank: int;
+
+    /* The element type of this :record:`ndarray`. */
     type eltType = defaultEltType;
     var _domain: domain(rank,int);
     var data: [_domain] eltType = noinit;
@@ -27,870 +37,995 @@ record ndarray : serializable {
     pragma "no copy return"
     pragma "return not owned"
     inline proc _dom do return _domain;
+}
 
-    proc shape: rank * int {
-        var s: rank * int;
-        const dms = _domain.dims();
-        for param i in 0..<rank {
-            const ref dm = dms(i);
-            s(i) = (dm.highBound - dm.lowBound) + 1;
-        }
-        return s;
-    }
+/* Create a new :record:`ndarray` with the requisite element type `eltType`
+   and domain `dom`.
 
-    inline
-    proc init(type eltType, const dom: ?t)
-            where isDomainType(t) {
-        this.rank = dom.rank;
-        this.eltType = eltType;
-        this._domain = dom;
-    }
+   :arg eltType: The element of type of the new :record:`ndarray`.
+   :type eltType: type
 
-    inline
-    proc init(type eltType, const dom: ?t, const in fill: eltType) 
-            where isDomainType(t) {
-        this.rank = dom.rank;
-        this.eltType = eltType;
-        this._domain = dom;
-        this.data = fill;
-    }
-
-    proc init(param rank: int, type eltType, const dom: ?t) 
-            where isDomainType(t) 
-                && dom.rank == rank {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = dom;
-    }
-
-    proc init(param rank: int, type eltType, const dom: ?t, const arr: [] eltType)
-        where isDomainType(t)
-             && dom.rank == rank {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = dom;
-        this.data = arr;
-    }
-
-    proc init(type eltType, shape: ?rank * int) {
-        var ranges: rank*range;
-        for param i in 0..<rank do
-            ranges(i) = 0..<shape(i);
-        this.init(eltType,{(...ranges)});
-    }
-
-    proc init(param rank: int, type eltType = defaultEltType) {
-        const shape: rank * int;
-        this.init(eltType,shape);
-    }
-
-    proc init(type eltType = defaultEltType, const shape: int ...?rank) do
-        this.init(eltType,shape);
-
-    proc init(const dom: rect(?rank), type eltType) do
-        this.init(eltType,dom);  // This could be optimized by refactoring whole init system. 
-
-    proc init(const dom: ?t,type eltType = defaultEltType) 
-            where isDomainType(t) {
-        this.init(eltType,dom);
-    }
-
-    proc init(const Arr: []) {
-        this.rank = Arr.rank;
-        this.eltType = Arr.eltType;
-        this._domain = Arr.domain;
-        this.data = Arr;
-    }
-    
-    proc init(const A: ndarray(?rank,?eltType)) {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = A._domain;
-        this.data = A.data;
-    }
-
-    proc init(type eltType, ref rs: Random.randomStream(eltType), const dom: ?t)
+   :arg dom: The domain of the new :record:`ndarray`.
+*/
+inline
+proc ndarray.init(type eltType, const dom: ?t)
         where isDomainType(t) {
-        this.init(eltType,dom);
-        rs.fill(data);
-    }
+    this.rank = dom.rank;
+    this.eltType = eltType;
+    this._domain = dom;
+}
 
-    // proc init(it: _iteratorRecord) {
-    //     const arr = it;
-    //     this.init(arr);
+/* Create a new :record:`ndarray` with the requisite element type `eltType`
+   and domain `dom`, filled with the value `fill`.
+
+   :arg eltType: The element type of the new :record:`ndarray`.
+   :type eltType: type
+
+   :arg dom: The domain of the new :record:`ndarray`.
+
+   :arg fill: The fill value of the new :record:`ndarray`. All elements
+   of the :record:`ndarray` will be initialised to a copy of this element.
+   :type fill: const in eltType
+*/
+inline
+proc ndarray.init(type eltType, const dom: ?t, const in fill: eltType) 
+        where isDomainType(t) {
+    this.rank = dom.rank;
+    this.eltType = eltType;
+    this._domain = dom;
+    this.data = fill;
+}
+
+/* Create a new :record:`ndarray` with rank `rank`, element type `eltType`,
+   and domain `dom`.
+
+   The domain must have the same rank as the requested rank.
+
+   :arg rank: The rank of the new :record:`ndarray`. It must be the same value
+   as `dom.rank`.
+   :type rank: param int
+
+   :arg eltType: The element type of the new :record:`ndarray`.
+   
+   :arg dom: The domain of the new :record:`ndarray`. `dom.rank` must be the same
+   value as `rank`.
+*/
+proc ndarray.init(param rank: int, type eltType, const dom: ?t) 
+        where isDomainType(t) 
+            && dom.rank == rank {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = dom;
+}
+
+/* Create a new :record:`ndarray` with rank `rank`, element type `eltType`, 
+   domain `dom`, initialized with values taken from the array `arr`.
+
+   :arg rank: The rank of the new :record:`ndarray`. It must be the same value
+   as `dom.rank`.
+   :type rank: param int
+
+   :arg eltType: The element type of the new :record:`ndarray`.
+   :type eltType: type
+
+   :arg dom: The domain of the new :record:`ndarray`.
+
+   :arg arr: The values from which the new :record:`ndarray` will be initialized.
+   :type arr: const []eltType
+*/
+proc ndarray.init(param rank: int, type eltType, const dom: ?t, const arr: []eltType)
+    where isDomainType(t)
+            && dom.rank == rank {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = dom;
+    this.data = arr;
+}
+
+proc ndarray.init(type eltType, shape: ?rank * int) {
+    var ranges: rank*range;
+    for param i in 0..<rank do
+        ranges(i) = 0..<shape(i);
+    this.init(eltType,{(...ranges)});
+}
+
+proc ndarray.init(param rank: int, type eltType = defaultEltType) {
+    const shape: rank * int;
+    this.init(eltType,shape);
+}
+
+proc ndarray.init(type eltType = defaultEltType, const shape: int ...?rank) do
+    this.init(eltType,shape);
+
+proc ndarray.init(const dom: rect(?rank), type eltType) do
+    this.init(eltType,dom);  // This could be optimized by refactoring whole init system. 
+
+proc ndarray.init(const dom: ?t,type eltType = defaultEltType) 
+        where isDomainType(t) {
+    this.init(eltType,dom);
+}
+
+proc ndarray.init(const Arr: []) {
+    this.rank = Arr.rank;
+    this.eltType = Arr.eltType;
+    this._domain = Arr.domain;
+    this.data = Arr;
+}
+
+proc ndarray.init(const A: ndarray(?rank,?eltType)) {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = A._domain;
+    this.data = A.data;
+}
+
+proc ndarray.init(type eltType, ref rs: Random.randomStream(eltType), const dom: ?t)
+    where isDomainType(t) {
+    this.init(eltType,dom);
+    rs.fill(data);
+}
+
+// proc init(it: _iteratorRecord) {
+//     const arr = it;
+//     this.init(arr);
+// }
+
+proc ndarray.init=(const other: [] ?eltType) do
+    this.init(other);
+
+proc ndarray.init=(const other: ndarray(?rank,?eltType)) {
+    this.rank = rank;
+    this.eltType = eltType;
+    this._domain = other._domain;
+    this.data = other.data;
+}
+
+// proc init=(other: _iteratorRecord) do
+//     this.init(other);
+
+proc ref ndarray.this(args: int...rank) ref {
+    return data.this((...args));
+}
+
+proc ref ndarray.setData(const arr: [] eltType)
+        where arr.rank == rank do
+    if arr.domain == this.domain then
+        data = arr;
+    else
+        this = arr;
+
+proc ref ndarray.reshapeDomain(const dom: domain(rank,int))
+    where isRegularDomain(dom) {
+    _domain = dom;
+}
+
+/* Yield the shape of an :record:`ndarray`.
+
+   The shape is the size of each dimension.
+
+   We have that for any :record:`ndarray`, the size of the shape will be the same as its rank.
+
+   .. code-block::
+
+       // D is a value of type domain
+       const t = new ndarray(real, D);
+       t.shape.size == D.rank // Will always be true
+
+   :returns: The shape of the :record:`ndarray`.
+   :rtype: rank * int
+ */
+proc ndarray.shape: rank * int {
+    var s: rank * int;
+    const dms = _domain.dims();
+    for param i in 0..<rank {
+        const ref dm = dms(i);
+        s(i) = (dm.highBound - dm.lowBound) + 1;
+    }
+    return s;
+}
+
+/* Reshapes an :record:`ndarray`.
+
+   This function comes in two flavors:
+   #. Reshape the :record:`ndarray` to have the argument domain.
+   #. Reshape the :record:`ndarray` to have the argument shape, given as arguments to the function.
+
+   :arg dom: The domain to reshape the :record:`ndarray` to have.
+
+   :returns: A new :record:`ndarray` with the new shape.
+   :rtype: ndarray(rank, eltType)
+ */
+proc ndarray.reshape(const dom: ?t): ndarray(rank,eltType)
+    where isDomainType(t)
+        && dom.rank == rank {
+    var arr = new ndarray(eltType,dom);
+    const arrDom  = arr.domain;
+    const selfDom = _domain;
+
+    const inter = selfDom[arrDom];
+    arr.data[inter] = data[inter];
+    return arr;
+}
+
+proc ndarray.reshape(const dom: ?t): ndarray(dom.rank,eltType)
+        where isDomainType(t)
+            && dom.rank != rank {
+
+    var arr: ndarray(dom.rank,eltType) = new ndarray(eltType,dom);
+
+    const selfDom = this.domain;
+    const newDom  = arr.domain;
+    const ref selfData = this.data;
+    ref arrData = arr.data;
+
+    const zero: eltType = 0;
+
+    forall (i,meIdx) in newDom.everyZip() {
+        const selfIdx = selfDom.indexAt(i);
+        const a = if selfDom.contains(selfIdx) then selfData[selfIdx] else zero;
+        arrData[meIdx] = a;
+    }
+    return arr;
+    // const minSize: int           = min(selfDom.size,newDom.size);
+    // const dataDom: rect(1)       = (minSize,);
+    // const zeroDom: rect(1)       = ((newDom.size - dataDom.size,),(dataDom.size,));
+
+    // ref arrData = arr.data;
+    // const ref selfData = data;
+
+    // // Fills in intersection. 
+    // forall i in dataDom {
+    //     const arrIdx  = newDom.indexAt(i);
+    //     const selfIdx = selfDom.indexAt(i);
+    //     arrData[arrIdx] = selfData[selfIdx];
     // }
 
-    proc init=(const other: [] ?eltType) do
-        this.init(other);
-
-    proc init=(const other: ndarray(?rank,?eltType)) {
-        this.rank = rank;
-        this.eltType = eltType;
-        this._domain = other._domain;
-        this.data = other.data;
-    }
-
-    // proc init=(other: _iteratorRecord) do
-    //     this.init(other);
-
-    proc ref this(args: int...rank) ref {
-        return data.this((...args));
-    }
-
-    proc ref setData(const arr: [] eltType)
-            where arr.rank == rank do
-        if arr.domain == this.domain then
-            data = arr;
-        else
-            this = arr;
-
-    proc ref reshapeDomain(const dom: domain(rank,int))
-        where isRegularDomain(dom) {
-        _domain = dom;
-    }
-
-    proc reshape(const dom: ?t): ndarray(dom.rank,eltType)
-            where isDomainType(t) {
-        var arr = new ndarray(eltType,dom);
-
-        const arrDom = arr.domain;
-        const selfDom = this.domain;
-        
-        ref arrData = arr.data;
-        const ref selfData = this.data;
-
-        const arrShape = arrDom.shape;
-        const selfShape = selfDom.shape;
-        const selfShapeDivs = util.shapeDivisors((...selfShape));
-
-        const zero: eltType = 0;
-
-        forall (i,idx) in arrDom.everyZip() {
-            const selfIdx = util.indexAtHelperMultiples(i,(...selfShapeDivs));
-            const a = if util.shapeContains(selfShape,selfIdx)
-                        then selfData[selfIdx]
-                        else zero;
-            arrData[idx] = a;
-        }
-        return arr;
-    }
-
-    proc reshape(newShape: int ...?newRank): ndarray(newRank,eltType) do
-        return this.reshape(util.domainFromShape((...newShape)));
-
-    proc slice(args...) {
-        const slc = data[(...args)];
-        return new ndarray(slc);
-    }
-
-    proc permute(axes: int...rank) {
-        const oldShape = data.shape;
-        var oldShapeR = data.dims();
-
-        var newShapeR: rank*range;
-        for param i in 0..<rank {
-            newShapeR(i) = data.dim(axes(i));
-        }
-
-        const newDom = {(...newShapeR)};
-        var prm = new ndarray(newDom,eltType);
-        const newShape = prm.shape;
-
-        ref prmData = prm.data;
-        const ref thisData = this.data;
-
-        forall i in 0..<data.size {
-            var oldIdx,newIdx: rank*int;
-            for param j in 0..<rank {
-                oldIdx(j) = i % oldShape(j);
-                newIdx(j) = i % newShape(j);
-            }
-            prmData[newIdx] = thisData[oldIdx];
-        }
-
-        return prm;
-    }
-
-    proc expand(axes: int...rank) {
-        const shape = data.domain.shape;
-        const oldRanges = data.dims();
-        var newRanges: rank*range = oldRanges;
-        for param i in 0..<rank {
-            const axis = axes(i);
-            const ds = shape(i);
-            if axis != ds {
-                if ds == 1 {
-                    newRanges(i) = 0..<axis;
-                } else {
-                    halt("Cannot expand an axis that is not 1.");
-                }
-            } else {
-                newRanges(i) = oldRanges(i);
-            }
-        }
-        // const dom = util.domainFromShape((...axes));
-        const dom = {(...newRanges)};
-        var expanded = new ndarray(dom,eltType);
-
-        const oldShape = shape;
-        const newShape = dom.shape;
-        
-        ref expandedData = expanded.data;
-        const expandedDataDomain = expandedData.domain;
-        const ref thisData = this.data;
-        // @assertOnGpu
-        forall idx in expandedDataDomain.every() {
-            var origIdx: rank * int;
-            if idx.type == int {
-                origIdx(0) = idx;
-            } else {
-                origIdx = idx;
-            }
-            for param i in 0..<rank {
-                if oldShape(i) == 1 then origIdx(i) = 0;
-            }
-            expandedData[idx] = thisData[origIdx];
-        }
-        return expanded;
-    }
-
-
-    proc ref sumOneAxis(axis: int): ndarray(rank,eltType) {
-        const dims = this.domain.dims();
-        const sumAxis = dims(axis);
-        const sumAxisSize = sumAxis.size;
-        var newDims = dims;
-        newDims(axis) = 0..<1;
-
-        const newDomain = {(...newDims)};
-        var S = new ndarray(newDomain,eltType);
-        ref B = S.data;
-        ref A = data;
-        // @assertOnGpu
-        forall idx in newDomain.every() {
-            var origIdx: newDomain.rank * int;
-            if idx.type == int {
-                origIdx(0) = idx;
-            } else {
-                origIdx = idx;
-            }
-
-            var sum: eltType = 0;
-            for i in 0..<sumAxisSize {
-                origIdx(axis) = i;
-                
-                sum += A[origIdx];
-            }
-            B[idx] = sum;
-        }
-        return S;
-    }
-
-    proc sumAxesMask(withAxesMask: rank*int): ndarray(rank,eltType) {
-        var acc: ndarray(rank,eltType) = this;
-        for param i in 0..<rank {
-            if withAxesMask(i) == 1 {
-                acc = acc.sumOneAxis(i);
-            }
-        }
-        return acc;
-    }
-
-    proc sum(): ndarray(rank,eltType) do
-        return this.sum((...this.nDimTuple()));
-
-    proc sum(axes: int...?axesCount): ndarray(rank,eltType) {
-        var acc: ndarray(rank,eltType) = new ndarray(data);
-        for param i in 0..<axesCount {
-            acc = acc.sumOneAxis(axes(i));
-        }
-        return acc;
-    }
-
-    proc nDimTuple(): rank * int {
-        var tpl: rank * int;
-        for param i in 0..<rank do
-            tpl(i) = i;
-        return tpl;
-    }
-
-    proc mean(): ndarray(rank,eltType) do
-        return this.mean((...this.nDimTuple()));
-
-    proc mean(axes: int...?axesCount): ndarray(rank,eltType) {
-        const shape = this.shape;
-        var denom: eltType = 1.0;
-        for param i in 0..<axesCount {
-            const reducedN = shape(axes(i));
-            denom *= reducedN : eltType;
-        }
-        return this.sum((...axes)) / denom;
-    }
-    proc shrink(narg: 2*int ... rank,param exactBounds = false): ndarray(rank,eltType) {
-        var newShape: rank * int;
-        var sliceRanges: rank * range;
-        for param i in 0..<rank {
-            var (start,end) = narg(i);
-            if start < 0 && end < 0 {
-                start = 0;
-                end = this.shape(i);
-            }
-            if !exactBounds {
-                sliceRanges(i) = start..#end;
-            } else {
-                sliceRanges(i) = start..<end;
-            }
-            newShape(i) = sliceRanges(i).size;
-        }
-        const sliceDom = {(...sliceRanges)};
-        const newDom = util.domainFromShape((...newShape));
-        var shrunk = new ndarray(newDom,eltType);
-        shrunk.data = data[sliceDom];
-        return shrunk;
-    }
-
-    proc pad(narg: 2*int ... rank,value: eltType = 0): ndarray(rank,eltType) {
-        var newShape: rank * int;
-        var sliceRanges: rank * range;
-        for param i in 0..<rank {
-            const dimSize = data.domain.shape(i);
-            var (left,right) = narg(i);
-            sliceRanges(i) = left..#dimSize;
-            newShape(i) = dimSize + left + right;
-        }
-        const sliceDom = {(...sliceRanges)};
-        const newDom = util.domainFromShape((...newShape));
-        var padded = new ndarray(newDom,eltType);
-        padded.data = value;
-        padded.data[sliceDom] = data;
-        return padded;
-    }
-
-
-    proc dilate(dil: int) where rank == 2 {
-        if dil < 0 then util.err("Cannot dilate ", this.type:string, ", of shape ", this.shape, ", by dilation=", dil);
-        if dil == 0 then return this;
-        const (height,width) = this.shape;
-        const insertH = (height - 1) * dil;
-        const insertW = (width - 1) * dil;
-
-        const newHeight = insertH + height;
-        const newWidth = insertW + width;
-
-        const dom = util.domainFromShape(newHeight,newWidth);
-        var dilated = new ndarray(dom,eltType);
-        ref dat = dilated.data;
-        const ref thisData = data;
-        const step = dil + 1;
-        const selfDom = this.domain;
-        forall (h,w) in data.domain.every() {
-            dat[h * step,w * step] = thisData[h,w];
-        }
-        return dilated;
-    }
-
-    proc dilate(dil: int) where rank == 3 {
-        if dil < 0 then util.err("Cannot dilate ", this.type:string, ", of shape ", this.shape, ", by dilation=", dil);
-        if dil == 0 then return this;
-        const (channels,height,width) = this.shape;
-        const insertH = (height - 1) * dil;
-        const insertW = (width - 1) * dil;
-
-        const newHeight = insertH + height;
-        const newWidth = insertW + width;
-
-        const dom = util.domainFromShape(channels,newHeight,newWidth);
-        var dilated = new ndarray(dom,eltType);
-        ref dat = dilated.data;
-        const ref thisData = data;
-        const step = dil + 1;
-        forall (c,h,w) in this.domain.every() do
-            dat[c,h * step,w * step] = thisData[c,h,w];
-
-        return dilated;
-    }
-
-    proc squeeze(param newRank: int): ndarray(newRank,eltType) where newRank < rank {
-        // I think this will work: (a member of the chapel team needs to review this)
-        // I suspect heavy performance hits will happen when running this on CUDA. 
-        if newRank == 1 {
-            var me = new ndarray(1,eltType);
-            const s = data.size;
-            me.reshapeDomain({0..<s});
-            const dataDomain = data.domain;
-            ref meData = me.data;
-            const ref thisData = data;
-            // @assertOnGpu
-            forall i in me.domain.every() {
-                meData[i] = thisData[dataDomain.indexAt(i)];
-            }
-            // var j = 0;
-            // for i in data.domain {
-            //     me[j] = data[i];
-            //     j += 1;
-            // }
-            return me;
-        }
-        const oldShape = this.shape;
-        var newShape: newRank*int;
-        var offset: int = 0;
-        for param i in 0..<rank {
-            if oldShape(i) == 1 {
-                offset -= 1;
-            } else {
-                newShape(i + offset) = oldShape(i);
-            }
-        }
-
-        const dom = util.domainFromShape((...newShape));
-        var me = new ndarray(dom,eltType);
-        me.reshapeDomain(dom);
-        ref meData = me.data;
-        // I had to change this 
-        // forall (i,a) in zip(dom,this.data) do meData[i] = a;
-        // to this 
-        forall i in 0..<dom.size do
-            meData[util.indexAt(i,(...newShape))] = this.data[util.indexAt(i,(...oldShape))];
-        // because of a type error about the dimensionality of `dom` and `this.data`. The new version is likely less performant. 
-        return me;
-    }
-
-    proc min(): ndarray(1,eltType) {
-        var me = new ndarray({0..<1},eltType);
-        const myData = this.data;
-        me.data[0] = Math.min reduce myData;
-        return me;
-    }
-
-    proc max(): ndarray(1,eltType) {
-        var me = new ndarray({0..<1},eltType);
-        const myData = this.data;
-        me.data[0] = Math.max reduce myData;
-        return me;
-    }
-
-    proc max(axes: int...?axesCount): ndarray(rank,eltType) {
-        compilerWarning("max is unimplemented.");
-        return this; // Implement me.
-    }
-
-
-    proc populateRemote(re: borrowed Remote(ndarray(rank,eltType))): borrowed Remote(ndarray(rank,eltType)) {
-        on re.device {
-            ref reArr = re.ptr;
-            reArr = this;
-        }
-        return re;
-    }
-
-    proc toRemote(): owned Remote(ndarray(rank,eltType)) {
-        var re = new Remote(ndarray(rank,eltType));
-        populateRemote(re.borrow());
-        return re;
-    }
-
-    iter ref batchify(param dim: int = 0) ref where dim < rank {
-        const dimR = data.domain.shape(dim);
-        var dims = data.dims();
-        for i in dimR {
-            yield data[(...((...dims(0..<dim)),i,(...dims((dim+1)..<rank))))];
-        }
-    }
-
-    proc kernelRot(): ndarray(4,eltType) where rank == 4 {
-        const (features,channels,height,width) = data.domain.shape;
-        var me = new ndarray(data.domain,eltType);
-        ref meData = me.data;
-        const ref thisData = data;
-        const selfDom = this.domain;
-        forall (f,c,h,w) in selfDom.every() {
-            meData[f,c,h,w] = thisData[f,c,height - h - 1,width - w - 1];
-        }
-        return me;
-    }
+    // const zero: eltType = 0;
+    // forall i in zeroDom do
+    //     arrData[newDom.indexAt(i)] = 0; // should this be `zero` for performance?
     
-    proc kernelRot(): ndarray(3,eltType) where rank == 3 {
-        const (channels,height,width) = data.domain.shape;
-        var me = new ndarray(data.domain,eltType);
-        ref meData = me.data;
-        const ref thisData = data;
-        forall (c,h,w) in this.domain.every() {
-            meData[c,h,w] = thisData[c,height - h - 1,width - w - 1];
-        }
-        return me;
-    }
-
-    proc topk(k: int): ndarray(1, int) where rank == 1 {
-        const myData = this.data;
-        const myDom = this.domain;
-        const mySize = myDom.size;
-        if k > mySize then util.err("Cannot get top ", k, " from ", mySize, " elements.");
-        var topK: [0..<k] int = 0..<k;
-        var topKData: [0..<k] eltType = myData(0..<k);
-        for i in k..<mySize {
-            var minIdx = 0;
-            var minVal = topKData(minIdx);
-            for j in 1..<k {
-                if topKData(j) < minVal {
-                    minIdx = j;
-                    minVal = topKData(j);
-                }
-            }
-            if myData(i) > minVal {
-                topK(minIdx) = i;
-                topKData(minIdx) = myData(i);
-            }
-        }
-        // sort topK based on topKData
-        use Sort;
-        record cmp: keyComparator { proc key(x) do return x(1); }
-        var paired = [i in 0..<k] (topK(i), topKData(i));
-        sort(paired, comparator=new reverseComparator(new cmp()));
-        var res = [p in paired] p(0);
-        return new ndarray(res);
-    }
-
-    proc argmax() where rank == 1 {
-        // const D__________________A______________T____________A = this.data;
-        // const (_,i) = maxloc reduce zip(
-        //     D__________________A______________T____________A,
-        //     D__________________A______________T____________A.domain);
-        // return i;
-        // For some reason this is causing problems.  Keeping this because I am worried the above wont run on gpu.
-        var mxi: int = 0;
-        const data = this.data;
-        var mx: eltType = data[mxi];
-        for i in data.domain {
-            const mei = data[i];
-            if mx < mei {
-                mxi = i;
-                mx = mei;
-            }
-        }
-        return mxi;
-    }
-
-    inline proc relu() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom,eltType);
-        ref rlD = rl.data;
-        // @assertOnGpu
-        forall i in dom.every() {
-            const x = thisData[i];
-            rlD[i] = Math.max(0,x);
-        }
-        return rl;
-    }
-
-    inline proc square() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom,eltType);
-        ref rlD = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rlD[i] = x * x;
-        }
-        return rl;
-    }
-
-    inline proc gelu() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom,eltType);
-        ref rlD = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rlD[i] = x * (0.5 * (1.0 + Math.erf(x * Math.reciprSqrt2)));
-        }
-        return rl;
-    }
-
-    inline proc silu() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = x / (1 + Math.exp(-x));
-        }
-        return rl;
-    }
-
-    inline proc mish() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = x * Math.tanh(Math.log(1 + Math.exp(x)));
-        }
-        return rl;
-    }
-
-    inline proc sigmoid() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = 1 / (1 + Math.exp(-x));
-        }
-        return rl;
-    }
-
-    inline proc tanh() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = Math.tanh(x);
-        }
-        return rl;
-    }
-
-    inline proc relu6() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = Math.min(Math.max(0, x), 6);
-        }
-        return rl;
-    }
-
-    inline proc selu() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        const alpha: eltType = 1.6732632423543772848170429916717;
-        const scale: eltType = 1.0507009873554804934193349852946;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = scale * (Math.max(0, x) + Math.min(0, alpha * (Math.exp(x) - 1)));
-        }
-        return rl;
-    }
-
-    inline proc logsigmoid() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = Math.log(1 / (1 + Math.exp(-x)));
-        }
-        return rl;
-    }
-
-    inline proc tanhshrink() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = x - Math.tanh(x);
-        }
-        return rl;
-    }
-
-    inline proc softsign() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = x / (1 + Math.abs(x));
-        }
-        return rl;
-    }
-
-    inline proc rrelu(lower: eltType=1.0/8.0, upper: eltType=1.0/3.0, training: bool=false) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        var a: [dom] eltType = (lower + upper) / 2.0;
-        if training then
-            Random.fillRandom(a,min=lower,max=upper);
-        forall i in dom.every() {
-            const x = thisData[i];
-            const alpha = a[i];
-            rld[i] = Math.max(0, x) + alpha * Math.min(0,x);
-        }
-        return rl;
-    }
-
-    inline proc hardswish() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            const floatMax: eltType = Types.max(eltType);
-            const xgeq3: eltType = Math.ceil(1.0 / floatMax); // x >= 3: 1 if true, 0 otherwise
-            const xleqn3: eltType = Math.ceil(1.0 / floatMax); // x <= -3: 1 if true, 0 otherwise
-            rld[i] = x * xgeq3 + x * (x + 3) / 6.0 * (1 - xgeq3) * xleqn3;
-        }
-        return rl;
-    }
-
-    inline proc hardsigmoid() {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = Math.max(0, Math.min(1, x/6.0 + 0.5));
-        }
-        return rl;
-    }
-
-    inline proc hardShrink(alpha: eltType=0.5) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            const floatMax = Types.max(eltType);
-            const xmap0 = Math.ceil(1.0 / floatMax * (x - alpha) * (x + alpha)); // 0 if x in [-l, l], 1 otherwise 
-            rld[i] = x * xmap0;
-        }
-        return rl;
-    }
-
-    inline proc hardTanh(minVal: eltType=-1.0, maxVal: eltType=1.0) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            const floatMax: eltType = Types.max(eltType);
-            const xgmaxval: eltType = Math.ceil(1.0 / floatMax * (x - maxVal)); // x greater than maxVal: 1 if true, 0 otherwise
-            const xlminval: eltType = Math.ceil(1.0 / floatMax * (x - minVal)); // x less than minVal: 1 if true, o otherwise
-            rld[i] = Math.max(x, minVal) * (1 - xlminval) + Math.min(x, maxVal) * xgmaxval + x * xlminval * (1 - xgmaxval);
-        }
-        return rl;
-    }
-
-    inline proc elu(alpha: eltType=1.0) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            const floatMax: eltType = Types.max(eltType);
-            const xgz: eltType = Math.ceil(x / floatMax); // x greater than zero: 1 if true, 0 otherwise
-            rld[i] = x * xgz + alpha * (Math.exp(x) - 1) * (1 - xgz);
-        }
-        return rl;
-    }
-
-    inline proc threshold(threshold: eltType, value: eltType) { // PyTorch has no defaults for threshold
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            const floatMax: eltType = Types.max(eltType); // maximum value a float_64 can take
-            const xgeqt: eltType = Math.ceil((x - threshold) / floatMax); // 1 if x >= threshold, 0 otherwise
-            rld[i] = x * xgeqt + value * (1 - xgeqt);
-        }
-        return rl;
-    }
-
-    inline proc softplus(beta: eltType=1.0, threshold: eltType=20.0) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            const floatMax: eltType = Types.max(eltType);
-            const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-            rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
-        }
-        return rl;
-    }
-
-    inline proc celu(alpha: eltType=1.0) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = Math.max(0.0, x) + Math.min(0.0, alpha * (Math.exp(x / alpha) - 1.0));
-        }
-        return rl;
-    }
-
-    inline proc leakyrelu(negativeSlope: eltType=Math.exp(-2)) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = Math.max(0, x) + negativeSlope * Math.min(0, x);
-        }
-        return rl;
-    }
-
-    inline proc softshrink(alpha: eltType=0.5) {  // l must be non-negative
-        if alpha < 0 then util.err("Argument to softshrink function must be non-negative");
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-        const floatMax: eltType = Types.max(eltType);
-        forall i in dom.every() {
-            const x = thisData[i];
-            const xgl = Math.ceil(1.0 / floatMax * (x - alpha)); // x greater than lambda: 1 if true, otherwise
-            const xlnl = 1 - Math.ceil(1.0 / floatMax * (x + alpha)); // x less than negative lambda, 1 if true, 0 otherwise
-            rld[i] = xgl * (x - alpha) + xlnl * (x + alpha);
-        }
-        return rl;
-    }
-
-    proc degenerateFlatten(): [] eltType {
-        const myDom = this.domain;
-        const mySize = myDom.size;
-        var flat: [0..<mySize] eltType;
-        var i = 0;
-        for x in this.data {
-            flat[i] = x;
-            i += 1;
-        }
-        return flat;
-    }
-
-    proc shapeArray(): [] int do
-        return util.tupleToArray((...this.shape));
-
-    proc flatten(): ndarray(1,eltType) do
-        return this.reshape(this.domain.size);
+    // return arr;
 }
 
 
+/* Reshape an :record:`ndarray` to have the shape corresponding to the arguments.
+
+   :returns: A new :record:`ndarray` with the shape given by the arguments.
+   :rtype: ndarray(newRank, eltType)
+ */
+proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {
+    // This can optimized such that it doesn't use two heavy utility functions...
+    return this.reshape(util.domainFromShape((...newShape)));
+    // const normalDomain = util.domainFromShape((...newShape));
+    // var arr = new ndarray(normalDomain, eltType);
+    // ref arrData = arr.data;
+    // const myDomain = data.domain;
+    // foreach i in 0..<min(myDomain.size,normalDomain.size) {
+    //     arrData[normalDomain.orderToIndex(i)] = data[myDomain.orderToIndex(i)];
+    // }
+    // return arr;
+}
+
+/* Yield a slice of an :record:`ndarray` according to the arguments.
+
+   This function behaves exactly the same as Chapel's standard
+   `slicing syntax <https://chapel-lang.org/docs/language/spec/arrays.html#array-slicing>`_.
+
+   :returns: A new :record:`ndarray` representing the slice of the :record:`ndarray`.
+ */
+proc ndarray.slice(args...) {
+    const slc = data[(...args)];
+    return new ndarray(slc);
+}
+
+proc ndarray.permute(axes: int...rank) {
+    const oldShape = data.shape;
+    var oldShapeR = data.dims();
+
+    var newShapeR: rank*range;
+    for param i in 0..<rank {
+        newShapeR(i) = data.dim(axes(i));
+    }
+
+    const newDom = {(...newShapeR)};
+    var prm = new ndarray(newDom,eltType);
+    const newShape = prm.shape;
+
+    ref prmData = prm.data;
+    const ref thisData = this.data;
+
+    forall i in 0..<data.size {
+        var oldIdx,newIdx: rank*int;
+        for param j in 0..<rank {
+            oldIdx(j) = i % oldShape(j);
+            newIdx(j) = i % newShape(j);
+        }
+        prmData[newIdx] = thisData[oldIdx];
+    }
+
+    return prm;
+}
+
+proc ndarray.expand(axes: int...rank) {
+    const shape = data.domain.shape;
+    const oldRanges = data.dims();
+    var newRanges: rank*range = oldRanges;
+    for param i in 0..<rank {
+        const axis = axes(i);
+        const ds = shape(i);
+        if axis != ds {
+            if ds == 1 {
+                newRanges(i) = 0..<axis;
+            } else {
+                halt("Cannot expand an axis that is not 1.");
+            }
+        } else {
+            newRanges(i) = oldRanges(i);
+        }
+    }
+    // const dom = util.domainFromShape((...axes));
+    const dom = {(...newRanges)};
+    var expanded = new ndarray(dom,eltType);
+
+    const oldShape = shape;
+    const newShape = dom.shape;
+    
+    ref expandedData = expanded.data;
+    const expandedDataDomain = expandedData.domain;
+    const ref thisData = this.data;
+    // @assertOnGpu
+    forall idx in expandedDataDomain.every() {
+        var origIdx: rank * int;
+        if idx.type == int {
+            origIdx(0) = idx;
+        } else {
+            origIdx = idx;
+        }
+        for param i in 0..<rank {
+            if oldShape(i) == 1 then origIdx(i) = 0;
+        }
+        expandedData[idx] = thisData[origIdx];
+    }
+    return expanded;
+}
+
+
+proc ref ndarray.sumOneAxis(axis: int): ndarray(rank,eltType) {
+    const dims = this.domain.dims();
+    const sumAxis = dims(axis);
+    const sumAxisSize = sumAxis.size;
+    var newDims = dims;
+    newDims(axis) = 0..<1;
+
+    const newDomain = {(...newDims)};
+    var S = new ndarray(newDomain,eltType);
+    ref B = S.data;
+    ref A = data;
+    // @assertOnGpu
+    forall idx in newDomain.every() {
+        var origIdx: newDomain.rank * int;
+        if idx.type == int {
+            origIdx(0) = idx;
+        } else {
+            origIdx = idx;
+        }
+
+        var sum: eltType = 0;
+        for i in 0..<sumAxisSize {
+            origIdx(axis) = i;
+            
+            sum += A[origIdx];
+        }
+        B[idx] = sum;
+    }
+    return S;
+}
+
+proc ndarray.sumAxesMask(withAxesMask: rank*int): ndarray(rank,eltType) {
+    var acc: ndarray(rank,eltType) = this;
+    for param i in 0..<rank {
+        if withAxesMask(i) == 1 {
+            acc = acc.sumOneAxis(i);
+        }
+    }
+    return acc;
+}
+
+proc ndarray.sum(): ndarray(rank,eltType) do
+    return this.sum((...this.nDimTuple()));
+
+proc ndarray.sum(axes: int...?axesCount): ndarray(rank,eltType) {
+    var acc: ndarray(rank,eltType) = new ndarray(data);
+    for param i in 0..<axesCount {
+        acc = acc.sumOneAxis(axes(i));
+    }
+    return acc;
+}
+
+/* Yields the indices of all of the axes of the :record:`ndarray`, as a tuple.
+
+   :returns: A tuple representing the indices of the axes of the :record:`ndarray`
+   :rtype: rank * int
+ */
+proc ndarray.nDimTuple(): rank * int {
+    var tpl: rank * int;
+    for param i in 0..<rank do
+        tpl(i) = i;
+    return tpl;
+}
+
+proc ndarray.mean(): ndarray(rank,eltType) do
+    return this.mean((...this.nDimTuple()));
+
+proc ndarray.mean(axes: int...?axesCount): ndarray(rank,eltType) {
+    const shape = this.shape;
+    var denom: eltType = 1.0;
+    for param i in 0..<axesCount {
+        const reducedN = shape(axes(i));
+        denom *= reducedN : eltType;
+    }
+    return this.sum((...axes)) / denom;
+}
+proc ndarray.shrink(narg: 2*int ... rank,param exactBounds = false): ndarray(rank,eltType) {
+    var newShape: rank * int;
+    var sliceRanges: rank * range;
+    for param i in 0..<rank {
+        var (start,end) = narg(i);
+        if start < 0 && end < 0 {
+            start = 0;
+            end = this.shape(i);
+        }
+        if !exactBounds {
+            sliceRanges(i) = start..#end;
+        } else {
+            sliceRanges(i) = start..<end;
+        }
+        newShape(i) = sliceRanges(i).size;
+    }
+    const sliceDom = {(...sliceRanges)};
+    const newDom = util.domainFromShape((...newShape));
+    var shrunk = new ndarray(newDom,eltType);
+    shrunk.data = data[sliceDom];
+    return shrunk;
+}
+
+proc ndarray.pad(narg: 2*int ... rank,value: eltType = 0): ndarray(rank,eltType) {
+    var newShape: rank * int;
+    var sliceRanges: rank * range;
+    for param i in 0..<rank {
+        const dimSize = data.domain.shape(i);
+        var (left,right) = narg(i);
+        sliceRanges(i) = left..#dimSize;
+        newShape(i) = dimSize + left + right;
+    }
+    const sliceDom = {(...sliceRanges)};
+    const newDom = util.domainFromShape((...newShape));
+    var padded = new ndarray(newDom,eltType);
+    padded.data = value;
+    padded.data[sliceDom] = data;
+    return padded;
+}
+
+
+proc ndarray.dilate(dil: int) where rank == 2 {
+    if dil < 0 then util.err("Cannot dilate ", this.type:string, ", of shape ", this.shape, ", by dilation=", dil);
+    if dil == 0 then return this;
+    const (height,width) = this.shape;
+    const insertH = (height - 1) * dil;
+    const insertW = (width - 1) * dil;
+
+    const newHeight = insertH + height;
+    const newWidth = insertW + width;
+
+    const dom = util.domainFromShape(newHeight,newWidth);
+    var dilated = new ndarray(dom,eltType);
+    ref dat = dilated.data;
+    const ref thisData = data;
+    const step = dil + 1;
+    const selfDom = this.domain;
+    forall (h,w) in data.domain.every() {
+        dat[h * step,w * step] = thisData[h,w];
+    }
+    return dilated;
+}
+
+proc ndarray.dilate(dil: int) where rank == 3 {
+    if dil < 0 then util.err("Cannot dilate ", this.type:string, ", of shape ", this.shape, ", by dilation=", dil);
+    if dil == 0 then return this;
+    const (channels,height,width) = this.shape;
+    const insertH = (height - 1) * dil;
+    const insertW = (width - 1) * dil;
+
+    const newHeight = insertH + height;
+    const newWidth = insertW + width;
+
+    const dom = util.domainFromShape(channels,newHeight,newWidth);
+    var dilated = new ndarray(dom,eltType);
+    ref dat = dilated.data;
+    const ref thisData = data;
+    const step = dil + 1;
+    forall (c,h,w) in this.domain.every() do
+        dat[c,h * step,w * step] = thisData[c,h,w];
+
+    return dilated;
+}
+
+
+proc ndarray.squeeze(param newRank: int): ndarray(newRank,eltType) where newRank < rank {
+    // I think this will work: (a member of the chapel team needs to review this)
+    // I suspect heavy performance hits will happen when running this on CUDA. 
+    if newRank == 1 {
+        var me = new ndarray(1,eltType);
+        const s = data.size;
+        me.reshapeDomain({0..<s});
+        const dataDomain = data.domain;
+        ref meData = me.data;
+        const ref thisData = data;
+        // @assertOnGpu
+        forall i in me.domain.every() {
+            meData[i] = thisData[dataDomain.indexAt(i)];
+        }
+        // var j = 0;
+        // for i in data.domain {
+        //     me[j] = data[i];
+        //     j += 1;
+        // }
+        return me;
+    }
+    const oldShape = this.shape;
+    var newShape: newRank*int;
+    var offset: int = 0;
+    for param i in 0..<rank {
+        if oldShape(i) == 1 {
+            offset -= 1;
+        } else {
+            newShape(i + offset) = oldShape(i);
+        }
+    }
+
+    const dom = util.domainFromShape((...newShape));
+    var me = new ndarray(dom,eltType);
+    me.reshapeDomain(dom);
+    ref meData = me.data;
+    // I had to change this 
+    // forall (i,a) in zip(dom,this.data) do meData[i] = a;
+    // to this 
+    forall i in 0..<dom.size do
+        meData[util.indexAt(i,(...newShape))] = this.data[util.indexAt(i,(...oldShape))];
+    // because of a type error about the dimensionality of `dom` and `this.data`. The new version is likely less performant. 
+    return me;
+}
+
+proc ndarray.min(): ndarray(1,eltType) {
+    var me = new ndarray({0..<1},eltType);
+    const myData = this.data;
+    me.data[0] = Math.min reduce myData;
+    return me;
+}
+
+proc ndarray.max(): ndarray(1,eltType) {
+    var me = new ndarray({0..<1},eltType);
+    const myData = this.data;
+    me.data[0] = Math.max reduce myData;
+    return me;
+}
+
+proc ndarray.max(axes: int...?axesCount): ndarray(rank,eltType) {
+    compilerWarning("max is unimplemented.");
+    return this; // Implement me.
+}
+
+
+proc ndarray.populateRemote(re: borrowed Remote(ndarray(rank,eltType))): borrowed Remote(ndarray(rank,eltType)) {
+    on re.device {
+        ref reArr = re.ptr;
+        reArr = this;
+    }
+    return re;
+}
+
+proc ndarray.toRemote(): owned Remote(ndarray(rank,eltType)) {
+    var re = new Remote(ndarray(rank,eltType));
+    populateRemote(re.borrow());
+    return re;
+}
+
+iter ref ndarray.batchify(param dim: int = 0) ref where dim < rank {
+    const dimR = data.domain.shape(dim);
+    var dims = data.dims();
+    for i in dimR {
+        yield data[(...((...dims(0..<dim)),i,(...dims((dim+1)..<rank))))];
+    }
+}
+
+proc ndarray.kernelRot(): ndarray(4,eltType) where rank == 4 {
+    const (features,channels,height,width) = data.domain.shape;
+    var me = new ndarray(data.domain,eltType);
+    ref meData = me.data;
+    const ref thisData = data;
+    const selfDom = this.domain;
+    forall (f,c,h,w) in selfDom.every() {
+        meData[f,c,h,w] = thisData[f,c,height - h - 1,width - w - 1];
+    }
+    return me;
+}
+
+proc ndarray.kernelRot(): ndarray(3,eltType) where rank == 3 {
+    const (channels,height,width) = data.domain.shape;
+    var me = new ndarray(data.domain,eltType);
+    ref meData = me.data;
+    const ref thisData = data;
+    forall (c,h,w) in this.domain.every() {
+        meData[c,h,w] = thisData[c,height - h - 1,width - w - 1];
+    }
+    return me;
+}
+
+proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
+    const myData = this.data;
+    const myDom = this.domain;
+    const mySize = myDom.size;
+    if k > mySize then util.err("Cannot get top ", k, " from ", mySize, " elements.");
+    var topK: [0..<k] int = 0..<k;
+    var topKData: [0..<k] eltType = myData(0..<k);
+    for i in k..<mySize {
+        var minIdx = 0;
+        var minVal = topKData(minIdx);
+        for j in 1..<k {
+            if topKData(j) < minVal {
+                minIdx = j;
+                minVal = topKData(j);
+            }
+        }
+        if myData(i) > minVal {
+            topK(minIdx) = i;
+            topKData(minIdx) = myData(i);
+        }
+    }
+    // sort topK based on topKData
+    use Sort;
+    record cmp: keyComparator { proc key(x) do return x(1); }
+    var paired = [i in 0..<k] (topK(i), topKData(i));
+    sort(paired, comparator=new reverseComparator(new cmp()));
+    var res = [p in paired] p(0);
+    return new ndarray(res);
+}
+
+proc ndarray.argmax() where rank == 1 {
+    // const D__________________A______________T____________A = this.data;
+    // const (_,i) = maxloc reduce zip(
+    //     D__________________A______________T____________A,
+    //     D__________________A______________T____________A.domain);
+    // return i;
+    // For some reason this is causing problems.  Keeping this because I am worried the above wont run on gpu.
+    var mxi: int = 0;
+    const data = this.data;
+    var mx: eltType = data[mxi];
+    for i in data.domain {
+        const mei = data[i];
+        if mx < mei {
+            mxi = i;
+            mx = mei;
+        }
+    }
+    return mxi;
+}
+
+inline proc ndarray.relu() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom,eltType);
+    ref rlD = rl.data;
+    // @assertOnGpu
+    forall i in dom.every() {
+        const x = thisData[i];
+        rlD[i] = Math.max(0,x);
+    }
+    return rl;
+}
+
+inline proc ndarray.square() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom,eltType);
+    ref rlD = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rlD[i] = x * x;
+    }
+    return rl;
+}
+
+inline proc ndarray.gelu() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom,eltType);
+    ref rlD = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rlD[i] = x * (0.5 * (1.0 + Math.erf(x * Math.reciprSqrt2)));
+    }
+    return rl;
+}
+
+inline proc ndarray.silu() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = x / (1 + Math.exp(-x));
+    }
+    return rl;
+}
+
+inline proc ndarray.mish() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = x * Math.tanh(Math.log(1 + Math.exp(x)));
+    }
+    return rl;
+}
+
+inline proc ndarray.sigmoid() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = 1 / (1 + Math.exp(-x));
+    }
+    return rl;
+}
+
+inline proc ndarray.tanh() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = Math.tanh(x);
+    }
+    return rl;
+}
+
+inline proc ndarray.relu6() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = Math.min(Math.max(0, x), 6);
+    }
+    return rl;
+}
+
+inline proc ndarray.selu() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    const alpha: eltType = 1.6732632423543772848170429916717;
+    const scale: eltType = 1.0507009873554804934193349852946;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = scale * (Math.max(0, x) + Math.min(0, alpha * (Math.exp(x) - 1)));
+    }
+    return rl;
+}
+
+inline proc ndarray.logsigmoid() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = Math.log(1 / (1 + Math.exp(-x)));
+    }
+    return rl;
+}
+
+inline proc ndarray.tanhshrink() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = x - Math.tanh(x);
+    }
+    return rl;
+}
+
+inline proc ndarray.softsign() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = x / (1 + Math.abs(x));
+    }
+    return rl;
+}
+
+inline proc ndarray.rrelu(lower: eltType=1.0/8.0, upper: eltType=1.0/3.0, training: bool=false) {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    var a: [dom] eltType = (lower + upper) / 2.0;
+    if training then
+        Random.fillRandom(a,min=lower,max=upper);
+    forall i in dom.every() {
+        const x = thisData[i];
+        const alpha = a[i];
+        rld[i] = Math.max(0, x) + alpha * Math.min(0,x);
+    }
+    return rl;
+}
+
+inline proc ndarray.hardswish() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        const floatMax: eltType = Types.max(eltType);
+        const xgeq3: eltType = Math.ceil(1.0 / floatMax); // x >= 3: 1 if true, 0 otherwise
+        const xleqn3: eltType = Math.ceil(1.0 / floatMax); // x <= -3: 1 if true, 0 otherwise
+        rld[i] = x * xgeq3 + x * (x + 3) / 6.0 * (1 - xgeq3) * xleqn3;
+    }
+    return rl;
+}
+
+inline proc ndarray.hardsigmoid() {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = Math.max(0, Math.min(1, x/6.0 + 0.5));
+    }
+    return rl;
+}
+
+inline proc ndarray.hardShrink(alpha: eltType=0.5) {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        const floatMax = Types.max(eltType);
+        const xmap0 = Math.ceil(1.0 / floatMax * (x - alpha) * (x + alpha)); // 0 if x in [-l, l], 1 otherwise 
+        rld[i] = x * xmap0;
+    }
+    return rl;
+}
+
+inline proc ndarray.hardTanh(minVal: eltType=-1.0, maxVal: eltType=1.0) {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        const floatMax: eltType = Types.max(eltType);
+        const xgmaxval: eltType = Math.ceil(1.0 / floatMax * (x - maxVal)); // x greater than maxVal: 1 if true, 0 otherwise
+        const xlminval: eltType = Math.ceil(1.0 / floatMax * (x - minVal)); // x less than minVal: 1 if true, o otherwise
+        rld[i] = Math.max(x, minVal) * (1 - xlminval) + Math.min(x, maxVal) * xgmaxval + x * xlminval * (1 - xgmaxval);
+    }
+    return rl;
+}
+
+inline proc ndarray.elu(alpha: eltType=1.0) {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        const floatMax: eltType = Types.max(eltType);
+        const xgz: eltType = Math.ceil(x / floatMax); // x greater than zero: 1 if true, 0 otherwise
+        rld[i] = x * xgz + alpha * (Math.exp(x) - 1) * (1 - xgz);
+    }
+    return rl;
+}
+
+inline proc ndarray.threshold(threshold: eltType, value: eltType) { // PyTorch has no defaults for threshold
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        const floatMax: eltType = Types.max(eltType); // maximum value a float_64 can take
+        const xgeqt: eltType = Math.ceil((x - threshold) / floatMax); // 1 if x >= threshold, 0 otherwise
+        rld[i] = x * xgeqt + value * (1 - xgeqt);
+    }
+    return rl;
+}
+
+inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        const floatMax: eltType = Types.max(eltType);
+        const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
+        rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
+    }
+    return rl;
+}
+
+inline proc ndarray.celu(alpha: eltType=1.0) {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = Math.max(0.0, x) + Math.min(0.0, alpha * (Math.exp(x / alpha) - 1.0));
+    }
+    return rl;
+}
+
+inline proc ndarray.leakyrelu(negativeSlope: eltType=Math.exp(-2)) {
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    forall i in dom.every() {
+        const x = thisData[i];
+        rld[i] = Math.max(0, x) + negativeSlope * Math.min(0, x);
+    }
+    return rl;
+}
+
+inline proc ndarray.softshrink(alpha: eltType=0.5) {  // l must be non-negative
+    if alpha < 0 then util.err("Argument to softshrink function must be non-negative");
+    const ref thisData = data;
+    const dom = this.domain;
+    var rl = new ndarray(dom, eltType);
+    ref rld = rl.data;
+    const floatMax: eltType = Types.max(eltType);
+    forall i in dom.every() {
+        const x = thisData[i];
+        const xgl = Math.ceil(1.0 / floatMax * (x - alpha)); // x greater than lambda: 1 if true, otherwise
+        const xlnl = 1 - Math.ceil(1.0 / floatMax * (x + alpha)); // x less than negative lambda, 1 if true, 0 otherwise
+        rld[i] = xgl * (x - alpha) + xlnl * (x + alpha);
+    }
+    return rl;
+}
+
+proc ndarray.degenerateFlatten(): [] eltType {
+    const myDom = this.domain;
+    const mySize = myDom.size;
+    var flat: [0..<mySize] eltType;
+    var i = 0;
+    for x in this.data {
+        flat[i] = x;
+        i += 1;
+    }
+    return flat;
+}
+
+proc ndarray.shapeArray(): [] int do
+    return util.tupleToArray((...this.shape));
 
 proc type ndarray.arange(type eltType = defaultEltType,shape: ?rank*int): ndarray(rank,eltType) {
     const dom = util.domainFromShape((...shape));
@@ -2059,4 +2194,6 @@ proc main() {
 
     // param r = 0..<3;
     // writeln(r);
+}
+
 }

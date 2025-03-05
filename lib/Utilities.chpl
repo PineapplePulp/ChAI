@@ -376,10 +376,6 @@ module Utilities {
         return "[" + inside + "]";
     }
 
-    proc prettyPrintArray2(format: string, data: [] numeric, shape: int,dim: int = 0, indx: int = 0): string do
-         return prettyPrintArray2(format,data,(shape,),dim,indx);
-
-
 
     module Standard {
         private use ChplConfig;

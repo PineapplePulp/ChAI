@@ -958,24 +958,8 @@ proc main() {
 import IO;
 // pretty printing
 proc staticTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
-    // const name = "ndarray(" + rank:string + "," + eltType:string + ")";
-    // var ser = serializer.startRecord(writer,name,2);
-    // ser.writeField("shape",this.data.shape);
-    // // var serArr = ser.startArray();
-    // ser.writeField("data",this.data);
-    // ser.endRecord();
-
     const prevDev = this.device;
     this.to(here);
-
-    // const precision = min(3,max reduce util.roundingPrecision(this.array.data));
-    // var format = "%{##";
-    // for i in 0..<precision {
-    //     if i == 0 then
-    //         format += ".";
-    //     format += "#";
-    // }
-    // format += "}";
 
     const array = this.array;
     const format = util.roundingFormat(array.data);
@@ -984,34 +968,6 @@ proc staticTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSeria
     writer.write("tensor(");
     writer.write(dataStr);
     writer.write(",\n       shape = ",array.data.shape);
-    writer.write(",\n       rank = ",this.rank);
-    writer.writeln(")");
-
-    return;
-    writer.write("tensor(");
-    const shape = this.array.shape;
-    var first: bool = true;
-    for (x,i) in zip(this.array.data,0..) {
-        const idx = util.nbase(shape,i);
-        if idx[rank - 1] == 0 {
-            if !first {
-                writer.write("\n       ");
-            }
-            writer.write("[");
-        }
-        writer.writef(format,x);
-
-        if idx[rank - 1] < shape[rank - 1] - 1 {
-            if rank == 1 then
-                writer.write("  ");
-            else
-                writer.write("  ");
-        } else {
-            writer.write("]");
-        }
-        first = false;
-    }
-    writer.write(",\n       shape = ",this.array.data.shape);
     writer.write(",\n       rank = ",this.rank);
     writer.writeln(")");
 

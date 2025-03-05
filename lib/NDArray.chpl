@@ -990,6 +990,9 @@ proc ndarray.degenerateFlatten(): [] eltType {
 proc ndarray.shapeArray(): [] int do
     return util.tupleToArray((...this.shape));
 
+proc ndarray.flatten(): ndarray(1,eltType) do
+    return this.reshape(this.domain.size);
+
 proc type ndarray.arange(type eltType = defaultEltType,shape: ?rank*int): ndarray(rank,eltType) {
     const dom = util.domainFromShape((...shape));
     const A: [dom] eltType = foreach (i,_) in dom.everyZip() do i : eltType;
@@ -1834,7 +1837,7 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
 }
 
 // For printing. 
-proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
+proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) throws {
     
     const format = util.roundingFormat(this.data);
     const name = "ndarray";

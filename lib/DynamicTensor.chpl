@@ -655,7 +655,7 @@ proc dynamicTensor.flatten(): dynamicTensor(eltType) {
 
 proc type dynamicTensor.nllLoss(
     input: dynamicTensor(?eltType), 
-    target: dynamicTensor(int), 
+    target: dynamicTensor(eltType), 
     weight: dynamicTensor(eltType),
     ignoreIndex: int = -1,
     red: bool = true,
@@ -664,7 +664,7 @@ proc type dynamicTensor.nllLoss(
     for param rankIn in 2..2 {
         if input.checkRank(rankIn) {
             for param rank in 1..1 {
-                if target.checkRank(rank) && weight.checkRank(rank) {
+                if target.checkRank(rankIn) && weight.checkRank(rank) {
                     return staticTensor.nllLoss(input.forceRank(rankIn),target.forceRank(rank),weight.forceRank(rank),ignoreIndex,red,reduction);
                 }
             }
@@ -682,8 +682,8 @@ proc type dynamicTensor.nllLoss(
     for param rankIn in 2..2 {
         if input.checkRank(rankIn) {
             for param rank in 1..1 {
-                if target.checkRank(rank) {
-                    return staticTensor.nllLoss(input.forceRank(rankIn),target.forceRank(rank),staticTensor.ones(eltType,1),ignoreIndex,red,reduction);
+                if target.checkRank(rankIn) {
+                    return staticTensor.nllLoss(input.forceRank(rankIn),target.forceRank(rank),staticTensor.ones(eltType,rank),ignoreIndex,red,reduction);
                 }
             }
         }

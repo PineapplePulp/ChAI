@@ -1,6 +1,4 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 class SmallCNN(nn.Module):
     def __init__(self):
@@ -18,7 +16,3 @@ class SmallCNN(nn.Module):
 
     def forward(self, x):
         return self.layers(x)
-    
-    # NOTES
-    # Must use nn.Flatten instead of x.view()
-    # Must use pool1 and pool2 rather than one pool.

@@ -2,9 +2,9 @@ name: Run ChAI Test
 
 on: 
   push:
-    branches: [ main ]
+    branches: [ main, im-dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, im-dev ]
 
 
 jobs:

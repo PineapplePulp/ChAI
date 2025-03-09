@@ -8,5 +8,6 @@
   ],
   "rank": 4,
   "size": 589824,
-  "dtype": "float32"
+  "dtype": "float16",
+  "element_bits": 16
 }

@@ -1,0 +1,10 @@
+{
+  "name": "f32",
+  "shape": [
+    2,
+    3
+  ],
+  "rank": 2,
+  "size": 6,
+  "dtype": "float32"
+}

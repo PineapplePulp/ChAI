@@ -533,8 +533,6 @@ record addOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","Add"));
 }
 
-
-
 record subOp : serializable {
     var lhs: shared BaseTensorResource(?);
     var rhs: shared BaseTensorResource(?);
@@ -593,6 +591,24 @@ record multOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","Mul"));
 }
 
+// record scalarMapOp : serializable {
+//     param opName: string;
+//     enum scalarMapOpSide { ScalarMapOpLeft, ScalarMapOpRight }
+//     param opSide: scalarMapOpSide;
+
+//     var input: shared BaseTensorResource(?);
+//     var scalar: input.eltType;
+
+//     proc init(param opName: string, scalar: ?scalarType, input: shared BaseTensorResource(?))
+//             where isNumericType(scalarType) {
+//         this.opSide = ScalarMapOpLeft;
+//         this.input = input;
+//         this.scalar = scalar;
+//     }
+
+//     proc forward() { compilerError("TODO!"); }
+
+// }
 
 record reshapeOp : serializable {
     param oldRank: int;
@@ -917,6 +933,18 @@ record maxOp : serializable {
 
 }
 
+record matVecMulOp : serializable {
+    var mat: shared BaseTensorResource(?);
+    var vec: shared BaseTensorResource(mat.eltType,?);
+
+    proc children do return (mat,vec);
+
+    proc forward() do
+        return ndarray.matvecmul(mat.array,vec.array);
+
+    proc spec : GradOpSpec do return new dict(("operation","MatVecMul"));
+}
+
 // https://www.adityaagrawal.net/blog/deep_learning/bprop_strided_conv
 record conv2DOp : serializable {
     type eltType = defaultEltType;
@@ -1028,6 +1056,23 @@ record negOp : serializable {
     }
 
     proc spec : GradOpSpec do return new dict(("operation", "-"));
+}
+
+
+record nllLossOp : serializable {
+    var input: shared BaseTensorResource(?);
+    var target: shared BaseTensorResource(?);
+    var weight: shared BaseTensorResource(?);
+    var ignoreIndex: int;
+    var red: bool;
+    var reduction: string;
+    
+    proc children do return (input,target,weight);
+
+    proc forward() do
+        return ndarray.nllLoss(input.array,target.array,weight.array,ignoreIndex,red,reduction);
+    
+    proc spec : GradOpSpec do return new dict(("operation", "nllLoss"));
 }
 
 

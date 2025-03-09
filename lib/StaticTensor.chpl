@@ -103,6 +103,12 @@ proc staticTensor.shapeArray(): [] int {
     return sa;
 }
 
+proc staticTensor.shapeTuple(): rank*int {
+    var st: rank * int;
+    on this.device do
+        st = this.array.shape;
+    return st;
+}
 proc tensorFromCtx(param rank: int, type eltType, ctx: ?ctxType): staticTensor(rank,eltType) {
     var newMeta = new owned TensorResource(eltType,rank,ctx);
     newMeta.forward();
@@ -192,17 +198,17 @@ operator ==(a: staticTensor(?rank,?eltType), b: staticTensor(rank,eltType)): boo
     return flag;
 }
 
-
-proc staticTensor.reshape(dom: domain(?)) {
-    param newRank = dom.rank;
-    var ctx = new reshapeOp(rank,newRank,eltType,dom.shape,meta);
-    return tensorFromCtx(newRank,eltType,ctx);
-}
-
-proc staticTensor.reshape(newShape: int ...?newRank) {
+proc staticTensor.reshape(newShape: ?newRank*int) {
     var ctx = new reshapeOp(rank,newRank,eltType,newShape,meta);
     return tensorFromCtx(newRank,eltType,ctx);
 }
+
+proc staticTensor.reshape(newShape: int ...?newRank) do
+    return this.reshape(newShape);
+
+proc staticTensor.reshape(dom: domain(?)) do
+    return this.reshape(dom.shape);
+
 
 proc staticTensor.relu() {
     var ctx = new reluOp(meta);
@@ -354,32 +360,16 @@ proc staticTensor.slice(rngs: range...rank) {
     return tensorFromCtx(rank,eltType,ctx);
 }
 
-proc staticTensor.sum(axes: ?axesCount * int, param keepDim: bool = true) {
-    if rank - axesCount < 0 then
-        compilerError("Cannot mean more axes than rank. ");
+proc staticTensor.sum(axes: ?axesCount * int, param keepDim: bool) {
+    if rank - axesCount < 0 && !keepDim then
+        compilerError("Cannot sum more axes than rank. ");
     var ctx = new sumOp(rank,eltType,axesCount,axes,meta,keepDim);
     return tensorFromCtx(ctx.outRank,eltType,ctx);
 }
 
-proc staticTensor.sum(axes: ?axesCount * int, keepDim: bool = true) {
-    if rank - axesCount < 0 then
-        compilerError("Cannot mean more axes than rank. ");
-    const bools = (true,false);
-    for param i in 0..<bools.size do
-        if keepDim then
-            return this.sum(axes,keepDim=true);
-        else
-            return this.sum(axes,keepDim=false);
-}
-
-proc staticTensor.sum(keepDim: bool = true) {
+proc staticTensor.sum(param keepDim: bool = true) {
     const axes = this.array.nDimTuple();
-    const bools = (true,false);
-    for param i in 0..<bools.size do
-        if keepDim then
-            return this.sum(axes,keepDim=true);
-        else
-            return this.sum(axes,keepDim=false);
+    return this.sum(axes,keepDim);
 }
 
 proc staticTensor.sum(axes: int...?axesCount) {
@@ -387,8 +377,8 @@ proc staticTensor.sum(axes: int...?axesCount) {
 }
 
 
-proc staticTensor.mean(axes: ?axesCount * int, param keepDim: bool = true) {
-    if rank - axesCount < 0 then
+proc staticTensor.mean(axes: ?axesCount * int, param keepDim: bool) {
+    if rank - axesCount < 0 && !keepDim then
         compilerError("Cannot mean more axes than rank. ");
     var ctx = new meanOp(rank,eltType,axesCount,axes,meta,keepDim);
     return tensorFromCtx(ctx.outRank,eltType,ctx);
@@ -461,30 +451,49 @@ proc type staticTensor.batchNorm(
     return tensorFromCtx(featureRank, eltType, ctx);
 }
 
-proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
-    const (n,) = vec.array.domain.shape;
-    const (m,_n) = mat.array.domain.shape;
-    if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
-    var vec_ = vec.reshape(1,n);
-    var v = vec_.expand(m,n);
-    var Mv = mat * v;
-    return Mv.sum(1);
+// proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+//     const (n,) = vec.array.domain.shape;
+//     const (m,_n) = mat.array.domain.shape;
+//     if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
+//     var vec_ = vec.reshape(1,n);
+//     var v = vec_.expand(m,n);
+//     var Mv = mat * v;
+//     return Mv.sum(1);
+// }
+
+// proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+//     const (b,n) = vec.array.domain.shape;
+//     const (m,_n) = mat.array.domain.shape;
+//     if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
+//     var vec_ = vec.reshape(b,1,n);
+//     var v = vec_.expand(b,m,n);
+//     var M_ = mat.reshape(1,m,n);
+//     var M = M_.expand(b,m,n);
+//     var Mv = M * v;
+//     return Mv.sum(2);
+// }
+
+
+proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+    var ctx = new matVecMulOp(mat.meta,vec.meta);
+    return tensorFromCtx(1,eltType,ctx);
 }
 
-proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
-    const (b,n) = vec.array.domain.shape;
-    const (m,_n) = mat.array.domain.shape;
-    if n != _n then halt("arrays must be same shape" + n : string + " " + _n : string);
-    var vec_ = vec.reshape(b,1,n);
-    var v = vec_.expand(b,m,n);
-    var M_ = mat.reshape(1,m,n);
-    var M = M_.expand(b,m,n);
-    var Mv = M * v;
-    return Mv.sum(2);
+proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+    var ctx = new matVecMulOp(mat.meta,vec.meta);
+    return tensorFromCtx(2,eltType,ctx);
 }
 
-proc type staticTensor.matvecmul(m,v) {
-    return matvec(m,v);
+proc type staticTensor.nllLoss(
+    input: staticTensor(2,?eltType),
+    target: staticTensor(1,eltType),
+    weight: staticTensor(1,eltType),
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+) {
+    var ctx = new nllLossOp(input.meta,target.meta,weight.meta,ignoreIndex,red,reduction);
+    return tensorFromCtx(1,eltType,ctx);
 }
 
 proc type staticTensor.convolve(features: staticTensor(3,?eltType),kernel: staticTensor(4,eltType), stride: int, padding: int): staticTensor(3,eltType) {
@@ -958,57 +967,29 @@ proc main() {
 //     serializer.beginRecord()
 // }
 
-import IO;
-// pretty printing
-proc staticTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
-    // const name = "ndarray(" + rank:string + "," + eltType:string + ")";
-    // var ser = serializer.startRecord(writer,name,2);
-    // ser.writeField("shape",this.data.shape);
-    // // var serArr = ser.startArray();
-    // ser.writeField("data",this.data);
-    // ser.endRecord();
 
+proc staticTensor.writeMe(writer: IO.fileWriter(?),name: string) {
     const prevDev = this.device;
     this.to(here);
 
-    const precision = min(3,max reduce util.roundingPrecision(this.array.data));
-    var format = "%{##";
-    for i in 0..<precision {
-        if i == 0 then
-            format += ".";
-        format += "#";
-    }
-    format += "}";
-    
-    writer.write("tensor(");
-    const shape = this.array.shape;
-    var first: bool = true;
-    for (x,i) in zip(this.array.data,0..) {
-        const idx = util.nbase(shape,i);
-        if idx[rank - 1] == 0 {
-            if !first {
-                writer.write("\n       ");
-            }
-            writer.write("[");
-        }
-        writer.writef(format,x);
-
-        if idx[rank - 1] < shape[rank - 1] - 1 {
-            if rank == 1 then
-                writer.write("  ");
-            else
-                writer.write("  ");
-        } else {
-            writer.write("]");
-        }
-        first = false;
-    }
-    writer.write(",\n       shape = ",this.array.data.shape);
+    const array = this.array;
+    const format = util.roundingFormat(array.data);
+    const header = name + "(";
+    const indent = (" " * name.size) + (" " * this.rank);
+    const dataStr = util.prettyPrintArray(indent,format,array.flatten().data,array.data.shape);
+    writer.write(header);
+    writer.write(dataStr);
+    writer.write(",\n       shape = ",array.data.shape);
     writer.write(",\n       rank = ",this.rank);
     writer.writeln(")");
 
     this.to(prevDev);
 }
+
+import IO;
+// pretty printing
+proc staticTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) do
+    this.writeMe(writer,"tensor");
 
 
 // chapel generic one
@@ -1022,40 +1003,6 @@ proc staticTensor.serialize(writer: IO.fileWriter(?),ref serializer: ?srt2) wher
     rh.writeField("eltType",eltType:string);
     rh.writeField("resource",resource);
     rh.endRecord();
-
-    this.to(prevDev);
-}
-
-proc staticTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer,param capitalT: bool) where capitalT == true {
-    const prevDev = this.device;
-    this.to(here);
-
-    writer.write("Tensor(");
-    const shape = this.array.data.domain.shape;
-    var first: bool = true;
-    for (x,i) in zip(this.array.data,0..) {
-        const idx = util.nbase(shape,i);
-        if idx[rank - 1] == 0 {
-            if !first {
-                writer.write("\n       ");
-            }
-            writer.write("[");
-        }
-        writer.writef("%{##.####}",x);
-
-        if idx[rank - 1] < shape[rank - 1] - 1 {
-            if rank == 1 then
-                writer.write("  ");
-            else
-                writer.write("  ");
-        } else {
-            writer.write("]");
-        }
-        first = false;
-    }
-    writer.write(",\n       shape = ",this.array.data.shape);
-    writer.write(",\n       rank = ",this.rank);
-    writer.writeln(")");
 
     this.to(prevDev);
 }

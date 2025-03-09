@@ -1,0 +1,12 @@
+{
+  "name": "features.10.weight",
+  "shape": [
+    256,
+    128,
+    3,
+    3
+  ],
+  "rank": 4,
+  "size": 294912,
+  "dtype": "float16"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "features.28.bias",
+  "shape": [
+    512
+  ],
+  "rank": 1,
+  "size": 512,
+  "dtype": "float16"
+}

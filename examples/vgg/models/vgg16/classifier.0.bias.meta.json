@@ -1,0 +1,9 @@
+{
+  "name": "classifier.0.bias",
+  "shape": [
+    4096
+  ],
+  "rank": 1,
+  "size": 4096,
+  "dtype": "float16"
+}

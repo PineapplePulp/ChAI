@@ -25,6 +25,7 @@ cat_breeds/models/*.pt
 !Dockerfile
 node_modules/
 cat_breeds/models/*
+examples/vgg/models/vgg16/*.npy
 # chapel-2.3.0-1.ubuntu22.amd64.deb
 # chapel-2.3.0-1.ubuntu22.arm64.deb
 new_sun.png

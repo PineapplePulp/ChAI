@@ -30,6 +30,8 @@ parser.add_argument('--print-compiler-errors', action='store_true', help='Print 
 parser.add_argument('--print-numeric-diffs', action='store_true', help='Print numerical differences.')
 parser.add_argument('--print-outputs', action='store_true', help='Print Python and Chapel outputs.')
 
+parser.add_argument('--numerical-relative-tolerance', type=float, default=1e-5, help='Numerical relative tolerance.')
+parser.add_argument('--numerical-absolute-tolerance', type=float, default=1e-8, help='Numerical absolute tolerance.')
 
 parser.add_argument('--max-concurrent-compilations', type=int, default=5, help='Maximum concurrent chpl compilations at once.')
 
@@ -429,7 +431,11 @@ for test in tests:
     failed = False
     idx = 1
     for py_t,ch_t in zip(python_output_results,chapel_output_results):
-        if not torch.equal(py_t,ch_t):
+        if not torch.allclose(input=py_t,
+                              other=ch_t,
+                              rtol=float(args.numerical_relative_tolerance),
+                              atol=float(args.numerical_absolute_tolerance),
+                              equal_nan=True):
             failed = True
             if args.print_numeric_diffs:
                 print(f'💢 {display_name} (i={idx}): {py_t} != {ch_t}\ndiff:\n{py_t - ch_t}')

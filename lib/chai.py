@@ -100,7 +100,8 @@ def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=Tr
                     'shape': t.shape,
                     'rank': t.rank,
                     'size': t.data.size,
-                    'dtype': str(t.dtype)
+                    'dtype': str(t.dtype),
+                    'element_bits': t.data.itemsize * 8
                     }
                 f.write(json.dumps(meta,indent=2))
 
@@ -143,7 +144,8 @@ def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=Tr
                 'shape': t.shape,
                 'rank': t.rank,
                 'size': t.data.size,
-                'dtype': str(t.dtype)
+                'dtype': str(t.dtype),
+                'element_bits': t.data.itemsize * 8
                 }
             f.write(json.dumps(meta,indent=2))
 

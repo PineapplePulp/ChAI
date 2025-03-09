@@ -724,9 +724,31 @@ record ndarray : serializable {
         const dom = this.domain;
         var rl = new ndarray(dom, eltType);
         ref rld = rl.data;
+        // branching is ok here b/c still in CPU
+
+        use CTypes only c_sizeof, c_ptrTo;
+        use OS.POSIX only memcpy;
+
+        type intType = int(numBits(eltType)); // integer w/ same #ofbits as real
         forall i in dom.every() {
-            const x = thisData[i];
-            rld[i] = Math.log(1 / (1 + Math.exp(-x)));
+            const x = thisData[i]; // negative x
+            const threshold: eltType = 20.0;
+            
+            var func: eltType = -Math.log1p(Math.exp(-x)); // result after applying logsigmoid(x) = -softplus(-x) activation function
+            var lin: eltType = x;                          // linear function: - (-x) = x
+
+            var func_bits: intType;
+            var lin_bits: intType;
+            memcpy(c_ptrTo(func_bits), c_ptrTo(func), c_sizeof(eltType));
+            memcpy(c_ptrTo(lin_bits), c_ptrTo(lin), c_sizeof(eltType));
+
+            const condition: intType = (-x > threshold);
+            const mask: intType = 0 - condition;
+
+            var result_bits: intType = (mask & lin_bits) | (~mask & func_bits);
+
+            // rld[i] = output;
+            memcpy(c_ptrTo(rld[i]), c_ptrTo(result_bits), c_sizeof(eltType));
         }
         return rl;
     }
@@ -868,24 +890,6 @@ record ndarray : serializable {
             rld = Math.inf;
         }
 
-        // else if beta < 0 {
-        //     forall i in dom.every() {
-        //         const x = thisData[i];
-        //         const floatMax: eltType = Types.max(eltType);
-        //         const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-        //         rld[i] = x * (1 - xgbt) + Math.log1p(Math.exp(beta * x)) / beta * xgbt;
-        //     }
-        // }
-
-        // else { // beta > 0
-        //     forall i in dom.every() {
-        //         const x = thisData[i];
-        //         const floatMax: eltType = Types.max(eltType);
-        //         const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-        //         rld[i] = x * xgbt + Math.log1p(Math.exp(beta * x)) / beta * (1 - xgbt);
-        //     }
-        // }
-
         // beta non-zero here
         else {
             use CTypes only c_sizeof, c_ptrTo;
@@ -907,8 +911,6 @@ record ndarray : serializable {
                 const mask: intType = 0 - condition;
 
                 var result_bits: intType = (mask & lin_bits) | (~mask & func_bits);
-                // var output: eltType;
-                // memcpy(c_ptrTo(output), c_ptrTo(result_bits), c_sizeof(eltType));
 
                 // rld[i] = output;
                 memcpy(c_ptrTo(rld[i]), c_ptrTo(result_bits), c_sizeof(eltType));

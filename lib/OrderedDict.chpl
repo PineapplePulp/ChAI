@@ -178,7 +178,7 @@ record dict : serializable {
     // // }
 
 
-    proc ref insert(in key: keyType, in value: valType) {
+    proc ref insert(in key: keyType, in value: valType) lifetime this < value {
         if !order.contains(key) then
             order.pushBack(key);
         table.addOrReplace(key,value);

@@ -10,6 +10,8 @@ use Utilities.Standard;
 
 use Env;
 
+use List only list;
+
 import LoadNumpy;
 
 param defaultDetachedMode = true;
@@ -330,45 +332,50 @@ operator ==(a: dynamicTensor(?eltType),b: dynamicTensor(eltType)): bool {
     }
     halt("Could not determine rank in dynamicTensor == dynamicTensor.");
 }
-proc dynamicTensor.sum(axes: ?axesCount*int, keepDim: bool = true): dynamicTensor(eltType) {
+
+inline proc dynamicTensor.reduceOpAxes(param opName: string, axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if this.checkRank(rank) then
-            return this.forceRank(rank).sum(axes,keepDim).eraseRank();
-    halt("Could not determine rank in dynamicTensor.sum.");
+            select opName {
+                when "sum" do
+                    return this.forceRank(rank).sum(axes,keepDim=keepDim).eraseRank();
+                when "mean" do
+                    return this.forceRank(rank).mean(axes,keepDim=keepDim).eraseRank();
+            }
+    halt("Could not determine rank in dynamicTensor." + opName + ".");
     return new dynamicTensor(eltType);
 }
 
-proc dynamicTensor.sum(keepDim: bool = true): dynamicTensor(eltType) {
+inline proc dynamicTensor.reduceOpNoAxes(param opName: string, param keepDim: bool): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if this.checkRank(rank) then
-            return this.forceRank(rank).sum(keepDim=true).eraseRank();
-    halt("Could not determine rank in dynamicTensor.sum.");
+            select opName {
+                when "sum" do
+                    return this.forceRank(rank).sum(keepDim=keepDim).eraseRank();
+                when "mean" do
+                        return this.forceRank(rank).mean(keepDim=keepDim).eraseRank();
+            }
+    halt("Could not determine rank in dynamicTensor." + opName + ".");
     return new dynamicTensor(eltType);
 }
 
-proc dynamicTensor.sum(axes: int...?axesCount): dynamicTensor(eltType) {
-    for param rank in 1..maxRank do
-        if this.checkRank(rank) then
-            return this.forceRank(rank).sum((...axes)).eraseRank();
-    halt("Could not determine rank in dynamicTensor.sum.");
-    return new dynamicTensor(eltType);
-}
+proc dynamicTensor.sum(axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) do
+    return this.reduceOpAxes("sum",axes,keepDim);
 
-proc dynamicTensor.sum(axes: int...?r): dynamicTensor(eltType) {
-    for param rank in 1..maxRank do
-        if this.checkRank(rank) then
-            return this.forceRank(rank).sum((...axes)).eraseRank();
-    halt("Could not determine rank in dynamicTensor.sum.");
-    return new dynamicTensor(eltType);
-}
+proc dynamicTensor.sum(param keepDim: bool = true): dynamicTensor(eltType) do
+    return this.reduceOpNoAxes("sum",keepDim);
 
-proc dynamicTensor.sum(axes: int...?r): dynamicTensor(eltType) {
-    for param rank in 1..maxRank do
-        if this.checkRank(rank) then
-            return this.forceRank(rank).sum((...axes)).eraseRank();
-    halt("Could not determine rank in dynamicTensor.sum.");
-    return new dynamicTensor(eltType);
-}
+proc dynamicTensor.sum(axes: int...?axesCount): dynamicTensor(eltType) do
+    return this.sum(axes,keepDim=true);
+
+proc dynamicTensor.mean(axes: ?axesCount*int, param keepDim: bool): dynamicTensor(eltType) do
+    return this.reduceOpAxes("mean",axes,keepDim);
+
+proc dynamicTensor.mean(param keepDim: bool = true): dynamicTensor(eltType) do
+    return this.reduceOpNoAxes("mean",keepDim);
+
+proc dynamicTensor.mean(axes: int...?axesCount): dynamicTensor(eltType) do
+    return this.mean(axes,keepDim=true);
 
 proc dynamicTensor.relu(): dynamicTensor(eltType) {
     for param rank in 1..maxRank {
@@ -683,6 +690,49 @@ proc dynamicTensor.flatten(): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
+
+proc type dynamicTensor.nllLoss(
+    input: dynamicTensor(?eltType), 
+    target: dynamicTensor(eltType), 
+    weight: dynamicTensor(eltType),
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+) {
+    for param rankIn in 2..2 {
+        if input.checkRank(rankIn) {
+            for param rank in 1..1 {
+                if target.checkRank(rankIn) && weight.checkRank(rank) {
+                    return staticTensor.nllLoss(input.forceRank(rankIn),target.forceRank(rank),weight.forceRank(rank),ignoreIndex,red,reduction);
+                }
+            }
+        }
+    }
+}
+
+proc type dynamicTensor.nllLoss(
+    input: dynamicTensor(?eltType), 
+    target: dynamicTensor(eltType), 
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+) {
+    param inRank: int = 2;
+    param targetRank: int = 1;
+
+    if input.checkRank(inRank) {
+        if target.checkRank(targetRank) {
+            var stInput: staticTensor(inRank,eltType) = input.forceRank(inRank);
+            var stTarget: staticTensor(targetRank,eltType) = target.forceRank(targetRank);
+            var weights: staticTensor(1,eltType) = staticTensor.ones(eltType,3);
+            return staticTensor.nllLoss(stInput,stTarget,weights,ignoreIndex,red,reduction);
+        }
+    }
+            
+    halt("Could not determine rank in dynamicTensor.nllLoss. ");
+    return staticTensor.zeros(eltType, 1);
+}
+
 proc type dynamicTensor.matvecmul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
     for param rankM in 2..2 {
         if m.checkRank(rankM) {
@@ -711,6 +761,20 @@ proc dynamicTensor.argmax(): int {
     return a.argmax();
 }
 
+proc type dynamicTensor.matVecMul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
+    for param rankM in 2..2 {
+        if m.checkRank(rankM) {
+            for param rankV in 1..1 {
+                if v.checkRank(rankV) {
+                    return staticTensor.matVecMul(m.forceRank(rankM),v.forceRank(rankV)).eraseRank();
+                }
+            }
+        }
+    }
+    halt("Could not determine rank in dynamicTensor.matVecMul.");
+    return new dynamicTensor(eltType);
+}
+
 // Right now, the supported shapes are (3,4) -> 3
 proc type dynamicTensor.convolve(features: dynamicTensor(?eltType), kernel: dynamicTensor(eltType), stride: int, padding: int): dynamicTensor(eltType) do
     return staticTensor.convolve(features.forceRank(3),kernel.forceRank(4),stride, padding).eraseRank();
@@ -722,11 +786,20 @@ proc type dynamicTensor.convolve(features: dynamicTensor(?eltType), kernel: dyna
 proc type dynamicTensor.arange(args...) do
     return staticTensor.arange((...args)).eraseRank();
 
+proc type dynamicTensor.arange(type eltType,args...) do
+    return staticTensor.arange(eltType,(...args)).eraseRank();
+
 proc type dynamicTensor.ones(args...) do
     return staticTensor.ones((...args)).eraseRank();
 
+proc type dynamicTensor.ones(type eltType,args...) do
+    return staticTensor.ones(eltType,(...args)).eraseRank();
+
 proc type dynamicTensor.zeros(args...) do
     return staticTensor.zeros((...args)).eraseRank();
+
+proc type dynamicTensor.zeros(type eltType,args...) do
+    return staticTensor.zeros(eltType,(...args)).eraseRank();
 
 proc type dynamicTensor.valueLike(t: dynamicTensor(?eltType), value: eltType): dynamicTensor(eltType) {
     for param rank in 1..maxRank {
@@ -767,6 +840,126 @@ proc dynamicTensor.degenerateFlatten(): [] eltType {
     halt("Could not determine rank in dynamicTensor.degenerateFlatten.");
     return new dynamicTensor(eltType);
 }
+
+record dynamicShape : serializable {
+
+    var size: int;
+    var sizes: [0..<size] int;
+
+    proc init(shape: ?rank*int) {
+        this.size = rank;
+        init this;
+        for param i in 0..<rank do
+            this.sizes[i] = shape(i);
+    }
+
+    proc init(dt: staticTensor(?rank,?eltType)) do
+        this.init(dt.shapeTuple());
+
+    proc init(sizes: [] int) do
+        this.init(sizes.shape);
+    
+    proc init(sizes: list(int)) do
+        this.init(sizes.toArray());
+
+    proc checkRank(param rank: int): bool do
+        return rank == size;
+    
+    proc toRankedShape(param rank: int): rank*int {
+        var shape: rank*int;
+        if this.checkRank(rank) {
+            for param i in 0..<rank do
+                shape(i) = this.sizes[i];
+            return shape;
+        }
+        halt("DynamicShape rank is not given rank " + rank : string + ".");
+        return shape;
+    }
+
+    proc toList(): list(int) do
+        return new list(this.sizes);
+
+    proc head: int do
+        return this.sizes.first;
+    
+    proc tail: dynamicShape {
+        var sizes = this.toList();
+        sizes.remove(this.head);
+        return new dynamicShape(sizes);
+    }
+}
+
+proc dynamicTensor.shape(): dynamicShape {
+    for param rank in 1..maxRank do
+        if this.checkRank(rank) then
+            return new dynamicShape(this.forceRank(rank));
+
+    halt("Could not determine rank in dynamicTensor.shape.");
+    return new dynamicShape((0,));
+}
+
+proc dynamicTensor.reshape(dShape: dynamicShape): dynamicTensor(eltType) {
+    for param rank in 1..maxRank do
+        for param shapeRank in 1..maxRank do
+            if this.checkRank(rank) && dShape.checkRank(shapeRank) then
+                return this.forceRank(rank).reshape(dShape.toRankedShape(shapeRank)).eraseRank();
+    halt("Could not determine rank in dynamicTensor.reshape.");
+    return new dynamicTensor(eltType);
+}
+
+proc dynamicTensor.unsqueeze(dim: int): dynamicTensor(eltType) {
+    for param rank in 1..maxRank do
+        if this.checkRank(rank) then
+            return this.forceRank(rank).unsqueeze(dim).eraseRank();
+    halt("Could not determine rank in dynamicTensor.unsqueeze.");
+    return new dynamicTensor(eltType);
+}
+
+
+proc dynamicTensor.squeeze(): dynamicTensor(eltType) {
+    var dShape = this.shape();
+    var newSizes = new list(int);
+    var prod = 1;
+    for i in 0..<dShape.size do
+        if dShape.sizes[i] != 1 {
+            const s = dShape.sizes[i];
+            newSizes.pushBack(s * prod);
+            prod *= s;
+        }
+    var newDShape = new dynamicShape(newSizes);
+    return this.reshape(newDShape);
+}
+
+proc dynamicTensor.squeeze(dim: int): dynamicTensor(eltType) {
+    var dShape = this.shape();
+    var newSizes = new list(int);
+    var prod = 1;
+    for i in 0..<dShape.size do
+        if dShape.sizes[i] != 1 {
+            const s = dShape.sizes[i];
+            newSizes.pushBack(s * prod);
+            prod *= s;
+        } else { break; }
+    var newDShape = new dynamicShape(newSizes);
+    return this.reshape(newDShape);
+}
+
+// proc dynamicTensor.squeeze(dim: squee): dynamicTensor(eltType) {
+//     for param rank in 1..maxRank do
+//         for param shapeRank in 1..maxRank do
+//             if this.checkRank(rank) && dShape.checkRank(shapeRank) then
+//                 return this.forceRank(rank).squeeze(dShape.toRankedShape(shapeRank)).eraseRank();
+//     halt("Could not determine rank in dynamicTensor.squeeze.");
+//     return new dynamicTensor(eltType);
+// }
+
+// proc dynamicTensor.squeeze(dShape: dynamicShape): dynamicTensor(eltType) {
+//     if dShape.size == 1 then
+//         return this.squeeze(dShape.head);
+//     else 
+//         return (this.squeeze(dShape.tail)).squeeze(dShape.head);
+// }
+
 
 proc main() {
 
@@ -831,7 +1024,7 @@ import IO;
 proc dynamicTensor.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
     for param rank in 1..maxRank {
         if this.checkRank(rank) {
-            this.forceRank(rank).serialize(writer,serializer,capitalT=true);
+            this.forceRank(rank).writeMe(writer,name="Tensor");
             return;
         }
     }

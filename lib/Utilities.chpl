@@ -53,15 +53,6 @@ module Utilities {
         }
     }
 
-    proc roundingPrecision(x: numeric): int {
-        for i in 0..<10 {
-            const dec = 10 ** i;
-            const ax = Math.abs(x);
-            if Math.floor(ax * dec) == Math.round(ax * dec) then
-                return i;
-        }
-        return 10;
-    }
 
     iter cartesian(X,Y) {
         for x in X {
@@ -193,6 +184,24 @@ module Utilities {
         return idxs;
     }
 
+    inline proc shapeDivisors(shape: int...?rank): rank*int {
+        var prod = 1;
+        var divs: rank * int;
+        for param j in 0..<rank {
+            param i = rank - j - 1;
+            divs(i) = prod;
+            prod *= shape(i);
+        }
+        return divs;
+    }
+
+    inline proc shapeProduct(shape: int...?rank): int {
+        var prod = 1;
+        for param i in 0..<rank do
+            prod *= shape(i);
+        return prod;
+    }
+
     inline proc indexAtHelperProd(n: int, prod: int, shape: int ...?rank): rank * int where rank > 1 {
         var idx: rank * int;
         var order = n;
@@ -303,6 +312,70 @@ module Utilities {
             arr[i] = t(i);
         return arr;
     }
+
+    inline proc shapeContains(shape: ?rank*int, idx: ?idxRank*int): bool
+            where rank == idxRank {
+        var contained = true;
+        for param i in 0..<rank do
+            contained &= idx(i) < shape(i);
+        return contained;
+    }
+
+    proc roundingPrecision(x: numeric): int {
+        for i in 0..<10 {
+            const dec = 10 ** i;
+            const ax = Math.abs(x);
+            if Math.floor(ax * dec) == Math.round(ax * dec) then
+                return i;
+        }
+        return 10;
+    }
+
+    proc roundingFormat(data: [] numeric): string {
+        const precision = Math.min(3,max reduce roundingPrecision(data));
+        var format = "%{##";
+        for i in 0..<precision {
+            if i == 0 then
+                format += ".";
+            format += "#";
+        }
+        format += "}";
+        return format;
+    }
+
+    proc prettyPrintArray(indent: string, format: string, data: [] ?eltType, shape: ?shapeType, dim: int = 0, indx: int = 0): string {
+        import IO.FormattedIO;
+        use List only list;
+
+        const low = data.domain.low;
+
+        param shapeRank = if isTupleType(shapeType)
+                            then shape.size
+                            else 1;
+        
+        if dim == shapeRank - 1 {
+            const sliceSize = shape(dim);
+            const slice = indx..<(indx + sliceSize);
+            const rowData = data[slice];
+            return "[" + ", ".join(for x in rowData do format.format(x)) + "]";
+        }
+        
+        const size: int = shape(dim);
+        var subsliceSize: int = 1;
+        for i in 0..<(shape.size - dim - 1) do
+            subsliceSize *= shape(dim + i + 1);
+
+        var lines: list(string);
+        for i in 0..<size {
+            const subIdx = indx + i * subsliceSize;
+            const subStr = prettyPrintArray(indent,format,data,shape,dim + 1,subIdx);
+            lines.pushBack(subStr);
+        }
+
+        const inside = (",\n" + indent).join(lines.toArray());
+        return "[" + inside + "]";
+    }
+
 
     module Standard {
         private use ChplConfig;

@@ -591,6 +591,24 @@ record multOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","Mul"));
 }
 
+// record scalarMapOp : serializable {
+//     param opName: string;
+//     enum scalarMapOpSide { ScalarMapOpLeft, ScalarMapOpRight }
+//     param opSide: scalarMapOpSide;
+
+//     var input: shared BaseTensorResource(?);
+//     var scalar: input.eltType;
+
+//     proc init(param opName: string, scalar: ?scalarType, input: shared BaseTensorResource(?))
+//             where isNumericType(scalarType) {
+//         this.opSide = ScalarMapOpLeft;
+//         this.input = input;
+//         this.scalar = scalar;
+//     }
+
+//     proc forward() { compilerError("TODO!"); }
+
+// }
 
 record reshapeOp : serializable {
     param oldRank: int;
@@ -775,40 +793,45 @@ record layerSliceOp : serializable {
 record sumOp : serializable {
     param rank: int;
     type eltType = defaultEltType;
-    param sumRank: int;
-    var axes: sumRank * int; // tuple of ints
+    param reduceRank: int;
+    var axes: reduceRank * int;
     var input: shared BaseTensorResource(eltType,rank);
+    param keepDim: bool = false;
 
     proc children do return (input,);
 
     // proc init(param rank: int, type eltType, )
 
-    proc outRank param : int {
-        if rank - sumRank == 0 {
-            if rank == 1 {
-                return rank;
-            }
-            return 1;
-        }
-        return rank - sumRank;
-    }
+    proc newRank param : int do
+        return rank - reduceRank; 
+
+    proc outRank param : int do
+        if keepDim then
+            return rank;
+        else
+            if newRank == 0 then
+                return 1;
+            else
+                return newRank;
 
     proc forward() {
-        param newDim = rank - sumRank;
-        if newDim == 0 {
-            if rank == 1 {
-                return input.array.sum(0);
-            }
-            return input.array.sum((...axes)).squeeze(1);
-        }
-        return input.array.sum((...axes)).squeeze(outRank);
+        if keepDim then
+            return input.array.sum((...axes));
+        else
+            if outRank == 0 then
+                if rank == 1 then
+                    return input.array.sum(0);
+                else
+                    return input.array.sum((...axes)).squeeze(1);
+            else
+                return input.array.sum((...axes)).squeeze(outRank);
     }
     proc backward(grad: ndarray(outRank,eltType)): (ndarray(rank,eltType),) {
         const inputShape: rank * int = input.array.data.shape;
         var unsqueezeShape: rank * int;
         for param i in 0..<rank {
             var found = false;
-            for param j in 0..<sumRank {
+            for param j in 0..<reduceRank {
                 if i == axes(j) {
                     found = true;
                 }
@@ -846,6 +869,45 @@ record sumOp : serializable {
 
 }
 
+record meanOp : serializable {
+    param rank: int;
+    type eltType = defaultEltType;
+    param reduceRank: int;
+    var axes: reduceRank * int;
+    var input: shared BaseTensorResource(eltType,rank);
+    param keepDim: bool = false;
+
+    proc children do return (input,);
+
+    proc newRank param : int do
+        return rank - reduceRank;
+
+    proc outRank param : int do
+        if keepDim then
+            return rank;
+        else
+            if newRank == 0 then
+                return 1;
+            else
+                return newRank;
+
+    proc forward() {
+        if keepDim then
+            return input.array.mean((...axes));
+        else
+            if outRank == 0 then
+                if rank == 1 then
+                    return input.array.mean(0);
+                else
+                    return input.array.mean((...axes)).squeeze(1);
+            else
+                return input.array.mean((...axes)).squeeze(outRank);
+    }
+
+    proc spec : GradOpSpec do return new dict(("operation","Sum"),("axes",axes:string));
+
+}
+
 record maxOp : serializable {
     param rank: int;
     type eltType = defaultEltType;
@@ -869,6 +931,18 @@ record maxOp : serializable {
     
     proc spec : GradOpSpec do return new dict(("operation","Max"),("axes",axes:string));
 
+}
+
+record matVecMulOp : serializable {
+    var mat: shared BaseTensorResource(?);
+    var vec: shared BaseTensorResource(mat.eltType,?);
+
+    proc children do return (mat,vec);
+
+    proc forward() do
+        return ndarray.matvecmul(mat.array,vec.array);
+
+    proc spec : GradOpSpec do return new dict(("operation","MatVecMul"));
 }
 
 // https://www.adityaagrawal.net/blog/deep_learning/bprop_strided_conv

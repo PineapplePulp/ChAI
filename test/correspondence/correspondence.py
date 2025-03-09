@@ -240,7 +240,15 @@ def run_chapel_test(test_name,test_path):
     output = subprocess.getoutput(f'{test_exec}')
     recorder = ChapelRecorder()
     for x in output.split('\n'):
-        recorder.add_record(x)
+        try:
+            recorder.add_record(x)
+        except Exception as e:
+            if args.print_outputs:
+                print('Failed to parse output for', test_exec)
+                print('Chapel Output:', output)
+                print('Exception:', e)
+                print('Line:', x)
+            raise e
     return {
         'actual': output,
         'recorder': recorder

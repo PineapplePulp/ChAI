@@ -31,3 +31,6 @@ def test(imports):
 
     c = torch.nn.Softplus(beta=10.0)(torch.zeros(10) + 40.0)
     print(c)
+    
+    a = torch.nn.Softplus(beta=0.0)(torch.zeros(5))
+    print(a)

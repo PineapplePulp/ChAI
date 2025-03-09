@@ -484,6 +484,18 @@ proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor
     return tensorFromCtx(2,eltType,ctx);
 }
 
+proc type staticTensor.nllLoss(
+    input: staticTensor(2,?eltType),
+    target: staticTensor(1,eltType),
+    weight: staticTensor(1,eltType),
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+) {
+    var ctx = new nllLossOp(input.meta,target.meta,weight.meta,ignoreIndex,red,reduction);
+    return tensorFromCtx(1,eltType,ctx);
+}
+
 proc type staticTensor.convolve(features: staticTensor(3,?eltType),kernel: staticTensor(4,eltType), stride: int, padding: int): staticTensor(3,eltType) {
     var ctx = new conv2DOp(eltType,features.meta,kernel.meta,stride,padding);
     return tensorFromCtx(3,eltType,ctx);

@@ -533,8 +533,6 @@ record addOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","Add"));
 }
 
-
-
 record subOp : serializable {
     var lhs: shared BaseTensorResource(?);
     var rhs: shared BaseTensorResource(?);
@@ -1058,6 +1056,23 @@ record negOp : serializable {
     }
 
     proc spec : GradOpSpec do return new dict(("operation", "-"));
+}
+
+
+record nllLossOp : serializable {
+    var input: shared BaseTensorResource(?);
+    var target: shared BaseTensorResource(?);
+    var weight: shared BaseTensorResource(?);
+    var ignoreIndex: int;
+    var red: bool;
+    var reduction: string;
+    
+    proc children do return (input,target,weight);
+
+    proc forward() do
+        return ndarray.nllLoss(input.array,target.array,weight.array,ignoreIndex,red,reduction);
+    
+    proc spec : GradOpSpec do return new dict(("operation", "nllLoss"));
 }
 
 

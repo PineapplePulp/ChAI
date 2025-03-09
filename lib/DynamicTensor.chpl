@@ -690,6 +690,63 @@ proc dynamicTensor.flatten(): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
+
+proc type dynamicTensor.nllLoss(
+    input: dynamicTensor(?eltType), 
+    target: dynamicTensor(eltType), 
+    weight: dynamicTensor(eltType),
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+) {
+    for param rankIn in 2..2 {
+        if input.checkRank(rankIn) {
+            for param rank in 1..1 {
+                if target.checkRank(rankIn) && weight.checkRank(rank) {
+                    return staticTensor.nllLoss(input.forceRank(rankIn),target.forceRank(rank),weight.forceRank(rank),ignoreIndex,red,reduction);
+                }
+            }
+        }
+    }
+}
+
+proc type dynamicTensor.nllLoss(
+    input: dynamicTensor(?eltType), 
+    target: dynamicTensor(eltType), 
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+) {
+    param inRank: int = 2;
+    param targetRank: int = 1;
+
+    if input.checkRank(inRank) {
+        if target.checkRank(targetRank) {
+            var stInput: staticTensor(inRank,eltType) = input.forceRank(inRank);
+            var stTarget: staticTensor(targetRank,eltType) = target.forceRank(targetRank);
+            var weights: staticTensor(1,eltType) = staticTensor.ones(eltType,3);
+            return staticTensor.nllLoss(stInput,stTarget,weights,ignoreIndex,red,reduction);
+        }
+    }
+            
+    halt("Could not determine rank in dynamicTensor.nllLoss. ");
+    return staticTensor.zeros(eltType, 1);
+}
+
+proc type dynamicTensor.matvecmul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
+    for param rankM in 2..2 {
+        if m.checkRank(rankM) {
+            for param rankV in 1..2 {
+                if v.checkRank(rankV) {
+                    return staticTensor.matvecmul(m.forceRank(rankM),v.forceRank(rankV)).eraseRank();
+                }
+            }
+        }
+    }
+    halt("Could not determine rank in dynamicTensor.matvecmul.");
+    return new dynamicTensor(eltType);
+}
+
 proc type dynamicTensor.matvecmulFast(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
     return staticTensor.matvecmulFast(m.forceRank(2),v.forceRank(1)).eraseRank();
 }

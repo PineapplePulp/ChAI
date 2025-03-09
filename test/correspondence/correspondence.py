@@ -231,6 +231,8 @@ class ChapelRecorder(Recorder):
             
             # Construct the tensor and reshape accordingly
             tensor = torch.tensor(data_floats, dtype=torch.float32).reshape(shape)
+            if tensor.dim() == 1:
+                return tensor.squeeze()
             return tensor
         
         return parse_chapel_serialized_tensor(x)
@@ -269,6 +271,8 @@ class PythonRecorder(Recorder):
                     self.add_record(x)
     
     def new_record_denotation(self, x):
+        if x.dim() == 1:
+            return x.squeeze()
         return x
 
 def run_python_test(test_name,test_path):
@@ -433,14 +437,21 @@ for test in tests:
     for py_t,ch_t in zip(python_output_results,chapel_output_results):
         py_t = py_t.to(torch.float32)
         ch_t = ch_t.to(torch.float32)
-        if not torch.allclose(input=py_t,
-                              other=ch_t,
-                              rtol=args.numerical_relative_tolerance,
-                              atol=args.numerical_absolute_tolerance,
-                              equal_nan=True):
-            failed = True
-            if args.print_numeric_diffs:
-                print(f'💢 {display_name} (i={idx}): {py_t} != {ch_t}\ndiff:\n{py_t - ch_t}')
+        try:
+            if not torch.allclose(input=py_t,
+                                other=ch_t,
+                                rtol=args.numerical_relative_tolerance,
+                                atol=args.numerical_absolute_tolerance,
+                                equal_nan=True):
+                failed = True
+                if args.print_numeric_diffs:
+                    print(f'💢 {display_name} (i={idx}): {py_t} != {ch_t}\ndiff:\n{py_t - ch_t}')
+        except Exception as e:
+            print(e)
+            print(test_name)
+            print(py_t)
+            print(ch_t)
+            sys.exit(1)
         idx += 1
 
     if failed and args.print_outputs:

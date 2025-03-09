@@ -74,7 +74,7 @@ def get_summary(model,global_name,parent_name=None):
     }
     return d
 
-def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=True,dtype=None,with_meta=True):
+def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=True,dtype=None,with_meta=True,with_numpy=False):
     Path(path_prefix).mkdir(exist_ok=True)
     for param_tensor in model.state_dict():
         if verbose: print("Serializing ", param_tensor)
@@ -108,8 +108,9 @@ def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=Tr
         f = open(chai_path,'wb')
         t.pack_into(f)
         f.close()
-        if verbose: print("Writing numpy.")
-        np.save(npy_path,t.data)
+        if with_numpy:
+            if verbose: print("Writing numpy.")
+            np.save(npy_path,t.data)
 
     with open(Path(path_prefix) / 'specification.json','w') as f:
         f.write(json.dumps(get_summary(model,model_name),indent=2))
@@ -120,7 +121,7 @@ def chai_dump(self,path_prefix,model_name,with_json=True,verbose=True,dtype=None
 
 torch.nn.Module.chai_dump = chai_dump
 
-def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=True):
+def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=True,with_numpy=False):
     if dtype is None:
         dtype = self.dtype
     Path(path).mkdir(exist_ok=True)
@@ -150,8 +151,9 @@ def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=Tr
     f = open(path / (name + '.chdata'),'wb')
     t.pack_into(f)
     f.close()
-    if verbose: print("Writing numpy.")
-    t.data.tofile(path / (name + '.npy'))
+    if with_numpy:
+        if verbose: print("Writing numpy.")
+        t.data.tofile(path / (name + '.npy'))
 
 torch.Tensor.chai_save = chai_save
 

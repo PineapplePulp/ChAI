@@ -1096,9 +1096,8 @@ proc type dynamicTensor.readInPlace(
     }
 
     const dataRank = fr.read(int);
-    for param rank in 1..maxRank {
+    for param rank in 1..maxRank do
         if dataRank == rank {
-
             var shape: rank * int;
             for param i in 0..<rank do
                 shape(i) = fr.read(int);
@@ -1106,16 +1105,21 @@ proc type dynamicTensor.readInPlace(
 
             const eltBits = fr.read(int);
             for param attemptBytes in 4..6 {
-
                 param attemptBits: int = 2 ** attemptBytes;
-
                 type loadType = if attemptBits == 16 
                                     then uint(16) 
                                     else real(attemptBits);
-
                 if attemptBits == eltBits {
                     var A: [dom] loadType;
-                    fr.read(A);
+                    
+                    try! {
+                        fr.read(A);
+                    } catch e : IO.UnexpectedEofError {
+                        IO.stderr.writeln(e);
+                        IO.stderr.writeln("Error reading from ", fr.getFile().path, " with precision ", attemptBits, " with shape ", shape);
+                        halt("Error reading from ", fr.getFile().path, " with precision ", attemptBits, " with shape ", shape);
+                    }
+                    
                     if attemptBits == 16 {
                         var B = [i in dom] util.uint16ToReal32(A[i]);
                         return returnDynamicArray(B);
@@ -1126,7 +1130,6 @@ proc type dynamicTensor.readInPlace(
             }
             halt("Could not determine precision in dynamicTensor.readInPlace.");
         }
-    }
     halt("Could not determine rank in dynamicTensor.readInPlace.");
 }
 

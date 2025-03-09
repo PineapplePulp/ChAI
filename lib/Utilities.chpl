@@ -53,6 +53,36 @@ module Utilities {
         }
     }
 
+    inline proc uint16ToReal32(t : uint(16)): real(32) {
+        // This is from damianmoz's code on GitHub that he shared. 
+        // https://github.com/chapel-lang/chapel/issues/25088#issuecomment-2707899786
+        type U = uint(32);
+        type R = real(32);
+        param zero = 0:real(32);
+
+        param UFTbits = (1:U) << 10; // real(16) UnderFlow Threshold as bits
+        param tiniest = 0x1.0p-23:R; // smallest positive non-zero real(16)
+
+        param N = 0x8000:U; // mask of MSB
+        param b = 112:U;    // net bias
+        const t32 = t:U;    // convert argument to uint(32)
+        const s = t32 & N;  // extract the negative (or sign) bit
+        const v = t32 - s;  // extract the significand + exponent only
+
+        // align the sign bit as a real(32)
+        // align the exponent and significand as a real(32)
+        // align the net bias with a real(32)'s exponent field 
+
+        return if t == 0 then // +0
+            zero
+        else if t == N then // -0
+            -zero
+        else if v < UFTbits then // subnormal
+            (if s == 0:U then v * tiniest else -(v * tiniest))
+        else // normal
+            (((s << 16) | (v << 13)) + (b << 23)).transmute(R);
+    }
+
 
     iter cartesian(X,Y) {
         for x in X {

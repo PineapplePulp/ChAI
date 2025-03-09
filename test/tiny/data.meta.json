@@ -1,0 +1,10 @@
+{
+  "name": "data",
+  "shape": [
+    2,
+    3
+  ],
+  "rank": 2,
+  "size": 6,
+  "dtype": "float16"
+}

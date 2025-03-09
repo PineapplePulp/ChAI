@@ -12,11 +12,17 @@ def sanitize_tensor(x):
     if isinstance(x,torch.Tensor):
         if x.dtype == torch.float64:
             return x.to(torch.float64).cpu().detach().numpy()
-        return x.to(torch.float32).cpu().detach().numpy()
+        if x.dtype == torch.float32:
+            return x.to(torch.float32).cpu().detach().numpy()
+        if x.dtype == torch.float16:
+            return x.to(torch.float16).cpu().detach().numpy()
     if isinstance(x,np.ndarray):
         if x.dtype == np.float64:
             return x.astype(np.float64,casting='safe')
-        return x.astype(np.float32,casting='safe')
+        if x.dtype == np.float32:
+            return x.astype(np.float32,casting='safe')
+        if x.dtype == np.float16:
+            return x.astype(np.float16,casting='safe')
     raise AssertionError("Cannot sanitize ", x)
 
 class ChapelTensor(object):
@@ -31,7 +37,16 @@ class ChapelTensor(object):
         buffer.write(struct.pack('@q',self.rank))
         for i in range(self.rank):
             buffer.write(struct.pack('@q',self.shape[i]))
-        fmt = '@d' if self.data.dtype == 'float64' else '@f'
+        buffer.write(struct.pack('@q',self.data.itemsize * 8)) # bits per element
+        fmt = ''
+        if self.data.dtype == 'float64':
+            fmt = '@d'
+        elif self.data.dtype == 'float32':
+            fmt = '@f'
+        elif self.data.dtype == 'float16':
+            fmt = '@e'
+        else:
+            raise AssertionError("Unsupported dtype ", self.data.dtype)
         for x in np.nditer(self.data):
             buffer.write(struct.pack(fmt,x))
 
@@ -59,7 +74,7 @@ def get_summary(model,global_name,parent_name=None):
     }
     return d
 
-def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=True,dtype=None,with_meta=True):
+def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=True,dtype=None,with_meta=True,with_numpy=False):
     Path(path_prefix).mkdir(exist_ok=True)
     for param_tensor in model.state_dict():
         if verbose: print("Serializing ", param_tensor)
@@ -70,6 +85,7 @@ def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=Tr
         meta_path = Path(path_prefix) / (param_tensor + '.meta.json')
         json_path = Path(path_prefix) / (param_tensor + '.json')
         chai_path = Path(path_prefix) / (param_tensor + '.chdata')
+        npy_path = Path(path_prefix) / (param_tensor + '.npy')
         if with_json:
             if verbose: print("Writing json.")
             t_json = json.dumps(t.full_dict(),indent=2)
@@ -84,7 +100,8 @@ def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=Tr
                     'shape': t.shape,
                     'rank': t.rank,
                     'size': t.data.size,
-                    'dtype': str(t.dtype)
+                    'dtype': str(t.dtype),
+                    'element_bits': t.data.itemsize * 8
                     }
                 f.write(json.dumps(meta,indent=2))
 
@@ -92,6 +109,10 @@ def dump_model_parameters(model,path_prefix,model_name,with_json=True,verbose=Tr
         f = open(chai_path,'wb')
         t.pack_into(f)
         f.close()
+        if with_numpy:
+            if verbose: print("Writing numpy.")
+            np.save(npy_path,t.data)
+
     with open(Path(path_prefix) / 'specification.json','w') as f:
         f.write(json.dumps(get_summary(model,model_name),indent=2))
 
@@ -101,7 +122,7 @@ def chai_dump(self,path_prefix,model_name,with_json=True,verbose=True,dtype=None
 
 torch.nn.Module.chai_dump = chai_dump
 
-def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=True):
+def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=True,with_numpy=False):
     if dtype is None:
         dtype = self.dtype
     Path(path).mkdir(exist_ok=True)
@@ -123,7 +144,8 @@ def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=Tr
                 'shape': t.shape,
                 'rank': t.rank,
                 'size': t.data.size,
-                'dtype': str(t.dtype)
+                'dtype': str(t.dtype),
+                'element_bits': t.data.itemsize * 8
                 }
             f.write(json.dumps(meta,indent=2))
 
@@ -131,6 +153,9 @@ def chai_save(self,path,name,with_json=True,verbose=True,dtype=None,with_meta=Tr
     f = open(path / (name + '.chdata'),'wb')
     t.pack_into(f)
     f.close()
+    if with_numpy:
+        if verbose: print("Writing numpy.")
+        t.data.tofile(path / (name + '.npy'))
 
 torch.Tensor.chai_save = chai_save
 

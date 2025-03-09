@@ -9,7 +9,7 @@ def test(imports):
     b = torch.nn.Softplus()(torch.zeros(2,3,4) - 60.0)
     print(b)
 
-    c = (torch.nn.Softplus()(torch.zeros(10).to(torch.float32) + 40.0)).to(torch.float32)
+    c = torch.nn.Softplus()(torch.zeros(10) + 40.0)
     print(c)
     
     # same values with alpha = -0.001

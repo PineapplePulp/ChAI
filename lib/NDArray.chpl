@@ -1718,15 +1718,63 @@ proc type ndarray.matvecmul(mat: ndarray(2,?eltType),vec: ndarray(1,eltType)): n
     return u;
 }
 
+proc type ndarray.batchNormTrain(
+    features: ndarray(?rank,?eltType),
+    weight: ndarray(1,eltType),
+    bias: ndarray(1, eltType),
+    ref movingAvg: ndarray(1, eltType),
+    ref movingVar: ndarray(1, eltType),
+    eps: real,
+    momentum: real,
+    n: int // num_features
+): ndarray(rank,eltType) {
+    if rank < 2 then halt("Rank must be greater than 2");
+    if rank > 4 then halt("Rank must be less than 4");
+    const fshape = features.shape;
+
+    var avgs = features.mean(0).reshape(n);
+    var vars = features.variance(0, correction=0).reshape(n);
+    const m = 1 - momentum;
+
+    ref a = avgs.data;
+    ref v = ndarray.sqrt(vars).data;
+    // ref v = ndarray.sqrt(vars).data;
+    ref ma = movingAvg.data;
+    ref mv = movingVar.data;
+    ref f = features.data;
+    ref w = weight.data;
+    ref b = bias.data;
+    
+    writeln("momentum: ", momentum);
+    writeln("ma: ", ma);
+    writeln("a: ", a);
+    ma = m*ma + momentum*a;
+    writeln("result: ", ma);
+    mv = m*mv + momentum*v;
+
+    var outDom = util.domainFromShape((...fshape));
+    var outFeatures = new ndarray(outDom,eltType);
+    ref dat = outFeatures.data;
+
+    writeln("Calculated mean: ", avgs, "\nCalculated vars: ", vars);
+
+    forall idx in outDom.every() {
+        var c = idx[1];
+        dat[idx] = w[c]*((f[idx]-a[c])/v[c])+b[c];
+        // writeln("dat[idx]: ", dat[idx], "; a[c]: ", a[c], "; v[c]: ", v[c], "; w[c]: ", w[c], "; b[c]: ", b[c]);
+    }
+
+    return outFeatures;
+}
+
 proc type ndarray.batchNorm(
     features: ndarray(?rank,?eltType),
     weight: ndarray(1,eltType),
     bias: ndarray(1, eltType),
     movingAvg: ndarray(1, eltType),
     movingVar: ndarray(1, eltType),
-    n: int // num_features
+    eps: real
 ): ndarray(rank,eltType) {
-    // writeln("IN ndarray.batchNorm");
     if rank < 2 then halt("Rank must be greater than 2");
     if rank > 4 then halt("Rank must be less than 4");
     const fshape = features.shape;
@@ -1747,7 +1795,6 @@ proc type ndarray.batchNorm(
     }
 
     return outFeatures;
-
 }
 
 

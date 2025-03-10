@@ -444,10 +444,12 @@ proc type staticTensor.batchNorm(
     bias: staticTensor(1,eltType),
     movingAvg: staticTensor(1,eltType), 
     movingVar: staticTensor(1,eltType),
+    eps: real,
+    momentum: real,
+    train: bool,
     numFeatures: int
 ): staticTensor(featureRank, eltType) {
-
-    var ctx = new batchNormOp(eltType, features.meta, weight.meta, bias.meta, movingAvg.meta, movingVar.meta, numFeatures);
+    var ctx = new batchNormOp(eltType, features.meta, weight.meta, bias.meta, movingAvg.meta, movingVar.meta, eps, momentum, train, numFeatures);
     return tensorFromCtx(featureRank, eltType, ctx);
 }
 

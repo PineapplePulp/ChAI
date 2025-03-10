@@ -986,19 +986,19 @@ inline proc ndarray.threshold(threshold: eltType, value: eltType) { // PyTorch h
     return rl;
 }
 
-inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        const floatMax: eltType = Types.max(eltType);
-        const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-        rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
-    }
-    return rl;
-}
+// inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
+//     const ref thisData = data;
+//     const dom = this.domain;
+//     var rl = new ndarray(dom, eltType);
+//     ref rld = rl.data;
+//     forall i in dom.every() {
+//         const x = thisData[i];
+//         const floatMax: eltType = Types.max(eltType);
+//         const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
+//         rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
+//     }
+//     return rl;
+// }
 
 inline proc ndarray.celu(alpha: eltType=1.0) {
     const ref thisData = data;

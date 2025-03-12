@@ -610,8 +610,8 @@ proc type dynamicTensor.batchnorm(
     bias: dynamicTensor(eltType),
     movingAvg: dynamicTensor(eltType),
     movingVar: dynamicTensor(eltType),
-    eps: real,
-    momentum: real,
+    eps: defaultEltType,
+    momentum: defaultEltType,
     train: bool,
     num_features: int
 ): dynamicTensor(eltType) {

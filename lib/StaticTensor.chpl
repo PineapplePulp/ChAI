@@ -444,8 +444,8 @@ proc type staticTensor.batchNorm(
     bias: staticTensor(1,eltType),
     movingAvg: staticTensor(1,eltType), 
     movingVar: staticTensor(1,eltType),
-    eps: real,
-    momentum: real,
+    eps: defaultEltType,
+    momentum: defaultEltType,
     train: bool,
     numFeatures: int
 ): staticTensor(featureRank, eltType) {

@@ -5,26 +5,40 @@ from torchvision.datasets import VisionDataset
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pathlib import Path
+import json
+
+
 # for https://www.kaggle.com/datasets/imbikramsaha/cat-breeds/data
 class cat_breed_dataset(VisionDataset):
     def __init__(self, path_to_data):
-        self.imgpath = os.path.join(path_to_data, "images")
-        self.labpath = os.path.join(path_to_data, "labels")
-        self.images, self.labels = [], []
-        for lab in os.listdir(self.labpath):
-            if "item" in lab:
-                self.labels.append(
-                    np.load(os.path.join(self.labpath, lab))
-                )
-        self.labels = np.array(self.labels)
-        for img in os.listdir(self.imgpath):
-            if "item" in img:
-                self.images.append(
-                    np.load(os.path.join(self.imgpath, img))
-                )
-        self.images = np.array(self.images)
+        data_dir = Path(path_to_data).resolve()
 
-        assert len(self.images) == len(self.labels)
+        img_dir = data_dir / 'images'
+        label_dir = data_dir / 'labels'
+        label_names_path = data_dir / 'label_names.json'
+
+        labels = []
+        for label_path in label_dir.iterdir():
+            if 'item' in label_path.name:
+                label_data = np.load(label_path)
+                labels.append(label_data)
+        
+        images = []
+        for img_path in img_dir.iterdir():
+            if 'item' in img_path.name:
+                img_data = np.load(img_path)
+                images.append(img_data)
+
+        label_names = {}
+        with open(label_names_path, 'r') as f:
+            label_names = json.load(f)
+        
+        self.labels = np.array(labels)
+        self.images = np.array(images)
+        self.label_names = label_names
+
+        assert len(self.images) == len(self.labels) and len(set(self.labels)) == len(self.label_names)
     
     def __len__(self):
         return len(self.labels)
@@ -32,10 +46,13 @@ class cat_breed_dataset(VisionDataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        img = torch.tensor(self.images[idx]).float()
-        lab = torch.tensor(self.labels[idx]).long()
+        image = torch.tensor(self.images[idx]).float()
+        label = torch.tensor(self.labels[idx]).long()
         # `tensor` is lowercase to make `lab` a 0-dim tensor
-        return img, lab
+        return (image,label)
+    
+    def get_class_name(self,label):
+        return self.label_names[label]
     
 def train(model, device, train_loader, optimizer, criterion, epoch, lambda_reg=0.01, one_pass=False, verbose=False):
     model.train()

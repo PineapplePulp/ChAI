@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 
 import torch
+import torch.nn as nn
 from torchvision.datasets import VisionDataset
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 # import matplotlib.pyplot as plt
 
@@ -11,6 +12,13 @@ import numpy as np
 import json
 
 my_dir = Path(__file__).resolve().parent
+
+def get_best_device():
+    if torch.cuda.is_available():
+        return torch.device('cuda')
+    if torch.backends.mps.is_available():
+        return torch.device('mps')
+    return torch.device('cpu')
 
 def download_cat_breeds_data(data_dir):
     import kagglehub
@@ -90,7 +98,7 @@ def download_cat_breeds_data(data_dir):
 
 # for https://www.kaggle.com/datasets/imbikramsaha/cat-breeds/data
 class CatBreedsData(VisionDataset):
-    def __init__(self, data_dir, download=False):
+    def __init__(self, data_dir, download=False, device=None):
         if download:
             download_cat_breeds_data(data_dir)
         data_dir = Path(data_dir / 'catbreeds').resolve()
@@ -115,6 +123,10 @@ class CatBreedsData(VisionDataset):
         with open(label_names_path, 'r') as f:
             label_names = json.load(f)
         
+        # if device is None:
+        #     device = torch.get_default_device()
+        # self.device = device
+
         self.labels = np.array(labels)
         self.images = np.array(images)
         self.label_names = label_names
@@ -132,14 +144,168 @@ class CatBreedsData(VisionDataset):
         # `tensor` is lowercase to make `lab` a 0-dim tensor
         return (image,label)
     
-    def get_class_name(self,label):
-        return self.label_names[label]
+    def get_label_name(self,idx):
+        if idx in self.label_names:
+            return self.label_names[idx].lower()
+        raise ValueError(f'Label index {idx} not found in label names.')
     
-    # def download(self):
+    def get_label_idx(self,label):
+        for k,v in self.label_names.items():
+            if v.lower() == label.lower():
+                return k
+        raise ValueError(f'Label {label} not found in label names.')
+
+
+class SmallCNN(nn.Module):
+    def __init__(self):
+        super(SmallCNN, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Conv2d(3, 64, 3, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(64, 128, 3, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(128, 256, 3, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Flatten(),
+            nn.Dropout(0.25),
+            nn.LazyLinear(1024),
+            nn.ReLU(),
+            nn.Linear(1024, 12),
+            nn.LogSoftmax(dim=1)
+        )
+
+    def forward(self, x):
+        return self.layers(x)
+
+def train(model, 
+          device, 
+          train_loader, 
+          optimizer, 
+          criterion, 
+          epoch, 
+          lambda_reg=0.01,
+          one_pass=False,
+          verbose=False):
+    
+    # print('Training model...')
+    model.train()
+    avg_loss = 0
+
+    for batch_idx, (data, target) in enumerate(train_loader):
+        data = data.to(device)
+        target = target.to(device)
+        optimizer.zero_grad()
+        output = model(data)
+
+        loss = criterion(output, target)
+        avg_loss += loss
+        loss.backward()
+
+        optimizer.step()
+        if one_pass: break
+    
+    avg_loss /= len(train_loader.dataset)
+
+    if verbose:
+        print(f'Train Epoch: {epoch} \tAverage loss: {avg_loss:.6f}')
+
+def eval(model, 
+          device, 
+          test_loader, 
+          optimizer, 
+          criterion, 
+          epoch):
+    
+    # print('Evaluating model...')
+    model.eval()
+    avg_loss = 0
+
+    for batch_idx, (data, target) in enumerate(test_loader):
+        data = data.to(device)
+        target = target.to(device)
+        output = model(data)
+        loss = criterion(output, target)
+        avg_loss += loss
+    
+    avg_loss /= len(test_loader.dataset)
+
+    print(f'Test Epoch: {epoch} \tAverage loss: {avg_loss:.6f}')
+
+
+# def eval(model, 
+#          device, 
+#          test_loader):
+    
+#     print('Evaluating model...')
+#     model.eval()
+#     test_loss = 0
+#     correct = 0
+
+#     with torch.no_grad():
+#         for data, target in test_loader:
+#             data = data.to(device)
+#             target = target.to(device)
+#             output = model(data)
+#             test_loss += criterion(output, target).item()
+#             pred = output.argmax(dim=1, keepdim=True)
+#             correct += pred.eq(target.view_as(pred)).sum().item()
+
+#     test_loss /= len(test_loader.dataset)
+
+#     print(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} ({100. * correct / len(test_loader.dataset):.0f}%)\n')
 
 
 if __name__ == "__main__":
     my_dir = Path(__file__).resolve().parent
     data_dir = my_dir / 'data'
-    cat_breeds = CatBreedsData(data_dir)
+
+    print('Constructing CatBreedsData Dataset.')
+    data_set = CatBreedsData(data_dir)
+    
+    data_set_size = len(data_set)
+    train_len = int(data_set_size*0.7)      
+    test_len = data_set_size - train_len
+    train_set, test_set = torch.utils.data.random_split(data_set, [train_len, test_len])
+
+    print('Train set size:', len(train_set))
+    print('Test set size:', len(test_set))
+
+    print('Creating DataLoader(s).')
+    train_batch_size = 20
+    train_loader = DataLoader(train_set, batch_size=train_batch_size, shuffle=True)
+
+    test_batch_size = test_len
+    test_loader = DataLoader(test_set, batch_size=test_batch_size, shuffle=False)
+
+    # train_features, train_labels = next(iter(train_loader))
+    # print(train_features[0].shape,train_labels[0])
+
+    device = get_best_device()
+    print('Using device:', device)
+
+    print('Creating model...')
+    model = SmallCNN()
+
+    print('Moving model to device...')
+    model.to(device)
+
+    epochs = 100
+
+    print('Constructing optimizer and criterion...')
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+    criterion = torch.nn.CrossEntropyLoss()
+
+    print('Starting training...')
+    for epoch in range(epochs):
+        train(model, device, train_loader, optimizer, criterion, epoch, one_pass=False, verbose=True)
+        # eval(model, device, test_loader, optimizer, criterion, epoch)
+        
+    model.to(torch.device('cpu'))
+    torch.save(model, my_dir / 'models' / 'pretest.pt')
+    print("Model saved to", my_dir / 'models' / 'pretest.pt')
+
+
     

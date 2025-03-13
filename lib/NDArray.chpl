@@ -867,6 +867,8 @@ proc ndarray.argmax() where rank == 1 {
 
        \mathrm{ReLU}(x) = (x)^+ = \max(0, x)
 
+    Zeroes every element that is less than 0.
+
    :returns: A new :record:`ndarray` with every element run through the recitifed linear unit function.
  */
 inline proc ndarray.relu() {
@@ -905,7 +907,7 @@ inline proc ndarray.square() {
 
        \mathrm{GELU}(x) = 0.5 * x * \mathrm{erf}(x * \frac{1}{\sqrt{2}})
 
-   :returns:
+   :returns: A new :record:`ndarray` where every element has been passed through ``GELU`` as defined above.
  */
 inline proc ndarray.gelu() {
     // Here because `Math.recipSqrt2` is unstable.
@@ -946,6 +948,14 @@ inline proc ndarray.mish() {
     return rl;
 }
 
+/* Computes the sigmoid function :math:`\sigma(x)` for each element.
+
+   .. math::
+
+       \sigma(x) = \frac{1}{1 + e^{-x}}
+
+   :returns: A new :record:`ndarray` where the sigmoid function has been computed for each element.
+ */
 inline proc ndarray.sigmoid() {
     const ref thisData = data;
     const dom = this.domain;
@@ -958,6 +968,14 @@ inline proc ndarray.sigmoid() {
     return rl;
 }
 
+/* Computes the hyperbolic tangent function for each element.
+
+   .. math::
+   
+       \tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}
+
+   :returns: A new :record:`ndarray` where :math:`\tanh(x)` has been computed for each element ``x``.
+ */
 inline proc ndarray.tanh() {
     const ref thisData = data;
     const dom = this.domain;
@@ -970,6 +988,16 @@ inline proc ndarray.tanh() {
     return rl;
 }
 
+/* Computes the ReLU6 function for each element.
+
+   .. math::
+
+       \mathrm{ReLU6}(x) = \min(\max(0, x), 6)
+
+    Clamps every element in the range :math:`[0, 6]`.
+
+    :returns: A new :record:`ndarray` where every element has been clamped to the range :math:`[0, 6]`.
+ */
 inline proc ndarray.relu6() {
     const ref thisData = data;
     const dom = this.domain;

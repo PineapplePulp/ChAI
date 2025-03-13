@@ -7,6 +7,9 @@ from torchvision.transforms import Resize, Normalize
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts')))
 import chai
 
+from pathlib import Path
+
+
 def process(img_path):
     img = read_image(img_path,mode=ImageReadMode.RGB).float()
     print(img.shape, img.dtype)
@@ -20,5 +23,15 @@ def process(img_path):
     # remove the extension
     img.chai_save('imgs', os.path.splitext(os.path.basename(img_path))[0])
 
+dirs = []
+
 for img_path in sys.argv[1:]:
-    process(img_path)
+    pth = Path(img_path).parent
+    dirs.append(pth)
+
+image_extensions = ['.jpg', '.jpeg', '.png', '.bmp']
+
+for dir in dirs:
+    for img_path in dir.iterdir():
+        if img_path.suffix in image_extensions:
+            process(img_path)

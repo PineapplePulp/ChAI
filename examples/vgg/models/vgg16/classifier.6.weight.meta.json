@@ -1,0 +1,11 @@
+{
+  "name": "classifier.6.weight",
+  "shape": [
+    1000,
+    4096
+  ],
+  "rank": 2,
+  "size": 4096000,
+  "dtype": "float16",
+  "element_bits": 16
+}

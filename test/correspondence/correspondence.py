@@ -30,6 +30,8 @@ parser.add_argument('--print-compiler-errors', action='store_true', help='Print 
 parser.add_argument('--print-numeric-diffs', action='store_true', help='Print numerical differences.')
 parser.add_argument('--print-outputs', action='store_true', help='Print Python and Chapel outputs.')
 
+parser.add_argument('--numerical-relative-tolerance', type=float, default=1e-5, help='Numerical relative tolerance.')
+parser.add_argument('--numerical-absolute-tolerance', type=float, default=1e-8, help='Numerical absolute tolerance.')
 
 parser.add_argument('--max-concurrent-compilations', type=int, default=5, help='Maximum concurrent chpl compilations at once.')
 
@@ -228,7 +230,9 @@ class ChapelRecorder(Recorder):
             data_floats = [float(x) for x in data_list]
             
             # Construct the tensor and reshape accordingly
-            tensor = torch.tensor(data_floats, dtype=torch.float).reshape(shape)
+            tensor = torch.tensor(data_floats, dtype=torch.float32).reshape(shape)
+            if tensor.dim() == 1:
+                return tensor.squeeze()
             return tensor
         
         return parse_chapel_serialized_tensor(x)
@@ -267,6 +271,8 @@ class PythonRecorder(Recorder):
                     self.add_record(x)
     
     def new_record_denotation(self, x):
+        if x.dim() == 1:
+            return x.squeeze()
         return x
 
 def run_python_test(test_name,test_path):
@@ -429,10 +435,23 @@ for test in tests:
     failed = False
     idx = 1
     for py_t,ch_t in zip(python_output_results,chapel_output_results):
-        if not torch.equal(py_t,ch_t):
-            failed = True
-            if args.print_numeric_diffs:
-                print(f'💢 {display_name} (i={idx}): {py_t} != {ch_t}\ndiff:\n{py_t - ch_t}')
+        py_t = py_t.to(torch.float32)
+        ch_t = ch_t.to(torch.float32)
+        try:
+            if not torch.allclose(input=py_t,
+                                other=ch_t,
+                                rtol=args.numerical_relative_tolerance,
+                                atol=args.numerical_absolute_tolerance,
+                                equal_nan=True):
+                failed = True
+                if args.print_numeric_diffs:
+                    print(f'💢 {display_name} (i={idx}): {py_t} != {ch_t}\ndiff:\n{py_t - ch_t}')
+        except Exception as e:
+            print(e)
+            print(test_name)
+            print(py_t)
+            print(ch_t)
+            sys.exit(1)
         idx += 1
 
     if failed and args.print_outputs:

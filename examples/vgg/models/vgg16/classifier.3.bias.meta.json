@@ -1,0 +1,10 @@
+{
+  "name": "classifier.3.bias",
+  "shape": [
+    4096
+  ],
+  "rank": 1,
+  "size": 4096,
+  "dtype": "float16",
+  "element_bits": 16
+}

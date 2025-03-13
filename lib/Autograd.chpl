@@ -533,8 +533,6 @@ record addOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","Add"));
 }
 
-
-
 record subOp : serializable {
     var lhs: shared BaseTensorResource(?);
     var rhs: shared BaseTensorResource(?);
@@ -1061,24 +1059,47 @@ record negOp : serializable {
 }
 
 
+record nllLossOp : serializable {
+    var input: shared BaseTensorResource(?);
+    var target: shared BaseTensorResource(?);
+    var weight: shared BaseTensorResource(?);
+    var ignoreIndex: int;
+    var red: bool;
+    var reduction: string;
+    
+    proc children do return (input,target,weight);
+
+    proc forward() do
+        return ndarray.nllLoss(input.array,target.array,weight.array,ignoreIndex,red,reduction);
+    
+    proc spec : GradOpSpec do return new dict(("operation", "nllLoss"));
+}
+
+
 record batchNormOp : serializable {
-    type eltType = defaultEltType;
+    type eltType = real;
     var features: shared BaseTensorResource(?); // what to put here?
     var weight: shared BaseTensorResource(eltType, 1);
     var bias: shared BaseTensorResource(eltType, 1);
     var movingAvg: shared BaseTensorResource(eltType, 1);
     var movingVar: shared BaseTensorResource(eltType, 1);
+    var eps: real;
+    var momentum: real;
+    var train: bool;
     var n: int;
 
-    proc children do return (features, weight, bias, movingAvg, movingVar);
+    proc children do return (features, weight, bias, movingAvg, movingVar, train);
 
     proc forward() {
-        return ndarray.batchNorm(features.array, weight.array, bias.array, movingAvg.array, movingVar.array, n);
+        if train {
+            return ndarray.batchNormTrain(features.array, weight.array, bias.array, movingAvg.array, movingVar.array, eps, momentum, n);
+        } else {
+            return ndarray.batchNorm(features.array, weight.array, bias.array, movingAvg.array, movingVar.array, eps);
+        }
     }
 
     proc spec : GradOpSpec do return new dict(("operation","BatchNorm"));
 }
-
 
 record dropoutOp : serializable {
     param rank: int;

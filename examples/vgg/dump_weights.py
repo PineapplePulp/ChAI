@@ -8,6 +8,8 @@ from vgg import vgg16
 
 model = vgg16(pretrained=True)
 
+model = model.to(torch.float16)
+
 # Add the scripts directory to the sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts')))
 

@@ -255,26 +255,9 @@ record ndarray : serializable {
         this._domain = other._domain;
         this.data = other.data;
     }
-
 }
 
 
-
-// proc init=(other: _iteratorRecord) do
-//     this.init(other);
-
-
-/* Slice an :record:`ndarray`.
-
-   This function behaves the same as Chapel's standard
-   `slicing syntax <https://chapel-lang.org/docs/language/spec/arrays.html#array-slicing>`_.
-
-   This method behaves the same as :proc:`ndarray.slice`.
-
-   You should prefer this method over that one.
-
-   :returns: The slice of the :record:`ndarray`, as a new :record:`ndarray`.
- */
 proc ref ndarray.this(args: int...rank) ref {
     return data.this((...args));
 }
@@ -327,85 +310,44 @@ proc ndarray.shape: rank * int {
    :returns: A new :record:`ndarray` with the new shape.
    :rtype: ndarray(rank, eltType)
  */
-proc ndarray.reshape(const dom: ?t): ndarray(rank,eltType)
-    where isDomainType(t)
-        && dom.rank == rank {
-    var arr = new ndarray(eltType,dom);
-    const arrDom  = arr.domain;
-    const selfDom = _domain;
-
-    const inter = selfDom[arrDom];
-    arr.data[inter] = data[inter];
-    return arr;
-}
-
 proc ndarray.reshape(const dom: ?t): ndarray(dom.rank,eltType)
-        where isDomainType(t)
-            && dom.rank != rank {
+        where isDomainType(t) {
+    var arr = new ndarray(eltType,dom);
 
-    var arr: ndarray(dom.rank,eltType) = new ndarray(eltType,dom);
-
+    const arrDom = arr.domain;
     const selfDom = this.domain;
-    const newDom  = arr.domain;
-    const ref selfData = this.data;
+    
     ref arrData = arr.data;
+    const ref selfData = this.data;
+
+    const arrShape = arrDom.shape;
+    const selfShape = selfDom.shape;
+    const selfShapeDivs = util.shapeDivisors((...selfShape));
 
     const zero: eltType = 0;
 
-    forall (i,meIdx) in newDom.everyZip() {
-        const selfIdx = selfDom.indexAt(i);
-        const a = if selfDom.contains(selfIdx) then selfData[selfIdx] else zero;
-        arrData[meIdx] = a;
+    forall (i,idx) in arrDom.everyZip() {
+        const selfIdx = util.indexAtHelperMultiples(i,(...selfShapeDivs));
+        const a = if util.shapeContains(selfShape,selfIdx)
+                    then selfData[selfIdx]
+                    else zero;
+        arrData[idx] = a;
     }
     return arr;
-    // const minSize: int           = min(selfDom.size,newDom.size);
-    // const dataDom: rect(1)       = (minSize,);
-    // const zeroDom: rect(1)       = ((newDom.size - dataDom.size,),(dataDom.size,));
-
-    // ref arrData = arr.data;
-    // const ref selfData = data;
-
-    // // Fills in intersection. 
-    // forall i in dataDom {
-    //     const arrIdx  = newDom.indexAt(i);
-    //     const selfIdx = selfDom.indexAt(i);
-    //     arrData[arrIdx] = selfData[selfIdx];
-    // }
-
-    // const zero: eltType = 0;
-    // forall i in zeroDom do
-    //     arrData[newDom.indexAt(i)] = 0; // should this be `zero` for performance?
-    
-    // return arr;
 }
-
 
 /* Reshape an :record:`ndarray` to have the shape corresponding to the arguments.
 
    :returns: A new :record:`ndarray` with the shape given by the arguments.
    :rtype: ndarray(newRank, eltType)
  */
-proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) {
-    // This can optimized such that it doesn't use two heavy utility functions...
+proc ndarray.reshape(newShape: int ...?newRank): ndarray(newRank,eltType) do
     return this.reshape(util.domainFromShape((...newShape)));
-    // const normalDomain = util.domainFromShape((...newShape));
-    // var arr = new ndarray(normalDomain, eltType);
-    // ref arrData = arr.data;
-    // const myDomain = data.domain;
-    // foreach i in 0..<min(myDomain.size,normalDomain.size) {
-    //     arrData[normalDomain.orderToIndex(i)] = data[myDomain.orderToIndex(i)];
-    // }
-    // return arr;
-}
 
 /* Yield a slice of an :record:`ndarray` according to the arguments.
 
    This function behaves exactly the same as Chapel's standard
    `slicing syntax <https://chapel-lang.org/docs/language/spec/arrays.html#array-slicing>`_.
-
-   .. note::
-
-       You should probably index instances of :record:`ndarray` directly instead of using this method.
 
    :returns: A new :record:`ndarray` representing the slice of the :record:`ndarray`.
  */
@@ -413,6 +355,7 @@ proc ndarray.slice(args...) {
     const slc = data[(...args)];
     return new ndarray(slc);
 }
+
 
 /* Switches the dimensions of an :record:`ndarray` around
    so that they come in the corresponding order instead of
@@ -575,7 +518,6 @@ proc ndarray.mean(axes: int...?axesCount): ndarray(rank,eltType) {
     }
     return this.sum((...axes)) / denom;
 }
-
 proc ndarray.shrink(narg: 2*int ... rank,param exactBounds = false): ndarray(rank,eltType) {
     var newShape: rank * int;
     var sliceRanges: rank * range;
@@ -706,6 +648,7 @@ proc ndarray.squeeze(param newRank: int): ndarray(newRank,eltType) where newRank
     return me;
 }
 
+
 /* Yields the minimum value from an :record:`ndarray`, as an :record:`ndarray`.
 
    :returns: The minimum value from the :record:`ndarray`.
@@ -718,6 +661,7 @@ proc ndarray.min(): ndarray(1,eltType) {
     return me;
 }
 
+
 /* Yields the maximum value from an :record:`ndarray`, as an :record:`ndarray`.
 
    :returns: The maximum value from the :record:`ndarray`.
@@ -729,6 +673,7 @@ proc ndarray.max(): ndarray(1,eltType) {
     me.data[0] = Math.max reduce myData;
     return me;
 }
+
 
 proc ndarray.max(axes: int...?axesCount): ndarray(rank,eltType) {
     compilerWarning("max is unimplemented.");
@@ -781,6 +726,7 @@ proc ndarray.kernelRot(): ndarray(3,eltType) where rank == 3 {
     return me;
 }
 
+
 /* Retrieves the top `k` elements from a one-dimensional :record:`ndarray`.
 
    .. code-block::
@@ -831,6 +777,7 @@ proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
     var res = [p in paired] p(0);
     return new ndarray(res);
 }
+
 
 /* Retrieve the index of the largest element in a one-dimensional :record:`ndarray`.
 
@@ -924,6 +871,7 @@ inline proc ndarray.gelu() {
     return rl;
 }
 
+
 inline proc ndarray.silu() {
     const ref thisData = data;
     const dom = this.domain;
@@ -936,6 +884,7 @@ inline proc ndarray.silu() {
     return rl;
 }
 
+
 inline proc ndarray.mish() {
     const ref thisData = data;
     const dom = this.domain;
@@ -947,6 +896,7 @@ inline proc ndarray.mish() {
     }
     return rl;
 }
+
 
 /* Computes the sigmoid function :math:`\sigma(x)` for each element.
 
@@ -968,6 +918,7 @@ inline proc ndarray.sigmoid() {
     return rl;
 }
 
+
 /* Computes the hyperbolic tangent function for each element.
 
    .. math::
@@ -987,6 +938,7 @@ inline proc ndarray.tanh() {
     }
     return rl;
 }
+
 
 /* Computes the ReLU6 function for each element.
 
@@ -1010,6 +962,7 @@ inline proc ndarray.relu6() {
     return rl;
 }
 
+
 inline proc ndarray.selu() {
     const ref thisData = data;
     const dom = this.domain;
@@ -1024,14 +977,37 @@ inline proc ndarray.selu() {
     return rl;
 }
 
+
 inline proc ndarray.logsigmoid() {
     const ref thisData = data;
     const dom = this.domain;
     var rl = new ndarray(dom, eltType);
     ref rld = rl.data;
+    // branching is ok here b/c still in CPU
+
+    use CTypes only c_sizeof, c_ptrTo;
+    use OS.POSIX only memcpy;
+
+    type intType = int(numBits(eltType)); // integer w/ same #ofbits as real
     forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = Math.log(1 / (1 + Math.exp(-x)));
+        const x = thisData[i]; // negative x
+        const threshold: eltType = 20.0;
+            
+        var func: eltType = -Math.log1p(Math.exp(-x)); // result after applying logsigmoid(x) = -softplus(-x) activation function
+        var lin: eltType = x;                          // linear function: - (-x) = x
+
+        var func_bits: intType;
+        var lin_bits: intType;
+        memcpy(c_ptrTo(func_bits), c_ptrTo(func), c_sizeof(eltType));
+        memcpy(c_ptrTo(lin_bits), c_ptrTo(lin), c_sizeof(eltType));
+
+        const condition: intType = (-x > threshold);
+        const mask: intType = 0 - condition;
+
+        var result_bits: intType = (mask & lin_bits) | (~mask & func_bits);
+
+        // rld[i] = output;
+        memcpy(c_ptrTo(rld[i]), c_ptrTo(result_bits), c_sizeof(eltType));
     }
     return rl;
 }
@@ -1146,6 +1122,49 @@ inline proc ndarray.elu(alpha: eltType=1.0) {
     return rl;
 }
 
+
+inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
+        const ref thisData = data;
+        const dom = this.domain;
+        var rl = new ndarray(dom, eltType);
+        ref rld = rl.data;
+
+        // branching is ok here since we are still in the CPU
+
+        // beta = 0 should return inf according to PyTorch, but there is no real32 inf
+        if beta == 0 {
+            rld = Math.inf;
+        }
+
+        // beta non-zero here
+        else {
+            use CTypes only c_sizeof, c_ptrTo;
+            use OS.POSIX only memcpy;
+
+            type intType = int(numBits(eltType)); // integer w/ same #ofbits as real
+            forall i in dom.every() {
+                const x = thisData[i];
+                
+                var func: eltType = Math.log1p(Math.exp(beta * x)) / beta; // result after applying softplus activation function
+                var lin: eltType = x;                                      // linear function
+
+                var func_bits: intType;
+                var lin_bits: intType;
+                memcpy(c_ptrTo(func_bits), c_ptrTo(func), c_sizeof(eltType));
+                memcpy(c_ptrTo(lin_bits), c_ptrTo(lin), c_sizeof(eltType));
+
+                const condition: intType = (x * beta > threshold);
+                const mask: intType = 0 - condition;
+
+                var result_bits: intType = (mask & lin_bits) | (~mask & func_bits);
+
+                // rld[i] = output;
+                memcpy(c_ptrTo(rld[i]), c_ptrTo(result_bits), c_sizeof(eltType));
+            }
+        }
+        return rl;
+}
+
 inline proc ndarray.threshold(threshold: eltType, value: eltType) { // PyTorch has no defaults for threshold
     const ref thisData = data;
     const dom = this.domain;
@@ -1160,19 +1179,19 @@ inline proc ndarray.threshold(threshold: eltType, value: eltType) { // PyTorch h
     return rl;
 }
 
-inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        const floatMax: eltType = Types.max(eltType);
-        const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-        rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
-    }
-    return rl;
-}
+// inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
+//     const ref thisData = data;
+//     const dom = this.domain;
+//     var rl = new ndarray(dom, eltType);
+//     ref rld = rl.data;
+//     forall i in dom.every() {
+//         const x = thisData[i];
+//         const floatMax: eltType = Types.max(eltType);
+//         const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
+//         rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
+//     }
+//     return rl;
+// }
 
 inline proc ndarray.celu(alpha: eltType=1.0) {
     const ref thisData = data;
@@ -1228,6 +1247,9 @@ proc ndarray.degenerateFlatten(): [] eltType {
 
 proc ndarray.shapeArray(): [] int do
     return util.tupleToArray((...this.shape));
+
+proc ndarray.flatten(): ndarray(1,eltType) do
+    return this.reshape(this.domain.size);
 
 proc type ndarray.arange(type eltType = defaultEltType,shape: ?rank*int): ndarray(rank,eltType) {
     const dom = util.domainFromShape((...shape));
@@ -1326,14 +1348,6 @@ operator +(a: ndarray(?rank, ?eltType)): ndarray(rank, eltType) {
     return a;
 }
 
-/* Add two :record:`ndarray` together elementwise.
-
-   The two input :record:`ndarray` must have the same shape and element type.
-
-   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
-   ``c[d] = a[d] + b[d]``.
-   :rtype: ndarray(rank, eltType)
-*/
 operator +(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
 
@@ -1347,14 +1361,6 @@ operator +(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
-/* Multiply two :record:`ndarray` together elementwise.
-
-   The two input :record:`ndarray` must have the same shape and element type.
-
-   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
-   ``c[d] = a[d] * b[d]``.
-   :rtype: ndarray(rank, eltType)
-*/
 operator *(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
     var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
@@ -1367,11 +1373,6 @@ operator *(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
-/* Negate an :record:`ndarray`.
-
-   :returns: A new :record:`ndarray` where every element has been negated.
-   :rtype: ndarray(rank, eltType)
-*/
 operator -(a: ndarray(?rank, ?eltType)): ndarray(rank, eltType) {
     const dom = a.domain;
     var negged = new ndarray(dom, eltType);
@@ -1384,14 +1385,6 @@ operator -(a: ndarray(?rank, ?eltType)): ndarray(rank, eltType) {
     return negged;
 }
 
-/* Subtract two :record:`ndarray`s elementwise.
-
-   The two input :record:`ndarray` must have the same shape and element type.
-
-   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
-   ``c[d] = a[d] - b[d]``.
-   :rtype: ndarray(rank, eltType)
-*/
 operator -(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
     var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
@@ -1404,14 +1397,6 @@ operator -(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
-/* Divide two :record:`ndarray`s elementwise.
-
-   The two input :record:`ndarray` must have the same shape and element type.
-
-   :returns: An :record:`ndarray` ``c``, such that for all domain values of ``c`` ``d``,
-   ``c[d] = a[d] / b[d]``.
-   :rtype: ndarray(rank, eltType)
-*/
 operator /(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
     const dom = a.domain;
     var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
@@ -1424,17 +1409,6 @@ operator /(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
-/* Produces a new :record:`ndarray` conforming to a model shape, with all elements set to the specified `value`.
-
-   :arg a: An :record:`ndarray` whose shape will be the same as the result :record:`ndarray`.
-   :type a: ndarray(?rank, ?eltType)
-
-   :arg value: A value to fill the resulting :record:`ndarray`.
-   :type value: eltType
-
-   :returns: A new :record:`ndarray` with the same shape as `a` where every element has been substituted with `value`.
-   :rtype: ndarray(rank, eltType)
- */
 inline proc type ndarray.valueLike(a: ndarray(?rank,?eltType),value: eltType): ndarray(rank,eltType) do
     return new ndarray(eltType=eltType,dom=a.domain,fill=value);
 
@@ -1905,14 +1879,6 @@ proc type ndarray.adaptiveAvgPool2d(features: ndarray(3, ?eltType), outputSize: 
 }
 
 
-/* Compute the square root over every element of the :record:`ndarray`.
-
-   :arg array: The :record:`ndarray` to square root.
-   :type array: ndarray(?rank, ?eltType)
-
-   :returns: `array`, with all elements rooted.
-   :rtype: ndarray(rank, eltType)
- */
 proc type ndarray.sqrt(array: ndarray(?rank,?eltType)): ndarray(rank,eltType) {
     const dom = array.domain;
     var sqrtArr = new ndarray(dom,eltType);
@@ -1945,15 +1911,63 @@ proc type ndarray.matvecmul(mat: ndarray(2,?eltType),vec: ndarray(1,eltType)): n
     return u;
 }
 
+proc type ndarray.batchNormTrain(
+    features: ndarray(?rank,?eltType),
+    weight: ndarray(1,eltType),
+    bias: ndarray(1, eltType),
+    ref movingAvg: ndarray(1, eltType),
+    ref movingVar: ndarray(1, eltType),
+    eps: real,
+    momentum: real,
+    n: int // num_features
+): ndarray(rank,eltType) {
+    if rank < 2 then halt("Rank must be greater than 2");
+    if rank > 4 then halt("Rank must be less than 4");
+    const fshape = features.shape;
+
+    var avgs = features.mean(0).reshape(n);
+    var vars = features.variance(0, correction=0).reshape(n);
+    const m = 1 - momentum;
+
+    ref a = avgs.data;
+    ref v = ndarray.sqrt(vars).data;
+    // ref v = ndarray.sqrt(vars).data;
+    ref ma = movingAvg.data;
+    ref mv = movingVar.data;
+    ref f = features.data;
+    ref w = weight.data;
+    ref b = bias.data;
+    
+    writeln("momentum: ", momentum);
+    writeln("ma: ", ma);
+    writeln("a: ", a);
+    ma = m*ma + momentum*a;
+    writeln("result: ", ma);
+    mv = m*mv + momentum*v;
+
+    var outDom = util.domainFromShape((...fshape));
+    var outFeatures = new ndarray(outDom,eltType);
+    ref dat = outFeatures.data;
+
+    writeln("Calculated mean: ", avgs, "\nCalculated vars: ", vars);
+
+    forall idx in outDom.every() {
+        var c = idx[1];
+        dat[idx] = w[c]*((f[idx]-a[c])/v[c])+b[c];
+        // writeln("dat[idx]: ", dat[idx], "; a[c]: ", a[c], "; v[c]: ", v[c], "; w[c]: ", w[c], "; b[c]: ", b[c]);
+    }
+
+    return outFeatures;
+}
+
 proc type ndarray.batchNorm(
     features: ndarray(?rank,?eltType),
     weight: ndarray(1,eltType),
     bias: ndarray(1, eltType),
     movingAvg: ndarray(1, eltType),
     movingVar: ndarray(1, eltType),
-    n: int // num_features
+    eps: real
 ): ndarray(rank,eltType) {
-    // writeln("IN ndarray.batchNorm");
     if rank < 2 then halt("Rank must be greater than 2");
     if rank > 4 then halt("Rank must be less than 4");
     const fshape = features.shape;
@@ -1974,7 +1988,6 @@ proc type ndarray.batchNorm(
     }
 
     return outFeatures;
-
 }
 
 
@@ -1989,6 +2002,43 @@ inline proc type ndarray.fromRanges(type eltType = real, rngs: range...?rank): n
         aData[idx] = i : eltType;
     }
     return a;
+}
+
+proc type ndarray.nllLoss(
+    input: ndarray(2,?eltType), 
+    target: ndarray(1,eltType), 
+    weight: ndarray(1, eltType),
+    ignoreIndex: int = -1,
+    red: bool = true,
+    reduction: string = "mean"
+): ndarray(1,eltType) {
+    const (N,C) = input.shape;
+    assert(target.shape[0] == N, "Target shape must match batch size.");
+    assert(weight.shape[0] == C, "Weights shape must match number of classes.");
+    
+    const dom = util.domainFromShape(N);
+    var loss = new ndarray(dom, eltType);
+    ref x = input.data;
+    ref y = target.data;
+    ref w = weight.data;
+    ref lossD = loss.data;
+    var wynSum: real = 0.0;
+
+    forall n in 0..<N with (+ reduce wynSum) {
+        const yn: int = y[n]:int;
+        if yn == ignoreIndex {
+            lossD[n] = 0.0;
+        }
+        else {
+            lossD[n] = -w[yn]*x[n,yn];
+            wynSum += w[yn];
+        }
+    }
+
+    if !red then return loss;
+    if reduction == "mean" then return loss.sum(0) / wynSum;
+    if reduction == "sum" then return loss.sum(0);
+    halt("Invalid reduction mode: " + reduction);
 }
 
 module ndarrayRandom {
@@ -2129,39 +2179,18 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
 }
 
 // For printing. 
-proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) {
-    writer.write("ndarray(");
-    const shape = this.data.shape;
-    var first: bool = true;
-    for (x,i) in zip(data,0..) {
-        const idx = util.nbase(shape,i);
-        if idx[rank - 1] == 0 {
-            if !first {
-                writer.write("\n        ");
-                // writer.write("  ");
-            }
-            writer.write("[");
-        }
-        if eltType == int then
-            writer.writef("%{#}",x);
-        else
-            writer.writef("%{##.#}",x);
-
-        if idx[rank - 1] < shape[rank - 1] - 1 {
-            if rank == 1 then
-                writer.write("  ");
-            else
-                writer.write("  ");
-        } else {
-            writer.write("]");
-        }
-        first = false;
-    }
-    writer.write(",\n        shape = ",this.data.shape);
-    writer.write(",\n        rank = ",this.rank);
+proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) throws {
+    
+    const format = util.roundingFormat(this.data);
+    const name = "ndarray";
+    const header = name + "(";
+    const indent = (" " * name.size) + (" " * this.rank);
+    const dataStr = util.prettyPrintArray(indent,format,this.flatten().data,this.domain.shape);
+    writer.write(header);
+    writer.write(dataStr);
+    writer.write(",\n       shape = ",this.domain.shape);
+    writer.write(",\n       rank = ",this.rank);
     writer.writeln(")");
-    // writer.writeln(", shape=",this.data.shape,", rank=",this.rank,")");
-
 }
 
 proc ref ndarray.read(fr: IO.fileReader(?)) throws {
@@ -2190,6 +2219,8 @@ class _tensor_resource {
     param rank: int;
     type eltType = real(64);
     var data: remote(ndarray(rank,eltType));
+
+
 }
 
 // Some examples. 
@@ -2353,7 +2384,6 @@ proc take(param count: int, param s: string) param do
 
 proc drop(param count: int, param s: string) param do
     return slice(count,s.size,s);
-
 
 
 proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b: ndarray(?rankB, eltType)) {

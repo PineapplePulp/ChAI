@@ -1,0 +1,10 @@
+{
+  "name": "features.0.bias",
+  "shape": [
+    64
+  ],
+  "rank": 1,
+  "size": 64,
+  "dtype": "float16",
+  "element_bits": 16
+}

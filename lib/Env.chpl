@@ -6,7 +6,7 @@ param developmentAndTesting = !releaseChAI;
 
 
 // Minimum needed rank of dynamicTensor for *any* build
-config param minRankNeeded = 6;
+config param minRankNeeded = 4;
 
 
 // Maximum needed rank of dynamicTensor for a release build

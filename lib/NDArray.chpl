@@ -414,6 +414,19 @@ proc ndarray.slice(args...) {
     return new ndarray(slc);
 }
 
+/* Switches the dimensions of an :record:`ndarray` around
+   so that they come in the corresponding order instead of
+   in their natural order.
+
+   For each value in ``axes``, the dimension with that index
+   will become the dimension given by its position in the ``axes`` tuple.
+
+   For instance, given a two-dimensional :record:`ndarray` ``A``,
+   ``A.permute(1, 0)`` would perform a transpose. Dimension 1
+   would become dimension 0, and dimension 0 would become dimension 1.
+
+   :returns: A new :record:`ndarray` with the shuffled dimensions.
+ */
 proc ndarray.permute(axes: int...rank) {
     const oldShape = data.shape;
     var oldShapeR = data.dims();
@@ -829,10 +842,10 @@ proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
 proc ndarray.argmax() where rank == 1 {
     // What on earth is up with this comment...
 
-    // const D__________________A______________T____________A = this.data;
+    // const DATA = this.data;
     // const (_,i) = maxloc reduce zip(
-    //     D__________________A______________T____________A,
-    //     D__________________A______________T____________A.domain);
+    //     DATA
+    //     DATA.domain);
     // return i;
     // For some reason this is causing problems.  Keeping this because I am worried the above wont run on gpu.
     var mxi: int = 0;
@@ -848,6 +861,14 @@ proc ndarray.argmax() where rank == 1 {
     return mxi;
 }
 
+/* Applies the rectified linear unit function to each element in the :record:`ndarray`.
+
+   .. math::
+
+       \mathrm{ReLU}(x) = (x)^+ = \max(0, x)
+
+   :returns: A new :record:`ndarray` with every element run through the recitifed linear unit function.
+ */
 inline proc ndarray.relu() {
     const ref thisData = data;
     const dom = this.domain;
@@ -878,14 +899,25 @@ inline proc ndarray.square() {
     return rl;
 }
 
+/* Computes the Gaussian error linear units function for each element.
+
+   .. math::
+
+       \mathrm{GELU}(x) = 0.5 * x * \mathrm{erf}(x * \frac{1}{\sqrt{2}})
+
+   :returns:
+ */
 inline proc ndarray.gelu() {
+    // Here because `Math.recipSqrt2` is unstable.
+    param recipSqrt2 = 0.70710678118654752440;
+
     const ref thisData = data;
     const dom = this.domain;
     var rl = new ndarray(dom,eltType);
     ref rlD = rl.data;
     forall i in dom.every() {
         const x = thisData[i];
-        rlD[i] = x * (0.5 * (1.0 + Math.erf(x * Math.reciprSqrt2)));
+        rlD[i] = x * (0.5 * (1.0 + Math.erf(x * recipSqrt2)));
     }
     return rl;
 }

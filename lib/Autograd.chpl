@@ -1077,14 +1077,14 @@ record nllLossOp : serializable {
 
 
 record batchNormOp : serializable {
-    type eltType = real;
+    type eltType = defaultEltType;
     var features: shared BaseTensorResource(?); // what to put here?
     var weight: shared BaseTensorResource(eltType, 1);
     var bias: shared BaseTensorResource(eltType, 1);
     var movingAvg: shared BaseTensorResource(eltType, 1);
     var movingVar: shared BaseTensorResource(eltType, 1);
-    var eps: real;
-    var momentum: real;
+    var eps: defaultEltType;
+    var momentum: defaultEltType;
     var train: bool;
     var n: int;
 

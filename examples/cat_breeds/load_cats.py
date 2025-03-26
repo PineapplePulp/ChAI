@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 
 # The next 8 lines were taken and modified from Kaggle
+cats_install_dir = '/Users/iainmoncrief/.cache/kagglehub/datasets/imbikramsaha/cat-breeds/versions/1'
 sdir=r'./example/cat-breeds/versions/1/cats-breads'
 classes=sorted(os.listdir(sdir) )
 n = 0

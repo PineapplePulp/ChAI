@@ -1080,6 +1080,32 @@ class BatchNorm : Module(?) {
     }
 }
 
+class MultiheadAttention : Module(?) {
+    var q_weight: owned Parameter(eltType);
+    var k_weight: owned Parameter(eltType);
+    var v_weight: owned Parameter(eltType);
+    var num_heads: int;
+    var embed_dim: int;
+
+    proc init(type eltType = real, embed_dim: int, num_heads: int) {
+        this.q_weight = new Parameter(Tensor.ones(embed_dim, embed_dim));
+        this.k_weight = new Parameter(Tensor.ones(embed_dim, embed_dim));
+        this.v_weight = new Parameter(Tensor.ones(embed_dim, embed_dim));
+        this.num_heads = num_heads;
+        this.embed_dim = embed_dim;
+    }
+
+    override proc forward(input: Tensor(eltType)): Tensor(eltType) {
+        return Tensor.multiheadAttention(input, q_weight.data, k_weight.data, v_weight.data, num_heads, embed_dim);
+    }
+
+    override proc setup() {
+        addModule("query", q_weight);
+        addModule("key", k_weight);
+        addModule("value", v_weight);
+    }
+}
+
 class AdaptiveAvgPool2D : Module(?) {
   // only handles square pooling
   var outputSize: int;

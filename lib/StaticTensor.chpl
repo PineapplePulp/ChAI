@@ -453,6 +453,18 @@ proc type staticTensor.batchNorm(
     return tensorFromCtx(featureRank, eltType, ctx);
 }
 
+proc type staticTensor.multiheadAttention(
+    features: staticTensor(3, ?eltType),
+    q_weight: staticTensor(2, eltType),
+    k_weight: staticTensor(2, eltType),
+    v_weight: staticTensor(2, eltType),
+    num_heads: int,
+    embed_dim: int
+): staticTensor(3, eltType) {
+    var ctx = new multiheadAttentionOp(eltType, features.meta, q_weight.meta, k_weight.meta, v_weight.meta, num_heads, embed_dim);
+    return tensorFromCtx(3, eltType, ctx);
+}
+
 // proc matvec(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
 //     const (n,) = vec.array.domain.shape;
 //     const (m,_n) = mat.array.domain.shape;

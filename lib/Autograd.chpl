@@ -1101,6 +1101,24 @@ record batchNormOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","BatchNorm"));
 }
 
+record multiheadAttentionOp : serializable {
+    type eltType = real;
+    var features: shared BaseTensorResource(?);
+    var q_weight: shared BaseTensorResource(eltType, ?);
+    var k_weight: shared BaseTensorResource(eltType, ?);
+    var v_weight: shared BaseTensorResource(eltType, ?);
+    var num_heads: int;
+    var embed_dim: int;
+
+    proc children do return (features, q_weight, k_weight, v_weight);
+
+    proc forward() {
+        return ndarray.multiheadAttention(features.array, q_weight.array, k_weight.array, v_weight.array, num_heads, embed_dim);
+    }
+
+    proc spec : GradOpSpec do return new dict(("operation", "MultiHeadAttention"));
+}
+
 record dropoutOp : serializable {
     param rank: int;
     type eltType;

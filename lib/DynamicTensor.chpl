@@ -634,6 +634,28 @@ proc type dynamicTensor.batchnorm(
     return new dynamicTensor(eltType);
 }
 
+proc type dynamicTensor.multiheadAttention(
+    features: dynamicTensor(?eltType),
+    q_weight: dynamicTensor(eltType),
+    k_weight: dynamicTensor(eltType),
+    v_weight: dynamicTensor(eltType),
+    num_heads: int,
+    embed_dim: int
+): dynamicTensor(eltType) {
+    if features.checkRank(3) {
+        return staticTensor.multiheadAttention(
+            features.forceRank(3),
+            q_weight.forceRank(2),
+            k_weight.forceRank(2),
+            v_weight.forceRank(2),
+            num_heads,
+            embed_dim
+        ).eraseRank();
+    }
+    halt("Could not determine rank in dynamicTensor.multiheadAttention");
+    return new dynamicTensor(eltType);
+}
+
 proc dynamicTensor.softmax(): dynamicTensor(eltType) {
     for param rank in 1..maxRank {
         if this.checkRank(rank) then

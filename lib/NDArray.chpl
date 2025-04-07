@@ -1982,6 +1982,29 @@ proc type ndarray.matmul(a: ndarray(?aRank,?eltType),b: ndarray(?bRank,eltType))
     return prod;
 }
 
+// Supports 1 head as of now.
+proc type ndarray.multiheadAttention(
+    features: ndarray(3, ?eltType),
+    q_weight: ndarray(2, eltType),
+    k_weight: ndarray(2, eltType),
+    v_weight: ndarray(2, eltType),
+    num_heads: int,
+    embed_dim: int
+): ndarray(3, eltType) {
+    const fshape = features.shape;
+    const seq_len = fshape[0];
+    const batch_size = fshape[1];
+    const head_dim = embed_dim / 1;
+
+    var q = ndarray.matmul(features,q_weight);
+    var k = ndarray.matmul(features,k_weight);
+    var v = ndarray.matmul(features,v_weight);
+    var z = (ndarray.matmul(q,k.permute(0,2,1))/Math.sqrt(head_dim))._softmax(axis=2);
+    var a = ndarray.matmul(z,v);
+
+    return a;
+}
+
 proc type ndarray.batchNormTrain(
     features: ndarray(?rank,?eltType),
     weight: ndarray(1,eltType),

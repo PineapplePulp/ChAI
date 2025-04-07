@@ -2005,6 +2005,34 @@ proc type ndarray.multiheadAttention(
     return a;
 }
 
+/* Softmax, but with the option to specify the axis.
+
+   :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
+   :rtype: ndarray(rank, eltType)
+*/
+proc ndarray._softmax(axis:int = (this.rank-1)): ndarray(this.rank, this.eltType)
+    // where isSubtype(this.eltType, real)
+{
+    const dom = this.domain;
+    var exps = new ndarray(this.eltType, dom);
+    var smxd = new ndarray(this.eltType, dom);
+    const ref thisData = this.data;
+    ref expsData = exps.data;
+    ref outData = smxd.data;
+
+    forall i in dom.every() {
+        expsData[i] = Math.exp(thisData[i]);
+    }
+    var sums = exps.sum(axis).expand((...this.shape));
+    ref sumsData = sums.data;
+
+    forall i in dom.every() {
+        outData[i] = expsData[i]/sumsData[i];
+    }
+
+    return smxd;
+}
+
 proc type ndarray.batchNormTrain(
     features: ndarray(?rank,?eltType),
     weight: ndarray(1,eltType),

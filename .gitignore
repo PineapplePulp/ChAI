@@ -32,3 +32,4 @@ new_sun.png
 new_sun*.png
 new_sun_hello.png
 test/correspondence/gh.out
+!Makefile

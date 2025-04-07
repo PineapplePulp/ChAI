@@ -1925,6 +1925,63 @@ proc type ndarray.matvecmul(mat: ndarray(2,?eltType),vec: ndarray(1,eltType)): n
     return u;
 }
 
+proc type ndarray.matmul(a: ndarray(?aRank,?eltType),b: ndarray(?bRank,eltType)): ndarray(?) where (aRank >= 2 && bRank >= 2) {
+    assert(a.shape[aRank-1] == b.shape[bRank-2], "Invalid dimensions for matrix multiplication");
+    const outRank = if aRank >= bRank then aRank else bRank;
+    var mat1 = if aRank >= bRank then new ndarray(a.data) else new ndarray(b.data);
+    var preMat2 = if aRank < bRank then new ndarray(a.data) else new ndarray(b.data);
+    const first = if aRank >= bRank then 1 else 2;
+
+    var reshapeDims: mat1.rank*int;
+    var expandDims: mat1.rank*int;
+    const rankDiff = mat1.rank - preMat2.rank;
+    for i in 0..<mat1.rank {
+        if i < rankDiff {
+            reshapeDims[i] = 1;
+            expandDims[i] = mat1.shape[i];
+        } else {
+            reshapeDims[i] = preMat2.shape[i-rankDiff];
+            expandDims[i] = preMat2.shape[i-rankDiff];
+        }
+    }
+    var mat2 = preMat2.reshape((...reshapeDims)).expand((...expandDims));
+
+    var outShape: mat1.rank*int;
+    for i in 0..<mat1.rank {
+        if i == mat1.rank-1 {
+            outShape[i] = mat2.shape[mat2.rank - 1];
+        } else {
+            outShape[i] = mat1.shape[i];
+        }
+    }
+    var outDom = util.domainFromShape((...outShape));
+    var prod = new ndarray(outDom,eltType);
+
+    ref m1 = mat1.data;
+    ref m2 = mat2.data;
+    ref pd = prod.data;
+
+    for idx in outDom.every() {
+        const i = idx[outRank - 2];
+        const j = idx[outRank - 1];
+        var sum: eltType = 0;
+        for n in 0..<a.shape[aRank-1] {
+            var idxLM = idx;
+            idxLM[outRank-2] = i;
+            idxLM[outRank-1] = n;
+            var idxRM = idx;
+            idxRM[outRank-2] = n;
+            if first == 1 {
+                sum += m1[(...idxLM)]*m2[(...idxRM)];
+            } else {
+                sum += m2[(...idxLM)]*m1[(...idxRM)];
+            }
+        }
+        pd[idx] = sum;
+    }
+    return prod;
+}
+
 proc type ndarray.batchNormTrain(
     features: ndarray(?rank,?eltType),
     weight: ndarray(1,eltType),

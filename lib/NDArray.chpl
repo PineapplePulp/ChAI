@@ -518,6 +518,20 @@ proc ndarray.mean(axes: int...?axesCount): ndarray(rank,eltType) {
     }
     return this.sum((...axes)) / denom;
 }
+
+proc ndarray.variance(): ndarray(rank,eltType) do
+    return this.variance((...this.nDimTuple()));
+
+proc ndarray.variance(axes: int...?axesCount): ndarray(rank,eltType) {
+    const shape = this.shape;
+    var denom: eltType = 0;
+    for param i in 0..<axesCount {
+        const reducedN = shape(axes(i));
+        denom += reducedN : eltType;
+    }
+    return ((this - this.mean((...axes)).expand((...shape)))**2).sum((...axes)) / (denom - 1);
+}
+
 proc ndarray.shrink(narg: 2*int ... rank,param exactBounds = false): ndarray(rank,eltType) {
     var newShape: rank * int;
     var sliceRanges: rank * range;

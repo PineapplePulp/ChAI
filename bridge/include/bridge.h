@@ -4,9 +4,6 @@
 #include <stdio.h>
 
 #ifdef __cplusplus
-#include <torch/torch.h>
-#include <iostream>
-#include <vector>
 extern "C" {
 #endif
 

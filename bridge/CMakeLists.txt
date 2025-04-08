@@ -11,17 +11,11 @@ endif()
 
 set(CMAKE_C_COMPILER "clang")
 set(CMAKE_CXX_COMPILER "clang++")
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 
 
 set(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(PROJECT_BINARY_DIR "${CMAKE_BINARY_DIR}")
-
-find_package(chpl REQUIRED HINTS ${PROJECT_ROOT_DIR}/cmake/chapel)
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT_DIR}/cmake/chapel")
-
-project(MyProject LANGUAGES CXX C CHPL)
 
 
 # For ExternalProject_Add
@@ -34,6 +28,10 @@ include(ExternalProject)
 
 # Where to place PyTorch after installation
 set(PYTORCH_INSTALL_DIR "${PROJECT_BINARY_DIR}/pytorch-install")
+set(PYTORCH_BUILD_DIR "${PROJECT_BINARY_DIR}/pytorch-prefix/src/pytorch-build")
+
+set(PYTORCH_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/pytorch-install-prefix")
+file(MAKE_DIRECTORY "${PYTORCH_INSTALL_PREFIX}")
 
 # ExternalProject_Add can fetch from Git, a local path, or a release tarball.
 # Here, for simplicity, we'll fetch from Git. In practice, you might want
@@ -64,17 +62,26 @@ ExternalProject_Add(
       -DUSE_CUDA=OFF                       # Disable CUDA
       -DUSE_CUDNN=OFF                      # Disable cuDNN
       -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
+      # -DBUILD_BINARY=ON
+      # -DUSE_DISTRIBUTED=ON
+      # -DBUILD_STATIC_RUNTIME_BENCHMARK=ON
+      # -DBUILD_LITE_INTERPRETER=ON
+      # -DUSE_STATIC_MKL=ON
+      # -DSTATIC_DISPATCH_BACKEND=ON
+      # -DCAFFE2_USE_MSVC_STATIC_RUNTIME=ON
+      -DUSE_DISTRIBUTED=ON
       -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
+      -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_PREFIX}
+      # -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
   INSTALL_DIR         ${PYTORCH_INSTALL_DIR} # Where to install
 
-  LOG_DOWNLOAD ON
-  LOG_UPDATE ON
-  LOG_PATCH ON
-  LOG_CONFIGURE ON
+  # LOG_DOWNLOAD ON
+  # LOG_UPDATE ON
+  # LOG_PATCH ON
+  # LOG_CONFIGURE ON
   # LOG_BUILD ON
-  LOG_INSTALL ON
+  # LOG_INSTALL ON
   
 )
 
@@ -82,6 +89,23 @@ ExternalProject_Add(
 file(GLOB_RECURSE PYTORCH_INCLUDES "${PYTORCH_INSTALL_DIR}/include" "*.h")
 file(GLOB_RECURSE PYTORCH_LIBS "${PYTORCH_INSTALL_DIR}/lib" "*.a")
 
+
+set(PYTORCH_LIBS_LINKER_ARGS "")  # Will hold the list of "-l..." flags.
+foreach(lib_path IN LISTS PYTORCH_LIBS)
+  # Get just the filename without the directory or extension
+  get_filename_component(lib_name "${lib_path}" NAME_WE)
+  # If it starts with "lib", strip that off
+  string(REGEX REPLACE "^lib" "" lib_name "${lib_name}")
+  # Now prepend "-l" to the actual library name
+  list(APPEND MY_LIBS "-l${lib_name}")
+endforeach()
+
+
+find_package(chpl REQUIRED HINTS ${PROJECT_ROOT_DIR}/cmake/chapel)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT_DIR}/cmake/chapel")
+
+project(MyProject LANGUAGES CXX C CHPL)
 
 # ------------------------------------------------------------------------------
 # 2) Create an INTERFACE library to wrap the installed static libs
@@ -99,6 +123,7 @@ add_dependencies(torch_interface pytorch)
 target_include_directories(torch_interface INTERFACE
     "${PYTORCH_INSTALL_DIR}/include"
     "${PYTORCH_INSTALL_DIR}/include/torch/csrc/api/include"
+    # "${PYTORCH_BUILD_DIR}/aten/src/include"
 )
 
 # Link the relevant static libraries.  For a minimal CPU-only build, 
@@ -126,17 +151,22 @@ add_executable(CHPLTest lib/CHPLTest.chpl)
 add_library(torchbridge STATIC "${PROJECT_ROOT_DIR}/lib/bridge.cpp" "${PROJECT_ROOT_DIR}/include/bridge.h")
 add_dependencies(torchbridge torch_interface)
 
-target_include_directories(torchbridge PUBLIC
+target_include_directories(torchbridge PRIVATE
     "${PYTORCH_INSTALL_DIR}/include"
     "${PYTORCH_INSTALL_DIR}/include/torch/csrc/api/include"
     "${PROJECT_ROOT_DIR}/include"
+    # "${PYTORCH_BUILD_DIR}/aten/src/include"
 )
 # target_link_directories(torchbridge PUBLIC
 #     "${PYTORCH_INSTALL_DIR}/lib"
 # )
 target_link_libraries(torchbridge 
-    torch_interface
-    ${PYTORCH_LIBS}
+    PRIVATE 
+      torch_interface
+      ${PYTORCH_LIBS}
+      pthread
+      dl
+      rt
     )
 
 
@@ -145,23 +175,29 @@ target_link_libraries(torchbridge
 
 add_executable(Bridge lib/Bridge.chpl include/bridge.h)
 # add_dependencies(TorchBridge torchbridge)
+add_dependencies(Bridge torchbridge)
 
 target_link_options(Bridge 
   PRIVATE 
     "${PROJECT_ROOT_DIR}/include/bridge.h"
     "-L${PROJECT_BINARY_DIR}"
+    "-ltorchbridge"
     -L. 
     "-ltorchbridge"
-    "-I${PROJECT_BINARY_DIR}"
-    "-L${PYTORCH_INSTALL_DIR}/lib"
-    "-I${PYTORCH_INSTALL_DIR}/include"
-    "-I${PYTORCH_INSTALL_DIR}/include/torch/csrc/api/include"
-    "-ltorch"
-    "-ltorch_cpu"
-    "-lcpuinfo"
-    "-lc10"
-    "-lpthread"
-    "-ldl"
+    # "-I${PROJECT_BINARY_DIR}"
+    # "-L${PYTORCH_INSTALL_DIR}/lib"
+    # "-I${PYTORCH_INSTALL_DIR}/include"
+    # "-I${PYTORCH_INSTALL_DIR}/include/torch/csrc/api/include"
+    # "-ltorch"
+    # "-ltorch_cpu"
+    # "-lcpuinfo"
+    # "-lc10"
+    # "-lsleef"
+    # "-lclog"
+    # "-lprotoc"
+    # ${PYTORCH_LIBS_LINKER_ARGS}
+    # "-lpthread"
+    # "-ldl"
   )
 
 

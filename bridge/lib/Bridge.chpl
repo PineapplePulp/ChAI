@@ -6,7 +6,9 @@ extern proc wrHello(): void;
 extern proc wrHelloTorch(): void;
 extern proc sumArray(arr: [] real(32), sizes: [] int(32), dim: int(32)): real(32);
 
-wrHello();
+
+baz();
+
 wrHello();
 
 

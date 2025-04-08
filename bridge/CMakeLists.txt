@@ -33,7 +33,7 @@ include(ExternalProject)
 # ------------------------------------------------------------------------------
 
 # Where to place PyTorch after installation
-set(PYTORCH_INSTALL_DIR "${CMAKE_BINARY_DIR}/pytorch-install")
+set(PYTORCH_INSTALL_DIR "${PROJECT_BINARY_DIR}/pytorch-install")
 
 # ExternalProject_Add can fetch from Git, a local path, or a release tarball.
 # Here, for simplicity, we'll fetch from Git. In practice, you might want
@@ -45,6 +45,8 @@ ExternalProject_Add(
   GIT_TAG             v2.6.0                # Example: specify a particular release
   UPDATE_COMMAND      ""                     # Don’t auto-run 'git pull'
   PATCH_COMMAND       ""                     # No custom patch step
+  
+  # DOWNLOAD_DIR         "${CMAKE_BINARY_DIR}/pytorch-download" # Where to download the repo
 
   # We need all PyTorch submodules. By default, ExternalProject won't do submodule init.
   # So we can do that in a separate step if we want a full build. For a minimal CPU build,
@@ -66,7 +68,20 @@ ExternalProject_Add(
       -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
 
   INSTALL_DIR         ${PYTORCH_INSTALL_DIR} # Where to install
+
+  LOG_DOWNLOAD ON
+  LOG_UPDATE ON
+  LOG_PATCH ON
+  LOG_CONFIGURE ON
+  # LOG_BUILD ON
+  LOG_INSTALL ON
+  
 )
+
+
+file(GLOB_RECURSE PYTORCH_INCLUDES "${PYTORCH_INSTALL_DIR}/include" "*.h")
+file(GLOB_RECURSE PYTORCH_LIBS "${PYTORCH_INSTALL_DIR}/lib" "*.a")
+
 
 # ------------------------------------------------------------------------------
 # 2) Create an INTERFACE library to wrap the installed static libs
@@ -95,6 +110,8 @@ target_link_libraries(torch_interface INTERFACE
     "${PYTORCH_INSTALL_DIR}/lib/libtorch_cpu.a"
     "${PYTORCH_INSTALL_DIR}/lib/libc10.a"
 
+    ${PYTORCH_LIBS}
+
     # System libraries often needed:
     pthread
     dl
@@ -114,35 +131,38 @@ target_include_directories(torchbridge PUBLIC
     "${PYTORCH_INSTALL_DIR}/include/torch/csrc/api/include"
     "${PROJECT_ROOT_DIR}/include"
 )
-target_link_directories(torchbridge PUBLIC
-    "${PYTORCH_INSTALL_DIR}/lib"
-)
-target_link_libraries(torchbridge torch_interface)
+# target_link_directories(torchbridge PUBLIC
+#     "${PYTORCH_INSTALL_DIR}/lib"
+# )
+target_link_libraries(torchbridge 
+    torch_interface
+    ${PYTORCH_LIBS}
+    )
 
 
 
 
 
-# add_executable(TorchBridge lib/Bridge.chpl include/bridge.h)
+add_executable(Bridge lib/Bridge.chpl include/bridge.h)
+# add_dependencies(TorchBridge torchbridge)
 
-# target_link_options(TorchBridge 
-#   PRIVATE 
-#     "${PROJECT_ROOT_DIR}/include/bridge.h"
-#     "-L${PROJECT_BINARY_DIR}"
-#     -L. 
-#     "-ltorchbridge"
-#     "-I${PROJECT_BINARY_DIR}"
-#     "-L${PYTORCH_INSTALL_DIR}/lib"
-#     "-I${PYTORCH_INSTALL_DIR}/include"
-#     "-I${PYTORCH_INSTALL_DIR}/include/torch/csrc/api/include"
-#     "-ltorch"
-#     "-ltorch_cpu"
-#     "-lcpuinfo"
-#     "-lc10"
-#     "-lpthread"
-#     "-ldl"
-    
-#   )
+target_link_options(Bridge 
+  PRIVATE 
+    "${PROJECT_ROOT_DIR}/include/bridge.h"
+    "-L${PROJECT_BINARY_DIR}"
+    -L. 
+    "-ltorchbridge"
+    "-I${PROJECT_BINARY_DIR}"
+    "-L${PYTORCH_INSTALL_DIR}/lib"
+    "-I${PYTORCH_INSTALL_DIR}/include"
+    "-I${PYTORCH_INSTALL_DIR}/include/torch/csrc/api/include"
+    "-ltorch"
+    "-ltorch_cpu"
+    "-lcpuinfo"
+    "-lc10"
+    "-lpthread"
+    "-ldl"
+  )
 
 
 

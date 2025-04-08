@@ -21,6 +21,8 @@ extern "C" void wrHelloTorch(void) {
 extern "C" float sumArray(float* arr, int* sizes, int dim) {
     // Convert sizes to std::vector<int64_t>
 
+    printf("sumArray called with arr: %p, sizes: %p, dim: %d\n", arr, sizes, dim);
+
     std::vector<int64_t> sizes_vec(sizes, sizes + dim);
     std::cout << sizes_vec << std::endl;
 

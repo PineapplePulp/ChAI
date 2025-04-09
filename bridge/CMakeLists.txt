@@ -11,7 +11,7 @@ endif()
 
 set(CMAKE_C_COMPILER "clang")
 set(CMAKE_CXX_COMPILER "clang++")
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 
 set(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -55,25 +55,34 @@ ExternalProject_Add(
   # We can use a little trick with COMMAND.
 #   PATCH_COMMAND       "git submodule update --init --recursive"
 
-  CMAKE_ARGS
-      -DBUILD_SHARED_LIBS=OFF              # Build static libraries
-      -DBUILD_PYTHON=OFF                   # Don’t build Python bindings
-      -DBUILD_TEST=OFF                     # Don’t build tests
-      -DUSE_CUDA=OFF                       # Disable CUDA
-      -DUSE_CUDNN=OFF                      # Disable cuDNN
-      -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
-      # -DBUILD_BINARY=ON
-      # -DUSE_DISTRIBUTED=ON
-      # -DBUILD_STATIC_RUNTIME_BENCHMARK=ON
-      # -DBUILD_LITE_INTERPRETER=ON
-      # -DUSE_STATIC_MKL=ON
-      # -DSTATIC_DISPATCH_BACKEND=ON
-      # -DCAFFE2_USE_MSVC_STATIC_RUNTIME=ON
-      # -DUSE_DISTRIBUTED=ON
-      -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
-      -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-
+  # CMAKE_ARGS
+  #     -DBUILD_SHARED_LIBS=OFF              # Build static libraries
+  #     -DBUILD_PYTHON=OFF                   # Don’t build Python bindings
+  #     -DBUILD_TEST=OFF                     # Don’t build tests
+  #     -DUSE_CUDA=OFF                       # Disable CUDA
+  #     -DUSE_CUDNN=OFF                      # Disable cuDNN
+  #     -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
+  #     # -DBUILD_BINARY=ON
+  #     # -DUSE_DISTRIBUTED=ON
+  #     # -DBUILD_STATIC_RUNTIME_BENCHMARK=ON
+  #     # -DBUILD_LITE_INTERPRETER=ON
+  #     # -DUSE_STATIC_MKL=ON
+  #     # -DSTATIC_DISPATCH_BACKEND=ON
+  #     # -DCAFFE2_USE_MSVC_STATIC_RUNTIME=ON
+  #     # -DUSE_DISTRIBUTED=ON
+  #     # -DCMAKE_BUILD_TYPE=Release
+  #     -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
+  #     # -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    CMAKE_ARGS
+        -DBUILD_SHARED_LIBS=OFF              # Build static libraries
+        -DBUILD_PYTHON=OFF                   # Don’t build Python bindings
+        -DBUILD_TEST=OFF                     # Don’t build tests
+        -DUSE_CUDA=OFF                       # Disable CUDA
+        -DUSE_CUDNN=OFF                      # Disable cuDNN
+        -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
+    
   INSTALL_DIR         ${PYTORCH_INSTALL_DIR} # Where to install
 
   # LOG_DOWNLOAD ON

@@ -31,7 +31,7 @@ set(PYTORCH_INSTALL_DIR "${PROJECT_BINARY_DIR}/pytorch-install")
 set(PYTORCH_BUILD_DIR "${PROJECT_BINARY_DIR}/pytorch-prefix/src/pytorch-build")
 
 set(PYTORCH_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/pytorch-install-prefix")
-file(MAKE_DIRECTORY "${PYTORCH_INSTALL_PREFIX}")
+# file(MAKE_DIRECTORY "${PYTORCH_INSTALL_PREFIX}")
 
 # ExternalProject_Add can fetch from Git, a local path, or a release tarball.
 # Here, for simplicity, we'll fetch from Git. In practice, you might want
@@ -69,10 +69,10 @@ ExternalProject_Add(
       # -DUSE_STATIC_MKL=ON
       # -DSTATIC_DISPATCH_BACKEND=ON
       # -DCAFFE2_USE_MSVC_STATIC_RUNTIME=ON
-      -DUSE_DISTRIBUTED=ON
+      # -DUSE_DISTRIBUTED=ON
       -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_PREFIX}
-      # -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
+      -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
   INSTALL_DIR         ${PYTORCH_INSTALL_DIR} # Where to install
 

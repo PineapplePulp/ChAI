@@ -37,4 +37,5 @@ test/correspondence/gh.out
 modules/build
 !bridge/*
 bridge/build
+bridge/libtorch
 # pytorch/

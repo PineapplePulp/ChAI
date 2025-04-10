@@ -8,8 +8,9 @@
 
 void secret() {
     std::cout << "Secret function called!" << std::endl;
-    torch::Tensor tensor = torch::eye(3);
-    // std::cout << "Tensor: " << tensor << std::endl;
+    auto x = torch::randn({5, 3});
+    // torch::Tensor tensor = torch::eye(3);
+    std::cout << "Tensor: " << x << std::endl;
 
     // std::cout << "Secret function called! Tensor: " << tensor << std::endl;
 }
@@ -17,8 +18,8 @@ void secret() {
 extern "C" int baz(void) {
     printf("Hello from baz!\n");
     secret();
-    // auto x = torch::randn({5, 3});
-    // return x.size(0);
+    auto x = torch::randn({5, 3});
+    return x.size(0);
 }
 
 
@@ -38,18 +39,18 @@ extern "C" float sumArray(float* arr, int* sizes, int dim) {
 
     printf("sumArray called with arr: %p, sizes: %p, dim: %d\n", arr, sizes, dim);
 
-    // std::vector<int64_t> sizes_vec(sizes, sizes + dim);
-    // std::cout << sizes_vec << std::endl;
+    std::vector<int64_t> sizes_vec(sizes, sizes + dim);
+    std::cout << sizes_vec << std::endl;
 
-    // auto shape = at::IntArrayRef(sizes_vec);
-    // std::cout << shape << std::endl;
+    auto shape = at::IntArrayRef(sizes_vec);
+    std::cout << shape << std::endl;
 
-    // auto t = torch::from_blob(arr, shape, torch::kFloat);
-    // std::cout << t << std::endl;
+    auto t = torch::from_blob(arr, shape, torch::kFloat);
+    std::cout << t << std::endl;
 
-    // return t.sum().item<float>();
+    return t.sum().item<float>();
 
-    return 0.0f;
+    // return 0.0f;
 
     // float sum = 0.0f;
     // for (int i = 0; i < size; ++i) {

@@ -1,5 +1,6 @@
 
 // require "mylib.h", "-lMyLib";
+use Allocators;
 
 extern proc baz(): int;
 extern proc wrHello(): void;
@@ -12,6 +13,12 @@ extern record bridge_tensor_t {
     var sizes: c_ptr(int(32));
     var dim: int(32);
 }
+
+// extern record bridge_tensor_t_const {
+//     var data: c_ptrConst(real(32));
+//     var sizes: c_ptr(int(32));
+//     var dim: int(32);
+// }
 
 extern proc increment2(arr: [] real(32), sizes: [] int(32), dim: int(32)): bridge_tensor_t;
 extern proc increment3(in arr: bridge_tensor_t): bridge_tensor_t;
@@ -66,6 +73,22 @@ for (idx,i) in zip(dom,0..<dom.size) do
 // increment(a,shape.sizes,shape.rank,b);
 // writeln("B: ", b);
 
+// var c = increment2(a,shape.sizes,shape.rank);
+
+// var cShape = getResultTensorShape(shape.rank, c);
+
+// var cDom = domainFromShape((...cShape));
+
+// var C: [cDom] real(32);
+// forall i in 0..<cDom.size {
+//     var idx = cDom.orderToIndex(i);
+//     C[idx] = c.data[i];
+// }
+
+// var c = bridgeTensorToArray(shape.rank, increment2(a,shape.sizes,shape.rank));
+
+
+// writeln("C: ", c);
 
 proc getSizeArray(const ref arr: [] ?eltType): [] int(32) {
     var sizes: [0..<arr.rank] int(32);
@@ -98,34 +121,13 @@ proc bridgeTensorToArray(param rank: int, package: bridge_tensor_t): [] real(32)
         var idx = dom.orderToIndex(i);
         result[idx] = package.data[i];
     }
+    deallocate(package.data);
+    deallocate(package.sizes);
     return result;
 }
-// var c = increment2(a,shape.sizes,shape.rank);
-
-// var cShape = getResultTensorShape(shape.rank, c);
-
-// var cDom = domainFromShape((...cShape));
-
-// var C: [cDom] real(32);
-// forall i in 0..<cDom.size {
-//     var idx = cDom.orderToIndex(i);
-//     C[idx] = c.data[i];
-// }
-
-// var c = bridgeTensorToArray(shape.rank, increment2(a,shape.sizes,shape.rank));
-
-
-// writeln("C: ", c);
-
-use Allocators;
-
 
 
 proc createBridgeTensor(ref data: [] real(32)): bridge_tensor_t {
-    // var alloc = new mallocWrapper();
-    // alloc.allocate(1024);
-
-
     var result: bridge_tensor_t;
     result.data = c_ptrTo(data);
     result.sizes = allocate(int(32),data.rank);
@@ -133,14 +135,38 @@ proc createBridgeTensor(ref data: [] real(32)): bridge_tensor_t {
     for i in 0..<data.rank do
         result.sizes[i] = sizeArr[i];
 
-    // result.sizes = c_ptrTo(getSizeArray(data));
     result.dim = data.rank;
     return result;
-
-    // var res = newWithAllocator(alloc, bridge_tensor_t, result);
-    // return res;
 }
 
-writeln(createBridgeTensor(a));
+// proc createBridgeTensor(const ref data: [] real(32)): bridge_tensor_t_const {
+//     var result: bridge_tensor_t_const;
+//     result.data = c_ptrToConst(data);
+//     result.sizes = allocate(int(32),data.rank);
+//     const sizeArr = getSizeArray(data);
+//     for i in 0..<data.rank do
+//         result.sizes[i] = sizeArr[i];
 
-writeln(bridgeTensorToArray(2,increment3(createBridgeTensor(a))));
+//     result.dim = data.rank;
+//     return result;
+// }
+
+
+proc chplIncrement(ref data: [] real(32)): [] real(32) {
+    param rank = data.rank;
+    var dataBT = createBridgeTensor(data);
+    var resultBT = increment3(dataBT);
+    var result = bridgeTensorToArray(rank, resultBT);
+    deallocate(dataBT.data);
+    deallocate(dataBT.sizes);
+    return result;
+}
+
+
+
+// writeln(bridgeTensorToArray(2,increment3(createBridgeTensor(a))));
+writeln(a);
+writeln("----------");
+writeln(chplIncrement(a));
+writeln("----------");
+writeln(a);

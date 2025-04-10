@@ -14,6 +14,7 @@ extern record tensor_result_t {
 }
 
 extern proc increment2(arr: [] real(32), sizes: [] int(32), dim: int(32)): tensor_result_t;
+extern proc increment3(in arr: tensor_result_t): tensor_result_t;
 
 
 // baz();
@@ -86,18 +87,58 @@ proc domainFromShape(shape: int ...?rank): domain(rank,int) {
     return {(...ranges)};
 }
 
-var c = increment2(a,shape.sizes,shape.rank);
 
-var cShape = getResultTensorShape(shape.rank, c);
+proc tensorResultToArray(param rank: int, package: tensor_result_t): [] real(32) {
+    var shape = getResultTensorShape(rank, package);
+    var dom = domainFromShape((...shape));
+    var result: [dom] real(32);
+    forall i in 0..<dom.size {
+        var idx = dom.orderToIndex(i);
+        result[idx] = package.data[i];
+    }
+    return result;
+}
+// var c = increment2(a,shape.sizes,shape.rank);
 
-var cDom = domainFromShape((...cShape));
+// var cShape = getResultTensorShape(shape.rank, c);
 
-var C: [cDom] real(32);
-forall i in 0..<cDom.size {
-    var idx = cDom.orderToIndex(i);
-    C[idx] = c.data[i];
+// var cDom = domainFromShape((...cShape));
+
+// var C: [cDom] real(32);
+// forall i in 0..<cDom.size {
+//     var idx = cDom.orderToIndex(i);
+//     C[idx] = c.data[i];
+// }
+
+var c = tensorResultToArray(shape.rank, increment2(a,shape.sizes,shape.rank));
+
+
+writeln("C: ", c);
+
+use Allocators;
+
+
+
+proc createTensorResult(ref data: [] real(32)): tensor_result_t {
+    // var alloc = new mallocWrapper();
+    // alloc.allocate(1024);
+
+
+    var result: tensor_result_t;
+    result.data = c_ptrTo(data);
+    result.sizes = allocate(int(32),data.rank);
+    const sizeArr = getSizeArray(data);
+    for i in 0..<data.rank do
+        result.sizes[i] = sizeArr[i];
+
+    // result.sizes = c_ptrTo(getSizeArray(data));
+    result.dim = data.rank;
+    return result;
+
+    // var res = newWithAllocator(alloc, tensor_result_t, result);
+    // return res;
 }
 
+writeln(createTensorResult(a));
 
-writeln("C: ", C);
-
+writeln(tensorResultToArray(2,increment3(createTensorResult(a))));

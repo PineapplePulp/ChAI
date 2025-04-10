@@ -23,6 +23,7 @@ float sumArray(float* arr, int* sizes, int dim);
 
 void increment(float* arr, int* sizes, int dim, float* output);
 tensor_result_t increment2(float* arr, int* sizes, int dim);
+tensor_result_t increment3(tensor_result_t arr);
 
 // void convolve(
 //     float* input,
@@ -33,8 +34,8 @@ tensor_result_t increment2(float* arr, int* sizes, int dim);
 //     int kernel_dim,
 //     float* output,
 //     int* output_sizes,
-//     int output_dim,
-// )
+//     int output_dim
+// );
 
 #ifdef __cplusplus
 }

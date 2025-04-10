@@ -105,6 +105,19 @@ extern "C" tensor_result_t increment2(float* arr, int* sizes, int dim) {
     return tensor_result_convert(incremented_tensor);
 }
 
+extern "C" tensor_result_t increment3(tensor_result_t arr) {
+    // Convert sizes to std::vector<int64_t>
+    std::vector<int64_t> sizes_vec(arr.sizes, arr.sizes + arr.dim);
+    auto shape = at::IntArrayRef(sizes_vec);
+    auto t = torch::from_blob(arr.data, shape, torch::kFloat);
+
+    // Increment the tensor
+    auto incremented_tensor = t + 1;
+
+    return tensor_result_convert(incremented_tensor);
+}
+
+
 extern "C" float sumArray(float* arr, int* sizes, int dim) {
     // Convert sizes to std::vector<int64_t>
 

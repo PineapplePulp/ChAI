@@ -7,14 +7,14 @@ extern proc wrHelloTorch(): void;
 extern proc sumArray(arr: [] real(32), sizes: [] int(32), dim: int(32)): real(32);
 extern proc increment(arr: [] real(32), sizes: [] int(32), dim: int(32), ref output: [] real(32)): void;
 
-extern record tensor_result_t {
+extern record bridge_tensor_t {
     var data: c_ptr(real(32));
     var sizes: c_ptr(int(32));
     var dim: int(32);
 }
 
-extern proc increment2(arr: [] real(32), sizes: [] int(32), dim: int(32)): tensor_result_t;
-extern proc increment3(in arr: tensor_result_t): tensor_result_t;
+extern proc increment2(arr: [] real(32), sizes: [] int(32), dim: int(32)): bridge_tensor_t;
+extern proc increment3(in arr: bridge_tensor_t): bridge_tensor_t;
 
 
 // baz();
@@ -39,10 +39,33 @@ for (idx,i) in zip(dom,0..<dom.size) do
 // writeln("Sum of array: ", sumArray(a,sizes,a.rank));
 
 
-record arrayShape_c {
-    param rank: int;
-    var sizes: [0..<rank] int(32);
-}
+// record arrayShape_c {
+//     param rank: int;
+//     var sizes: [0..<rank] int(32);
+// }
+
+
+
+// proc getArrayShapeC(const ref arr: [] ?eltType): arrayShape_c(arr.rank) {
+//     var shape: arrayShape_c(arr.rank);
+//     for i in 0..<arr.rank do
+//         shape.sizes[i] = arr.dim(i).size : int(32);
+//     return shape;
+// }
+
+// writeln("Sum of array: ", sumArray(a,getSizeArray(a),a.rank));
+
+// var shape = getArrayShapeC(a);
+// writeln("Shape of array: ", shape.sizes);
+// writeln("Sum of array: ", sumArray(a,shape.sizes,shape.rank));
+
+// var shape = getArrayShapeC(a);
+// writeln("A: ", a);
+
+// var b: [a.domain] real(32);
+// increment(a,shape.sizes,shape.rank,b);
+// writeln("B: ", b);
+
 
 proc getSizeArray(const ref arr: [] ?eltType): [] int(32) {
     var sizes: [0..<arr.rank] int(32);
@@ -51,28 +74,7 @@ proc getSizeArray(const ref arr: [] ?eltType): [] int(32) {
     return sizes;
 }
 
-proc getArrayShapeC(const ref arr: [] ?eltType): arrayShape_c(arr.rank) {
-    var shape: arrayShape_c(arr.rank);
-    for i in 0..<arr.rank do
-        shape.sizes[i] = arr.dim(i).size : int(32);
-    return shape;
-}
-
-// writeln("Sum of array: ", sumArray(a,getSizeArray(a),a.rank));
-
-// var shape = getArrayShapeC(a);
-// writeln("Shape of array: ", shape.sizes);
-// writeln("Sum of array: ", sumArray(a,shape.sizes,shape.rank));
-
-var shape = getArrayShapeC(a);
-writeln("A: ", a);
-
-var b: [a.domain] real(32);
-increment(a,shape.sizes,shape.rank,b);
-writeln("B: ", b);
-
-
-proc getResultTensorShape(param dim: int, result: tensor_result_t): dim*int {
+proc bridgeTensorShape(param dim: int, result: bridge_tensor_t): dim*int {
     var shape: dim*int;
     for i in 0..<dim do
         shape[i] = result.sizes[i] : int;
@@ -88,8 +90,8 @@ proc domainFromShape(shape: int ...?rank): domain(rank,int) {
 }
 
 
-proc tensorResultToArray(param rank: int, package: tensor_result_t): [] real(32) {
-    var shape = getResultTensorShape(rank, package);
+proc bridgeTensorToArray(param rank: int, package: bridge_tensor_t): [] real(32) {
+    var shape = bridgeTensorShape(rank, package);
     var dom = domainFromShape((...shape));
     var result: [dom] real(32);
     forall i in 0..<dom.size {
@@ -110,21 +112,21 @@ proc tensorResultToArray(param rank: int, package: tensor_result_t): [] real(32)
 //     C[idx] = c.data[i];
 // }
 
-var c = tensorResultToArray(shape.rank, increment2(a,shape.sizes,shape.rank));
+// var c = bridgeTensorToArray(shape.rank, increment2(a,shape.sizes,shape.rank));
 
 
-writeln("C: ", c);
+// writeln("C: ", c);
 
 use Allocators;
 
 
 
-proc createTensorResult(ref data: [] real(32)): tensor_result_t {
+proc createBridgeTensor(ref data: [] real(32)): bridge_tensor_t {
     // var alloc = new mallocWrapper();
     // alloc.allocate(1024);
 
 
-    var result: tensor_result_t;
+    var result: bridge_tensor_t;
     result.data = c_ptrTo(data);
     result.sizes = allocate(int(32),data.rank);
     const sizeArr = getSizeArray(data);
@@ -135,10 +137,10 @@ proc createTensorResult(ref data: [] real(32)): tensor_result_t {
     result.dim = data.rank;
     return result;
 
-    // var res = newWithAllocator(alloc, tensor_result_t, result);
+    // var res = newWithAllocator(alloc, bridge_tensor_t, result);
     // return res;
 }
 
-writeln(createTensorResult(a));
+writeln(createBridgeTensor(a));
 
-writeln(tensorResultToArray(2,increment3(createTensorResult(a))));
+writeln(bridgeTensorToArray(2,increment3(createBridgeTensor(a))));

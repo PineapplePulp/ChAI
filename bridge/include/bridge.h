@@ -7,11 +7,11 @@
 extern "C" {
 #endif
 
-typedef struct tensor_result_t {
+typedef struct bridge_tensor_t {
     float* data;
     int* sizes;
     int dim;
-} tensor_result_t;
+} bridge_tensor_t;
 
 int baz(void);
 
@@ -22,8 +22,8 @@ void wrHelloTorch(void);
 float sumArray(float* arr, int* sizes, int dim);
 
 void increment(float* arr, int* sizes, int dim, float* output);
-tensor_result_t increment2(float* arr, int* sizes, int dim);
-tensor_result_t increment3(tensor_result_t arr);
+bridge_tensor_t increment2(float* arr, int* sizes, int dim);
+bridge_tensor_t increment3(bridge_tensor_t arr);
 
 // void convolve(
 //     float* input,

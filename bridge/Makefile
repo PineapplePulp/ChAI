@@ -1,4 +1,5 @@
 
+all: bridge.o Bridge
 
 bridge.o: lib/bridge.cpp include/bridge.h 
 	g++ -c lib/bridge.cpp -I include -o bridge.o -I /Users/iainmoncrief/Documents/Github/ChAI/bridge/libtorch/include/torch/csrc/api/include -I /Users/iainmoncrief/Documents/Github/ChAI/bridge/libtorch/include --std=c++17

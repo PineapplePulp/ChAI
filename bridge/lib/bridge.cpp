@@ -8,8 +8,11 @@
 
 #include <cstdint>
 
-using float32_t = float;
 
+
+extern "C" float32_t* unsafe(const float32_t* arr) {
+    return const_cast<float32_t*>(arr);
+}
 
 int bridge_tensor_elements(bridge_tensor_t &bt) {
     int size = 1;
@@ -54,6 +57,20 @@ extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
     auto incremented_tensor = t + 1;
 
     return tensor_result_convert(incremented_tensor);
+}
+
+extern "C" bridge_tensor_t convolve2d(
+    bridge_tensor_t input,
+    bridge_tensor_t kernel,
+    bridge_tensor_t bias,
+    int stride,
+    int padding
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_kernel = bridge_to_torch(kernel);
+    auto t_bias = bridge_to_torch(bias);
+    auto output = torch::conv2d(t_input, t_kernel, t_bias, stride, padding);
+    return tensor_result_convert(output);
 }
 
 

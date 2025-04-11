@@ -23,6 +23,14 @@ extern record bridge_tensor_t {
 extern proc increment2(arr: [] real(32), sizes: [] int(32), dim: int(32)): bridge_tensor_t;
 extern proc increment3(in arr: bridge_tensor_t): bridge_tensor_t;
 
+extern proc convolve2d(
+    in input: bridge_tensor_t, 
+    in kernel: bridge_tensor_t, 
+    in bias: bridge_tensor_t, 
+    in stride: int(32), 
+    in padding: int(32)): bridge_tensor_t;
+
+extern proc unsafe(const ref arr: [] real(32)): c_ptr(real(32));
 
 // baz();
 
@@ -127,9 +135,9 @@ proc bridgeTensorToArray(param rank: int, package: bridge_tensor_t): [] real(32)
 }
 
 
-proc createBridgeTensor(ref data: [] real(32)): bridge_tensor_t {
+proc createBridgeTensor(const ref data: [] real(32)): bridge_tensor_t {
     var result: bridge_tensor_t;
-    result.data = c_ptrTo(data);
+    result.data = c_ptrToConst(data) : c_ptr(real(32));
     result.sizes = allocate(int(32),data.rank);
     const sizeArr = getSizeArray(data);
     for i in 0..<data.rank do
@@ -170,3 +178,18 @@ writeln("----------");
 writeln(chplIncrement(a));
 writeln("----------");
 writeln(a);
+
+
+var input: [domainFromShape(2,64,28,28)] real(32) = 1.0;
+var kernel: [domainFromShape(128,64,3,3)] real(32) = 2.0;
+var bias: [domainFromShape(128)] real(32) = 3.0;
+var stride: int(32) = 1;
+var padding: int(32) = 1;
+writeln("Begin.");
+var resultBT = convolve2d(createBridgeTensor(input), createBridgeTensor(kernel), createBridgeTensor(bias), stride, padding);
+var result = bridgeTensorToArray(4, resultBT);
+// writeln("Input: ", input);
+// writeln("Kernel: ", kernel);
+// writeln("Bias: ", bias);
+// writeln("Result: ", result);
+writeln("Result: ", result.size);

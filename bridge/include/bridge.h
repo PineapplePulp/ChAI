@@ -13,6 +13,9 @@ typedef struct bridge_tensor_t {
     int dim;
 } bridge_tensor_t;
 
+typedef float float32_t;
+typedef double float64_t;
+
 int baz(void);
 
 void wrHello(void);
@@ -25,17 +28,16 @@ void increment(float* arr, int* sizes, int dim, float* output);
 bridge_tensor_t increment2(float* arr, int* sizes, int dim);
 bridge_tensor_t increment3(bridge_tensor_t arr);
 
-// void convolve(
-//     float* input,
-//     int* input_sizes,
-//     int input_dim,
-//     float* kernel,
-//     int* kernel_sizes,
-//     int kernel_dim,
-//     float* output,
-//     int* output_sizes,
-//     int output_dim
-// );
+bridge_tensor_t convolve2d(
+    bridge_tensor_t input,
+    bridge_tensor_t kernel,
+    bridge_tensor_t bias,
+    int stride,
+    int padding
+);
+
+float* unsafe(const float* arr);
+
 
 #ifdef __cplusplus
 }

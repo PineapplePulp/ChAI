@@ -61,7 +61,7 @@ foreach(lib_path IN LISTS PYTORCH_LIBS)
 endforeach()
 
 # cmake_print_variables(PYTORCH_LIBS)
-cmake_print_variables(PYTORCH_LIBS_LINKER_ARGS)
+# cmake_print_variables(PYTORCH_LIBS_LINKER_ARGS)
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
@@ -73,7 +73,7 @@ target_link_options(TorchBridge
         "-ltorch"
         "-ltorch_cpu"
         "-lc10"
-        ${PYTORCH_LIBS_LINKER_ARGS}
+        # ${PYTORCH_LIBS_LINKER_ARGS}
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
 # install(TARGETS TorchBridge DESTINATION ".")

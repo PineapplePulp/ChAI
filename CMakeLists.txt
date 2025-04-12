@@ -48,6 +48,21 @@ target_include_directories(
 set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
 
+file(GLOB PYTORCH_LIBS "${LIBTORCH_DIR}/lib/*.a" "${LIBTORCH_DIR}/lib/*.dylib" "${LIBTORCH_DIR}/lib/*.so")
+
+set(PYTORCH_LIBS_LINKER_ARGS "-ltorch")  # Will hold the list of "-l..." flags.
+foreach(lib_path IN LISTS PYTORCH_LIBS)
+  # Get just the filename without the directory or extension
+  get_filename_component(lib_name "${lib_path}" NAME_WE)
+  # If it starts with "lib", strip that off
+  string(REGEX REPLACE "^lib" "" lib_name "${lib_name}")
+  # Now prepend "-l" to the actual library name
+  list(APPEND PYTORCH_LIBS_LINKER_ARGS "-l${lib_name}")
+endforeach()
+
+# cmake_print_variables(PYTORCH_LIBS)
+cmake_print_variables(PYTORCH_LIBS_LINKER_ARGS)
+
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
 target_link_options(TorchBridge
@@ -58,6 +73,7 @@ target_link_options(TorchBridge
         "-ltorch"
         "-ltorch_cpu"
         "-lc10"
+        ${PYTORCH_LIBS_LINKER_ARGS}
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
-install(TARGETS TorchBridge DESTINATION ".")
+# install(TARGETS TorchBridge DESTINATION ".")

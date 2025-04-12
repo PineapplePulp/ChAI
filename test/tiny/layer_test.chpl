@@ -66,7 +66,10 @@ writeln(arr);
 writeln(arr.toBridgeTensor());
 
 var bt = arr.toBridgeTensor();
+writeln(bt);
 arr.loadFromBridgeTensor(bt);
 writeln(arr);
 writeln(arr.shape);
+writeln(bt);
+
 writeln(ndarray.fromBridgeTensor(2,bt));

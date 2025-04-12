@@ -34,6 +34,7 @@ void store_tensor(torch::Tensor &input, float32_t* dest) {
 
 bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
     bridge_tensor_t result;
+    result.created_by_c = true;
     result.dim = tensor.dim();
     result.sizes = new int[result.dim];
     for (int i = 0; i < result.dim; ++i) {

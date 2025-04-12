@@ -9,6 +9,7 @@ module Bridge {
         var data: c_ptr(real(32));
         var sizes: c_ptr(int(32));
         var dim: int(32);
+        var created_by_c: bool;
     }
 
     proc tensorHandle(type eltType) type {
@@ -51,8 +52,10 @@ module Bridge {
         var result: [dom] real(32);
         forall (i,idx) in dom.everyZip() do
             result[idx] = package.data[i];
-        deallocate(package.data);
-        deallocate(package.sizes);
+        if package.created_by_c {
+            deallocate(package.data);
+            deallocate(package.sizes);
+        }
         return result;
     }
 
@@ -64,8 +67,10 @@ module Bridge {
         const dom = existing.domain;
         forall (i,idx) in dom.everyZip() do
             existing[idx] = package.data[i];
-        deallocate(package.data);
-        deallocate(package.sizes);
+        if package.created_by_c {
+            deallocate(package.data);
+            deallocate(package.sizes);
+        }
     }
 
     proc createBridgeTensor(const ref data: [] real(32)): bridge_tensor_t {

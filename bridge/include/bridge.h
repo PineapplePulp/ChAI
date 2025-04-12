@@ -7,14 +7,17 @@
 extern "C" {
 #endif
 
+typedef float float32_t;
+typedef double float64_t;
+typedef char bool_t;
+
 typedef struct bridge_tensor_t {
     float* data;
     int* sizes;
     int dim;
+    bool_t created_by_c;
 } bridge_tensor_t;
 
-typedef float float32_t;
-typedef double float64_t;
 
 int baz(void);
 

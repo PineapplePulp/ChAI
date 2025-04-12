@@ -1,0 +1,4 @@
+/Users/iainmoncrief/Documents/Github/ChAI/build/CMakeFiles/bridge.dir
+/Users/iainmoncrief/Documents/Github/ChAI/build/CMakeFiles/BridgeTest.dir
+/Users/iainmoncrief/Documents/Github/ChAI/build/CMakeFiles/edit_cache.dir
+/Users/iainmoncrief/Documents/Github/ChAI/build/CMakeFiles/rebuild_cache.dir

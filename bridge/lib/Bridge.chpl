@@ -14,11 +14,6 @@ extern record bridge_tensor_t {
     var dim: int(32);
 }
 
-// extern record bridge_tensor_t_const {
-//     var data: c_ptrConst(real(32));
-//     var sizes: c_ptr(int(32));
-//     var dim: int(32);
-// }
 
 extern proc increment2(arr: [] real(32), sizes: [] int(32), dim: int(32)): bridge_tensor_t;
 extern proc increment3(in arr: bridge_tensor_t): bridge_tensor_t;
@@ -193,3 +188,5 @@ var result = bridgeTensorToArray(4, resultBT);
 // writeln("Bias: ", bias);
 // writeln("Result: ", result);
 writeln("Result: ", result.size);
+
+

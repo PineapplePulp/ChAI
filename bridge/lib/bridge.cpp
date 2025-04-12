@@ -32,7 +32,7 @@ void store_tensor(torch::Tensor &input, float32_t* dest) {
     std::memmove(dest,data,bytes_size);
 }
 
-bridge_tensor_t tensor_result_convert(torch::Tensor &tensor) {
+bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
     bridge_tensor_t result;
     result.dim = tensor.dim();
     result.sizes = new int[result.dim];
@@ -47,8 +47,7 @@ bridge_tensor_t tensor_result_convert(torch::Tensor &tensor) {
 torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = at::IntArrayRef(sizes_vec);
-    auto t = torch::from_blob(bt.data, shape, torch::kFloat);
-    return t;
+    return torch::from_blob(bt.data, shape, torch::kFloat);
 }
 
 extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
@@ -56,7 +55,7 @@ extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
     // Increment the tensor
     auto incremented_tensor = t + 1;
 
-    return tensor_result_convert(incremented_tensor);
+    return torch_to_bridge(incremented_tensor);
 }
 
 extern "C" bridge_tensor_t convolve2d(
@@ -70,7 +69,7 @@ extern "C" bridge_tensor_t convolve2d(
     auto t_kernel = bridge_to_torch(kernel);
     auto t_bias = bridge_to_torch(bias);
     auto output = torch::conv2d(t_input, t_kernel, t_bias, stride, padding);
-    return tensor_result_convert(output);
+    return torch_to_bridge(output);
 }
 
 
@@ -125,7 +124,7 @@ extern "C" bridge_tensor_t increment2(float* arr, int* sizes, int dim) {
 
     auto incremented_tensor = t + 1;
 
-    return tensor_result_convert(incremented_tensor);
+    return torch_to_bridge(incremented_tensor);
 }
 
 

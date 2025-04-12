@@ -63,6 +63,7 @@ set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
 
 add_executable(BridgeTest ${BRIDGE_DIR}/lib/Bridge.chpl)
+add_dependencies(BridgeTest bridge)
 target_link_options(BridgeTest
     PRIVATE
         ${BRIDGE_DIR}/include/bridge.h

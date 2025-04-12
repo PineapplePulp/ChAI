@@ -35,7 +35,7 @@ download_libtorch(
 )
 
 
-add_library(bridge OBJECT ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
+add_library(bridge STATIC ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
 
 target_include_directories(
     bridge

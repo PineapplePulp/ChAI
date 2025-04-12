@@ -14,6 +14,8 @@ import Utilities as util;
 use Utilities.Standard;
 use Utilities.Types;
 
+import Bridge;
+
 type domainType = _domain(?);
 
 /* The most fundamental tensor type.
@@ -1243,6 +1245,22 @@ proc ndarray.degenerateFlatten(): [] eltType {
         i += 1;
     }
     return flat;
+}
+
+proc ndarray.toBridgeTensor(): Bridge.tensorHandle(eltType) do
+    return Bridge.createBridgeTensor(this.data);
+
+proc type ndarray.fromBridgeTensor(param rank: int, handle: Bridge.tensorHandle(eltType)): ndarray(rank,real(32)) {
+    const arr = Bridge.bridgeTensorToArray(rank,handle);
+    return new ndarray(arr);
+}
+
+
+proc ref ndarray.loadFromBridgeTensor(handle: Bridge.tensorHandle(eltType)): void {
+    const shape = Bridge.bridgeTensorShape(rank,handle);
+    if shape != this.shape then
+        this.reshapeDomain(util.domainFromShape((...shape)));
+    Bridge.bridgeTensorToExistingArray(this.data,handle);
 }
 
 proc ndarray.shapeArray(): [] int do

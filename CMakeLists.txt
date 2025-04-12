@@ -100,4 +100,15 @@ target_link_options(TorchBridge
         ${LIBTORCH_LIBS_LINKER_ARGS}
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
-# install(TARGETS TorchBridge DESTINATION ".")
+
+add_executable(TinyLayerTest ${PROJECT_ROOT_DIR}/test/tiny/layer_test.chpl)
+add_dependencies(TinyLayerTest bridge)
+target_link_options(TinyLayerTest
+    PRIVATE
+        -M ${PROJECT_ROOT_DIR}/lib
+        ${BRIDGE_DIR}/include/bridge.h
+        ${BRIDGE_OBJECT_FILES}
+        -L ${LIBTORCH_DIR}/lib
+        ${LIBTORCH_LIBS_LINKER_ARGS}
+        --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
+)

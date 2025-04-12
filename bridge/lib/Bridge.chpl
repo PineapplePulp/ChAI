@@ -15,6 +15,7 @@ extern record bridge_tensor_t {
 }
 
 
+
 extern proc increment2(arr: [] real(32), sizes: [] int(32), dim: int(32)): bridge_tensor_t;
 extern proc increment3(in arr: bridge_tensor_t): bridge_tensor_t;
 

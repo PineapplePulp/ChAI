@@ -48,20 +48,44 @@ target_include_directories(
 set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
 
-file(GLOB PYTORCH_LIBS "${LIBTORCH_DIR}/lib/*.a" "${LIBTORCH_DIR}/lib/*.dylib" "${LIBTORCH_DIR}/lib/*.so")
 
-set(PYTORCH_LIBS_LINKER_ARGS "-ltorch")  # Will hold the list of "-l..." flags.
-foreach(lib_path IN LISTS PYTORCH_LIBS)
-  # Get just the filename without the directory or extension
-  get_filename_component(lib_name "${lib_path}" NAME_WE)
-  # If it starts with "lib", strip that off
-  string(REGEX REPLACE "^lib" "" lib_name "${lib_name}")
-  # Now prepend "-l" to the actual library name
-  list(APPEND PYTORCH_LIBS_LINKER_ARGS "-l${lib_name}")
+
+file(GLOB LIBTORCH_ALL_LIB_FILES "${LIBTORCH_DIR}/lib/*.a" "${LIBTORCH_DIR}/lib/*.dylib" "${LIBTORCH_DIR}/lib/*.so")
+
+set(LIBTORCH_ALL_LIBS "")
+foreach(lib_path IN LISTS LIBTORCH_ALL_LIB_FILES)
+    get_filename_component(lib_name "${lib_path}" NAME_WE)
+    list(APPEND LIBTORCH_ALL_LIBS "${lib_name}")
 endforeach()
 
-# cmake_print_variables(PYTORCH_LIBS)
-# cmake_print_variables(PYTORCH_LIBS_LINKER_ARGS)
+
+set(REQUIRED_LIBS
+    "libtorch"
+    "libtorch_cpu"
+    "libc10"
+    "libtorch_global_deps"
+)
+
+set(DISALLOWED_LIBS
+    "libtorch_python"
+)
+
+
+set(LIBTORCH_LIBS_LINKER_ARGS "")  # Will hold the list of "-l..." flags.
+foreach(lib_name IN LISTS LIBTORCH_ALL_LIBS)
+    if(lib_name IN_LIST DISALLOWED_LIBS)
+        if(lib_name IN_LIST REQUIRED_LIBS)
+            message(FATAL_ERROR "Required lib ${lib_name} is disallowed.")
+        else()
+            message(STATUS "Skipping disallowed lib: ${lib_name}")
+            continue()
+        endif()
+    endif()
+    string(REGEX REPLACE "^lib" "" lib_name_short "${lib_name}")
+    list(APPEND LIBTORCH_LIBS_LINKER_ARGS "-l${lib_name_short}")
+endforeach()
+
+cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
@@ -70,10 +94,11 @@ target_link_options(TorchBridge
         ${BRIDGE_DIR}/include/bridge.h
         ${BRIDGE_OBJECT_FILES}
         -L ${LIBTORCH_DIR}/lib
-        "-ltorch"
-        "-ltorch_cpu"
-        "-lc10"
-        # ${PYTORCH_LIBS_LINKER_ARGS}
+        # "-ltorch"
+        # "-ltorch_cpu"
+        # "-lc10"
+        # "-ltorch_global_deps"
+        ${LIBTORCH_LIBS_LINKER_ARGS}
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
 # install(TARGETS TorchBridge DESTINATION ".")

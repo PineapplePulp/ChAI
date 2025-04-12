@@ -6,6 +6,9 @@ include(dlcache)
 
 include(CMakePrintHelpers)
 
+
+# set(TORCH_COMPUTE_PLATFORM "cpu") # cu118, cu124, cu126, cpu
+# set(TORCH_VERSION "2.1.0")
 set(TORCH_URL_PREFIX "https://download.pytorch.org/libtorch/nightly/cpu")
 
 
@@ -20,7 +23,7 @@ endif()
 if(APPLE)
     set(TORCH_DISTRIBUTION "${TORCH_URL_PREFIX}/libtorch-macos-arm64-latest.zip")
 elseif(LINUX)
-    set(TORCH_DISTRIBUTION "$${TORCH_URL_PREFIX}/libtorch-cxx11-abi-static-with-deps-latest.zip")
+    set(TORCH_DISTRIBUTION "$${TORCH_URL_PREFIX}/libtorch-shared-with-deps-latest.zip")
 endif()
 
 function(download_libtorch)

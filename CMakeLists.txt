@@ -11,11 +11,10 @@ endif()
 
 set(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(PROJECT_BINARY_DIR "${CMAKE_BINARY_DIR}")
-
-
+set(PROJECT_CACHE_DIR "${PROJECT_ROOT_DIR}/.cache")
+set(LIBTORCH_DIR "${PROJECT_ROOT_DIR}/libtorch")
 set(BRIDGE_DIR "${PROJECT_ROOT_DIR}/bridge")
 
-set(LIBTORCH_DIR "${BRIDGE_DIR}/libtorch")
 
 find_package(chpl REQUIRED HINTS ${PROJECT_ROOT_DIR}/cmake/chapel)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT_DIR}/cmake")
@@ -27,6 +26,17 @@ message(STATUS "Using chpl: ${CMAKE_CHPL_COMPILER}")
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_STANDARD 17)
+
+
+include(LibTorchDL)
+
+
+download_libtorch(
+    CACHE_DIR ${PROJECT_CACHE_DIR}
+    DESTINATION ${LIBTORCH_DIR}
+)
+
+
 
 
 add_library(bridge OBJECT ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
@@ -62,9 +72,9 @@ set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 # message(STATUS "Library path: ${bridge_o_path}")
 
 
-add_executable(BridgeTest ${BRIDGE_DIR}/lib/Bridge.chpl)
-add_dependencies(BridgeTest bridge)
-target_link_options(BridgeTest
+add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
+add_dependencies(TorchBridge bridge)
+target_link_options(TorchBridge
     PRIVATE
         ${BRIDGE_DIR}/include/bridge.h
         ${BRIDGE_OBJECT_FILES}
@@ -74,4 +84,4 @@ target_link_options(BridgeTest
         "-lc10"
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
-# install(TARGETS BridgeTest DESTINATION ".")
+install(TARGETS TorchBridge DESTINATION ".")

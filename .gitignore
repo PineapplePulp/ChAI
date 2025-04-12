@@ -40,3 +40,5 @@ bridge/build
 bridge/libtorch
 # pytorch/
 build/
+libtorch/
+.cache/

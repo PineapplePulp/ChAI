@@ -70,7 +70,6 @@ set(DISALLOWED_LIBS
     "libtorch_python"
 )
 
-
 set(LIBTORCH_LIBS_LINKER_ARGS "")  # Will hold the list of "-l..." flags.
 foreach(lib_name IN LISTS LIBTORCH_ALL_LIBS)
     if(lib_name IN_LIST DISALLOWED_LIBS)
@@ -85,7 +84,7 @@ foreach(lib_name IN LISTS LIBTORCH_ALL_LIBS)
     list(APPEND LIBTORCH_LIBS_LINKER_ARGS "-l${lib_name_short}")
 endforeach()
 
-cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
+# cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)

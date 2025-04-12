@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
 
 include(CMakePrintHelpers)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
@@ -29,7 +29,7 @@ set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_STANDARD 17)
 
 
-add_library(bridge OBJECT ${BRIDGE_DIR}/lib/bridge.cpp)
+add_library(bridge OBJECT ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
 
 target_include_directories(
     bridge
@@ -62,13 +62,10 @@ set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 # message(STATUS "Library path: ${bridge_o_path}")
 
 
-add_executable(BridgeTest
-    ${BRIDGE_DIR}/lib/Bridge.chpl
-    ${BRIDGE_DIR}/include/Bridge.h
-)
+add_executable(BridgeTest ${BRIDGE_DIR}/lib/Bridge.chpl)
 target_link_options(BridgeTest
     PRIVATE
-        ${BRIDGE_DIR}/include/Bridge.h
+        ${BRIDGE_DIR}/include/bridge.h
         ${BRIDGE_OBJECT_FILES}
         -L ${LIBTORCH_DIR}/lib
         "-ltorch"

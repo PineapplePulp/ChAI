@@ -1080,6 +1080,26 @@ class BatchNorm : Module(?) {
     }
 }
 
+class LayerNorm : Module(?) {
+    var weight: owned Parameter(eltType);
+    var bias: owned Parameter(eltType);
+    var nShape; 
+    proc init(type eltType = real, normalizedShape: ?nShapeRankP*int) {
+        this.weight = new Parameter(Tensor.ones((...normalizedShape)));
+        this.bias = new Parameter(Tensor.zeros((...normalizedShape)));
+        this.nShape = normalizedShape;
+    }
+
+    override proc forward(input: Tensor(eltType)): Tensor(eltType) {
+        return Tensor.layerNorm(input, weight.data, bias.data);
+    }
+
+    override proc setup() {
+        addModule("weight", weight);
+        addModule("bias", bias);
+    }
+}
+
 class MultiheadAttention : Module(?) {
     var q_weight: owned Parameter(eltType);
     var k_weight: owned Parameter(eltType);

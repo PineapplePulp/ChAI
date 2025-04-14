@@ -453,6 +453,16 @@ proc type staticTensor.batchNorm(
     return tensorFromCtx(featureRank, eltType, ctx);
 }
 
+proc type staticTensor.layerNorm(
+    features: staticTensor(?featureRank,?eltType),
+    weight: staticTensor(?n,eltType),
+    bias: staticTensor(n,eltType),
+    rankN: int
+): staticTensor(featureRank,eltType) {
+    var ctx = new layerNormOp(eltType, features.meta, weight.meta, bias.meta);
+    return tensorFromCtx(featureRank, eltType, ctx);
+}
+
 proc type staticTensor.multiheadAttention(
     features: staticTensor(3, ?eltType),
     q_weight: staticTensor(2, eltType),

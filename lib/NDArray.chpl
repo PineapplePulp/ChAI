@@ -532,6 +532,16 @@ proc ndarray.variance(axes: int...?axesCount): ndarray(rank,eltType) {
     return ((this - this.mean((...axes)).expand((...shape)))**2).sum((...axes)) / (denom - 1);
 }
 
+proc ndarray.variance(axes: int...?axesCount, correction: int): ndarray(rank,eltType) {
+    const shape = this.shape;
+    var denom: eltType = 0;
+    for param i in 0..<axesCount {
+        const reducedN = shape(axes(i));
+        denom += reducedN : eltType;
+    }
+    return ((this - this.mean((...axes)).expand((...shape)))**2).sum((...axes)) / (denom - correction);
+}
+
 proc ndarray.shrink(narg: 2*int ... rank,param exactBounds = false): ndarray(rank,eltType) {
     var newShape: rank * int;
     var sliceRanges: rank * range;
@@ -1387,6 +1397,16 @@ operator *(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,el
     return c;
 }
 
+operator **(a: ndarray(?rank,?eltType),b: real): ndarray(rank,eltType) {
+    const dom = a.domain;
+    var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
+    ref cData = c.data;
+    const ref aData = a.data;
+    forall i in dom.every() do
+        cData[i] = (aData[i]**b):eltType;
+    return c;
+}
+
 operator -(a: ndarray(?rank, ?eltType)): ndarray(rank, eltType) {
     const dom = a.domain;
     var negged = new ndarray(dom, eltType);
@@ -2109,6 +2129,45 @@ proc type ndarray.batchNorm(
         dat[idx] = w[c]*((f[idx]-a[c])/v[c])+b[c];
     }
 
+    return outFeatures;
+}
+
+proc type ndarray.layerNorm(
+    features: ndarray(?rank,?eltType),
+    weight: ndarray(?n,eltType),
+    bias: ndarray(n,eltType)
+): ndarray(rank,eltType) {
+    const fshape = features.shape;
+    const axis = rank - n - 1;
+
+    var args: n*int;
+    for i in 0..<n {
+        args[i] = i + axis + 1;
+    }
+    var avgs = features.mean((...args));
+    var vars = features.variance((...args), correction = 0);
+
+    ref f = features.data;
+    ref a = avgs.data;
+    ref v = vars.data;
+    ref w = weight.data;
+    ref b = bias.data;
+
+    var outDom = util.domainFromShape((...fshape));
+    var outFeatures = new ndarray(outDom,eltType);
+    ref dat = outFeatures.data;
+
+    forall idx in outDom.every() {
+        var c = idx;
+        var d: n*int;
+        for i in (axis + 1)..<rank {
+            c[i] = 0;
+        }
+        for i in 0..<n {
+            d[i] = idx[axis+1+i];
+        }
+        dat[idx] = ((f[idx] - a[c])/v[c])*w[d] + b[d];
+    }
     return outFeatures;
 }
 

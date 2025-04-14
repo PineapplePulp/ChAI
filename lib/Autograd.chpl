@@ -1101,6 +1101,21 @@ record batchNormOp : serializable {
     proc spec : GradOpSpec do return new dict(("operation","BatchNorm"));
 }
 
+record layerNormOp : serializable {
+    type eltType = real;
+    var features: shared BaseTensorResource(?);
+    var weight: shared BaseTensorResource(eltType, ?);
+    var bias: shared BaseTensorResource(eltType, ?);
+
+    proc children do return (features, weight, bias);
+
+    proc forward() {
+        return ndarray.layerNorm(features.array, weight.array, bias.array);
+    }
+
+    proc spec : GradOpSpec do return new dict(("operation", "LayerNorm"));
+}
+
 record multiheadAttentionOp : serializable {
     type eltType = real;
     var features: shared BaseTensorResource(?);

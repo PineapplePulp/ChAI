@@ -634,6 +634,29 @@ proc type dynamicTensor.batchnorm(
     return new dynamicTensor(eltType);
 }
 
+proc type dynamicTensor.layerNorm(
+    features: dynamicTensor(?eltType),
+    weight: dynamicTensor(eltType),
+    bias: dynamicTensor(eltType)
+    // normalizedShape: (...?maxRank)
+): dynamicTensor(eltType) {
+    // const n = normalizedShape.size;
+    for param rankF in 2..4 {
+        for param rankN in 1..4 {
+            if features.checkRank(rankF) && weight.checkRank(rankN) && bias.checkRank(rankN) {
+                return staticTensor.layerNorm(
+                    features.forceRank(rankF),
+                    weight.forceRank(rankN),
+                    bias.forceRank(rankN),
+                    rankN
+                ).eraseRank();
+            }
+        }
+    }
+    halt("Could not determine rank in dynamicTensor.layerNorm.");
+    return new dynamicTensor(eltType);
+}
+
 proc type dynamicTensor.multiheadAttention(
     features: dynamicTensor(?eltType),
     q_weight: dynamicTensor(eltType),

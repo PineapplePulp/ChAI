@@ -80,8 +80,6 @@ extern "C" bridge_tensor_t conv2d(
     int stride,
     int padding
 ) {
-
-    printf("Hello from conv2d!\n");
     auto t_input = bridge_to_torch(input);
     auto t_kernel = bridge_to_torch(kernel);
     auto t_bias = bridge_to_torch(bias);

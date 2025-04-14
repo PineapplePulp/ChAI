@@ -5,7 +5,7 @@ use Network except ReLU, Linear, Flatten;
 use Bridge;
 use Utilities as util;
 
-var x = Tensor.arange(2,3);
+var x = Tensor.arange(3,10,10);
 writeln(x);
 
 var relu = new ReLU();
@@ -18,24 +18,26 @@ var relu = new ReLU();
 var net = new Sequential(
     new shared ReLU()
 );
-var y = net(x);
-writeln(y);
-writeln(net.signature);
+// var y = net(x);
+// writeln(y);
+// writeln(net.signature);
 
 
 var net2 = new Sequential(
-    new shared ReLU(),
-    new shared Flatten(),
-    new shared Linear(6,6),
-    new shared ReLU(),
-    new shared GELU(),
-    new shared ELU(),
-    new shared ResidualBlock(new shared ReLU())
+    new shared Conv2D(3,32,3)
+    // new shared ReLU()
+    // new shared Flatten(),
+    // new shared Linear(96,6),
+    // new shared ReLU(),
+    // new shared GELU(),
+    // new shared ELU(),
+    // new shared ResidualBlock(new shared ReLU())
 );
 
-y = net2(x);
+
+var y = net2(x);
 writeln(y);
-writeln(net2.signature);
+// writeln(net2.signature);
 
 
 
@@ -72,4 +74,4 @@ writeln(arr);
 writeln(arr.shape);
 writeln(bt);
 
-writeln(ndarray.fromBridgeTensor(2,bt));
+// writeln(ndarray.fromBridgeTensor(2,bt));

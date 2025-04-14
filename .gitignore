@@ -42,3 +42,4 @@ bridge/libtorch
 build/
 libtorch/
 .cache/
+build-release/

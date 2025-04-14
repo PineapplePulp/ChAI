@@ -141,8 +141,11 @@ module Layer {
             
             const weightsShape = weights.forceRank(2).domain.shape;
             const (inFeatures,outFeatures) = weightsShape;
-            if outFeatures != bias.forceRank(1).domain.shape[0] then
+            if outFeatures != bias.forceRank(1).domain.shape[0] {
+                writeln("weightsShape: ",weightsShape);
+                writeln("biasShape: ",bias.forceRank(1).domain.shape);
                 util.err("Weights output dimension must match bias input dimension");
+            }
 
             init this;
             this.moduleName = "Linear";
@@ -158,6 +161,9 @@ module Layer {
             this.init(defaultEltType,inFeatures,outFeatures);
 
         override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) {
+            writeln("input: ", input.shape());
+            writeln("weights: ", this.weights.data.shape());
+            writeln("bias: ", this.bias.data.shape());
             if input.checkRank(1) {
                 compilerWarning("This could be written faster using a fused operation that includes the bias.");
                 return dynamicTensor.matVecMul(this.weights.data,input) + this.bias.data;

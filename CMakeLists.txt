@@ -34,6 +34,62 @@ download_libtorch(
     DESTINATION ${LIBTORCH_DIR}
 )
 
+file(GLOB CHAI_LIB_FILES "${PROJECT_ROOT_DIR}/lib/*.chpl")
+
+# file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/resources_dummy.c "int main(int argc, const char **argv){ return 1; }\n")
+# add_executable(ChAI ${CMAKE_CURRENT_BINARY_DIR}/resources_dummy.c)
+# # file(GLOB RESOURCE_FILES *.bmp *.wav moose.dat utf8.txt)
+# foreach(RESOURCE_FILE ${CHAI_LIB_FILES})
+#     add_custom_command(
+#         TARGET ChAI 
+#         POST_BUILD 
+#         COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${RESOURCE_FILE} $<TARGET_FILE_DIR:ChAI>
+#     )
+# endforeach(RESOURCE_FILE)
+
+# file(COPY ${CHAI_LIB_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+
+
+
+add_custom_target(
+    ChAI
+    ALL
+    DEPENDS ${PROJECT_SOURCE_DIR}/lib
+    # SOURCES ${CHAI_LIB_FILES}
+    # COMMAND ${CMAKE_COMMAND} -E echo "Building ChAI"
+)
+
+foreach(RESOURCE_FILE ${CHAI_LIB_FILES})
+    add_custom_command(
+        TARGET ChAI
+        POST_BUILD
+        # OUTPUT $<TARGET_FILE_DIR:ChAI>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_FILE} ${PROJECT_BINARY_DIR}/lib
+        # DEPENDS ${CHAI_LIB_FILES}
+    )
+endforeach(RESOURCE_FILE)
+
+
+
+# foreach(RESOURCE_FILE ${CHAI_LIB_FILES})
+#     add_custom_command(
+#         TARGET ChAI 
+#         POST_BUILD 
+#         COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${RESOURCE_FILE} $<TARGET_FILE_DIR:ChAI>
+#     )
+# endforeach(RESOURCE_FILE)
+
+
+function(watch)
+    set_property(
+            DIRECTORY
+            APPEND
+            PROPERTY CMAKE_CONFIGURE_DEPENDS ${ARGV}
+    )
+endfunction()
+
+# cmake_print_variables(CHAI_LIB_FILES)
 
 add_library(bridge STATIC ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
 
@@ -88,6 +144,7 @@ endforeach()
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
+add_dependencies(TorchBridge ChAI)
 target_link_options(TorchBridge
     PRIVATE
         ${BRIDGE_DIR}/include/bridge.h
@@ -101,10 +158,19 @@ target_link_options(TorchBridge
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
 
-add_executable(TinyLayerTest ${PROJECT_ROOT_DIR}/test/tiny/layer_test.chpl)
+
+
+
+
+add_executable(TinyLayerTest 
+    ${PROJECT_ROOT_DIR}/test/tiny/layer_test.chpl
+    ${CHAI_LIB_FILES}
+    )
 add_dependencies(TinyLayerTest bridge)
+add_dependencies(TinyLayerTest ChAI)
 target_link_options(TinyLayerTest
     PRIVATE
+        --main-module layer_test.chpl
         -M ${PROJECT_ROOT_DIR}/lib
         ${BRIDGE_DIR}/include/bridge.h
         ${BRIDGE_OBJECT_FILES}

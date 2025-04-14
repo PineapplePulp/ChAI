@@ -12,6 +12,14 @@ module Bridge {
         var created_by_c: bool;
     }
 
+    extern record nil_scalar_tensor_t {
+        var scalar: real(32);
+        var tensor: bridge_tensor_t;
+        var is_nil: bool;
+        var is_scalar: bool;
+        var is_tensor: bool;
+    }
+
     proc tensorHandle(type eltType) type {
         if eltType == real(32) then
             return bridge_tensor_t;
@@ -28,6 +36,16 @@ module Bridge {
         in bias: bridge_tensor_t, 
         in stride: int(32), 
         in padding: int(32)): bridge_tensor_t;
+
+    extern proc conv2d(
+        in input: bridge_tensor_t, 
+        in kernel: bridge_tensor_t, 
+        in bias: bridge_tensor_t, 
+        in stride: int(32), 
+        in padding: int(32)): bridge_tensor_t;
+
+        //
+
 
     extern proc unsafe(const ref arr: [] real(32)): c_ptr(real(32));
 

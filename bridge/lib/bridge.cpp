@@ -73,6 +73,33 @@ extern "C" bridge_tensor_t convolve2d(
     return torch_to_bridge(output);
 }
 
+extern "C" bridge_tensor_t conv2d(
+    bridge_tensor_t input,
+    bridge_tensor_t kernel,
+    bridge_tensor_t bias,
+    int stride,
+    int padding
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_kernel = bridge_to_torch(kernel);
+    auto t_bias = bridge_to_torch(bias);
+    auto output = torch::conv2d(t_input, t_kernel, t_bias, stride, padding);
+    return torch_to_bridge(output);
+}
+
+
+//  
+// extern "C" bridge_tensor_t conv2d(
+//     bridge_tensor_t input,
+//     bridge_tensor_t kernel,
+//     nil_scalar_tensor_t bias,
+//     nil_scalar_tensor_t stride,
+//     nil_scalar_tensor_t padding
+// ) {
+//     namespace F = torch::nn::functional;
+//     F::conv2d(input, kernel, F::Conv2dFuncOptions().stride(1));
+// }
+
 
 extern "C" int baz(void) {
     printf("Hello from baz!\n");

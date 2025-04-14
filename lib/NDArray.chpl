@@ -1250,7 +1250,7 @@ proc ndarray.degenerateFlatten(): [] eltType {
 proc ndarray.toBridgeTensor(): Bridge.tensorHandle(eltType) do
     return Bridge.createBridgeTensor(this.data);
 
-proc type ndarray.fromBridgeTensor(param rank: int, handle: Bridge.tensorHandle(eltType)): ndarray(rank,real(32)) {
+proc type ndarray.fromBridgeTensor(param rank: int, handle: Bridge.tensorHandle(real(32))): ndarray(rank,real(32)) {
     const arr = Bridge.bridgeTensorToArray(rank,handle);
     return new ndarray(arr);
 }
@@ -1262,6 +1262,15 @@ proc ref ndarray.loadFromBridgeTensor(handle: Bridge.tensorHandle(eltType)): voi
         this.reshapeDomain(util.domainFromShape((...shape)));
     Bridge.bridgeTensorToExistingArray(this.data,handle);
 }
+
+operator :(a: ndarray(?rank,?eltType), type t: Bridge.tensorHandle(eltType)): Bridge.tensorHandle(eltType) do
+    return a.toBridgeTensor();
+
+operator :(th: Bridge.tensorHandle(real(32)), type t: ndarray(?rank,?eltType)): ndarray(rank,eltType) do
+    if eltType == real(32) then
+        return ndarray.fromBridgeTensor(rank,th);
+    else
+        return ndarray.fromBridgeTensor(rank,th) : eltType;
 
 proc ndarray.shapeArray(): [] int do
     return util.tupleToArray((...this.shape));
@@ -1532,10 +1541,28 @@ operator /(c: ?scalarType,a: ndarray(?rank,?eltType)): ndarray(rank,eltType)
 //     return c;
 // }
 
+proc type ndarray.conv2d(
+    input: ndarray(?inputRank,?eltType),
+    weight: ndarray(4,eltType),
+    bias: ndarray(1,eltType),
+    stride: int,
+    padding: int
+    ): ndarray(inputRank,eltType)
+        where inputRank == 3 || inputRank == 4 {
+    return Bridge.conv2d(
+        input : Bridge.tensorHandle(eltType),
+        weight : Bridge.tensorHandle(eltType),
+        bias : Bridge.tensorHandle(eltType),
+        stride : int(32),
+        padding: int(32)
+    ) : ndarray(inputRank,eltType);
+}
+
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), stride: int) do
     return ndarray.convolve(features,kernel,stride,padding = (0,0));
 
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), bias: ndarray(1,eltType), stride: int, padding: 2*int): ndarray(3,eltType) {
+    writeln("hello1");
     const (channels,inHeight,inWidth) = features.shape;
     const (filters,channels_,kernelHeight,kernelWidth) = kernel.shape;
     const (filters_,) = bias.shape;
@@ -1607,6 +1634,8 @@ proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltTy
 
 
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), stride: int, padding: int): ndarray(3,eltType) {
+    writeln("hello2");
+
     const (channels, inHeight, inWidth) = features.shape;
     const (filters, channels_, kernelHeight, kernelWidth) = kernel.shape;
     if channels != channels_ then halt("Channels must match.");
@@ -1655,6 +1684,8 @@ proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltTy
 }
 
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), bias: ndarray(1,eltType), stride: int): ndarray(3,eltType) {
+    writeln("hello3");
+
     const (channels,inHeight,inWidth) = features.shape;
     const (filters,channels_,kernelHeight,kernelWidth) = kernel.shape;
     const (filters_,) = bias.shape;
@@ -1725,6 +1756,9 @@ proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltTy
 }
 
 proc type ndarray.convolve(features: ndarray(3,?eltType), kernel: ndarray(4,eltType), bias: ndarray(1,eltType), stride: int, padding: int): ndarray(3,eltType) {
+    return ndarray.conv2d(features, kernel, bias, stride, padding);
+    // compilerError("Not implemented yet.");
+
     const (channels, inHeight, inWidth) = features.shape;
     const (filters, channels_, kernelHeight, kernelWidth) = kernel.shape;
     const (filters_,) = bias.shape;

@@ -19,6 +19,14 @@ typedef struct bridge_tensor_t {
 } bridge_tensor_t;
 
 
+typedef struct nil_scalar_tensor_t {
+    float scalar;
+    bridge_tensor_t tensor;
+    bool_t is_nil;
+    bool_t is_scalar;
+    bool_t is_tensor;
+} nil_scalar_tensor_t;
+
 int baz(void);
 
 void wrHello(void);
@@ -38,6 +46,22 @@ bridge_tensor_t convolve2d(
     int stride,
     int padding
 );
+
+bridge_tensor_t conv2d(
+    bridge_tensor_t input,
+    bridge_tensor_t kernel,
+    bridge_tensor_t bias,
+    int stride,
+    int padding
+);
+
+// bridge_tensor_t conv2d(
+//     bridge_tensor_t input,
+//     bridge_tensor_t kernel,
+//     nil_scalar_tensor_t bias,
+//     nil_scalar_tensor_t stride,
+//     nil_scalar_tensor_t padding
+// );
 
 float* unsafe(const float* arr);
 

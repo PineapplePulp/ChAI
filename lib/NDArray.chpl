@@ -2019,38 +2019,10 @@ proc type ndarray.multiheadAttention(
     var q = ndarray.matmul(features,q_weight);
     var k = ndarray.matmul(features,k_weight);
     var v = ndarray.matmul(features,v_weight);
-    var z = (ndarray.matmul(q,k.permute(0,2,1))/Math.sqrt(head_dim))._softmax(axis=2);
+    var z = (ndarray.matmul(q,k.permute(0,2,1))/Math.sqrt(head_dim)).softmax(axis=2);
     var a = ndarray.matmul(z,v);
 
     return a;
-}
-
-/* Softmax, but with the option to specify the axis.
-
-   :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
-   :rtype: ndarray(rank, eltType)
-*/
-proc ndarray._softmax(axis:int = (this.rank-1)): ndarray(this.rank, this.eltType)
-    // where isSubtype(this.eltType, real)
-{
-    const dom = this.domain;
-    var exps = new ndarray(this.eltType, dom);
-    var smxd = new ndarray(this.eltType, dom);
-    const ref thisData = this.data;
-    ref expsData = exps.data;
-    ref outData = smxd.data;
-
-    forall i in dom.every() {
-        expsData[i] = Math.exp(thisData[i]);
-    }
-    var sums = exps.sum(axis).expand((...this.shape));
-    ref sumsData = sums.data;
-
-    forall i in dom.every() {
-        outData[i] = expsData[i]/sumsData[i];
-    }
-
-    return smxd;
 }
 
 proc type ndarray.batchNormTrain(
@@ -2603,24 +2575,27 @@ proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b
    :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
    :rtype: ndarray(rank, eltType)
 */
-proc ndarray.softmax(): ndarray(this.rank, this.eltType)
-    where isSubtype(this.eltType, real)
+proc ndarray.softmax(axis:int = (this.rank-1)): ndarray(this.rank, this.eltType)
+    // where isSubtype(this.eltType, real)
 {
     const dom = this.domain;
+    var exps = new ndarray(this.eltType, dom);
+    var outs = new ndarray(this.eltType, dom);
     const ref thisData = this.data;
+    ref expsData = exps.data;
+    ref outsData = outs.data;
 
-    var denom: this.eltType = 0.0;
-    forall i in dom.every() with (+ reduce denom) {
-        denom += Math.exp(thisData[i]);
-    }
-
-    var softmaxxed = new ndarray(this.eltType, dom);
-    ref softmaxData = softmaxxed.data;
     forall i in dom.every() {
-        softmaxData[i] = Math.exp(thisData[i]) / denom;
+        expsData[i] = Math.exp(thisData[i]);
+    }
+    var sums = exps.sum(axis).expand((...this.shape));
+    ref sumsData = sums.data;
+
+    forall i in dom.every() {
+        outsData[i] = expsData[i]/sumsData[i];
     }
 
-    return softmaxxed;
+    return outs;
 }
 
 

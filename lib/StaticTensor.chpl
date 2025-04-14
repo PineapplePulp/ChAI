@@ -476,15 +476,34 @@ proc type staticTensor.batchNorm(
 // }
 
 
-proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
-    var ctx = new matVecMulOp(mat.meta,vec.meta);
-    return tensorFromCtx(1,eltType,ctx);
+proc type staticTensor.matmul(
+    a: staticTensor(?aRank,?eltType),
+    b: staticTensor(?bRank,eltType)
+): staticTensor(ndarray.mmOutputRank(aRank,bRank),eltType)
+        where ndarray.mmInputRanksValid(aRank,bRank) {
+    var ctx = new matMulOp(a.meta,b.meta);
+    return tensorFromCtx(ctx.outRank,eltType,ctx);
 }
 
-proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
-    var ctx = new matVecMulOp(mat.meta,vec.meta);
-    return tensorFromCtx(2,eltType,ctx);
-}
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(1,eltType,ctx);
+// }
+
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(2,eltType,ctx);
+// }
+
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(1,eltType,ctx);
+// }
+
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(2,eltType,ctx);
+// }
 
 proc type staticTensor.nllLoss(
     input: staticTensor(2,?eltType),

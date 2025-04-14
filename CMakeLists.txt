@@ -95,7 +95,7 @@ add_library(bridge STATIC ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridg
 
 target_include_directories(
     bridge
-    PUBLIC
+    PRIVATE
     ${BRIDGE_DIR}/include
     ${LIBTORCH_DIR}/include
     ${LIBTORCH_DIR}/include/torch/csrc/api/include
@@ -141,6 +141,8 @@ foreach(lib_name IN LISTS LIBTORCH_ALL_LIBS)
 endforeach()
 
 # cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
+# cmake_print_variables(${BRIDGE_OBJECT_FILES})
+# cmake_print_variables(BRIDGE_OBJECT_FILES)
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
@@ -157,7 +159,9 @@ target_link_options(TorchBridge
         ${LIBTORCH_LIBS_LINKER_ARGS}
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
+# chpl test/tiny/layer_test.chpl -M lib bridge/include/bridge.h build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,libtorch/lib"
 
+# chpl --fast -o vgg test.chpl -M ../../lib /Users/iainmoncrief/Documents/Github/ChAI/bridge/include/bridge.h /Users/iainmoncrief/Documents/Github/ChAI/build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L /Users/iainmoncrief/Documents/Github/ChAI/libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,/Users/iainmoncrief/Documents/Github/ChAI/libtorch/lib"
 
 
 

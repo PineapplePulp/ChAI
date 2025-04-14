@@ -75,3 +75,25 @@ writeln(arr.shape);
 writeln(bt);
 
 // writeln(ndarray.fromBridgeTensor(2,bt));
+
+proc f() {
+var net2 = new Sequential(
+    new shared Conv2D(3,32,3),
+    new shared ReLU(),
+    new shared Flatten(),
+    new shared Linear(2048,6)
+    // new shared ReLU(),
+    // new shared GELU(),
+    // new shared ELU(),
+    // new shared ResidualBlock(new shared ReLU())
+);
+
+var x = Tensor.arange(3,10,10);
+var z = net2(x);
+writeln(z);
+writeln(z.shape());
+
+
+}
+
+f();

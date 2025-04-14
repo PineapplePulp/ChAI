@@ -140,7 +140,7 @@ module Layer {
                 util.err("Bias tensor must have rank 1");
             
             const weightsShape = weights.forceRank(2).domain.shape;
-            const (inFeatures,outFeatures) = weightsShape;
+            const (outFeatures,inFeatures) = weightsShape;
             if outFeatures != bias.forceRank(1).domain.shape[0] {
                 writeln("weightsShape: ",weightsShape);
                 writeln("biasShape: ",bias.forceRank(1).domain.shape);
@@ -166,9 +166,9 @@ module Layer {
             writeln("bias: ", this.bias.data.shape());
             if input.checkRank(1) {
                 compilerWarning("This could be written faster using a fused operation that includes the bias.");
-                return dynamicTensor.matVecMul(this.weights.data,input) + this.bias.data;
+                return dynamicTensor.matmul(this.weights.data,input) + this.bias.data;
             } else if input.checkRank(2) {
-                util.err("Broadcasted input not yet implemented.");
+                return dynamicTensor.matmul(this.weights.data,input) + this.bias.data;
             } else {
                 util.err("Input tensor must have rank 1 or 2");
             }

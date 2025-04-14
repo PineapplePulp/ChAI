@@ -1943,6 +1943,39 @@ proc type ndarray.sqrt(array: ndarray(?rank,?eltType)): ndarray(rank,eltType) {
     return sqrtArr;
 }
 
+proc type ndarray.matvecmul_torch(
+    a: ndarray(2,?eltType),
+    b: ndarray(?outRank,eltType)
+): ndarray(outRank,eltType) {
+    return Bridge.matmul(
+        a : Bridge.tensorHandle(eltType),
+        b : Bridge.tensorHandle(eltType)
+    ) : ndarray(outRank,eltType);
+}
+
+proc type ndarray.mmOutputRank(param aRank: int, param bRank: int) param : int {
+    if aRank == 1 && bRank == 1 then return 1;
+    if aRank == 2 && bRank == 1 then return 1;
+    if aRank == 3 && bRank == 1 then return 2;
+    if aRank == 3 && bRank == 3 then return 3;
+    if aRank == 3 && bRank == 2 then return 3;
+    return -1;
+}
+
+proc type ndarray.mmInputRanksValid(param aRank: int, param bRank: int) param : bool {
+    return ndarray.mmOutputRank(aRank,bRank) != -1;
+}
+
+proc type ndarray.matmul(
+    a: ndarray(?aRank,?eltType),
+    b: ndarray(?bRank,eltType)
+): ndarray(mmOutputRank(aRank,bRank),eltType) {
+    return Bridge.matmul(
+        a : Bridge.tensorHandle(eltType),
+        b : Bridge.tensorHandle(eltType)
+    ): ndarray(mmOutputRank(aRank,bRank),eltType);
+}
+
 proc type ndarray.matvecmul(mat: ndarray(2,?eltType),vec: ndarray(1,eltType)): ndarray(1,eltType) {
     const (m,n) = mat.shape;
     const (n_,) = vec.shape;

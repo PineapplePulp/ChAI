@@ -44,8 +44,7 @@ module Bridge {
         in stride: int(32), 
         in padding: int(32)): bridge_tensor_t;
 
-        //
-
+    extern proc matmul(in a: bridge_tensor_t, in b: bridge_tensor_t): bridge_tensor_t;
 
     extern proc unsafe(const ref arr: [] real(32)): c_ptr(real(32));
 

@@ -766,10 +766,25 @@ proc dynamicTensor.argmax(): int {
     return a.argmax();
 }
 
+proc type dynamicTensor.matmul(
+    a: dynamicTensor(?eltType),
+    b: dynamicTensor(eltType)
+): dynamicTensor(eltType) {
+    for param rankA in 1..3 do
+        if a.checkRank(rankA) then
+            for param rankB in 1..3 do
+                if ndarray.mmInputRanksValid(rankA,rankB) then
+                    if b.checkRank(rankB) then
+                        return staticTensor.matmul(a.forceRank(rankA),b.forceRank(rankB)).eraseRank();
+
+    halt("Could not determine rank in dynamicTensor.matmul.");
+    return new dynamicTensor(eltType);
+}
+
 proc type dynamicTensor.matVecMul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
-    for param rankM in 2..2 {
+    for param rankM in 2..3 {
         if m.checkRank(rankM) {
-            for param rankV in 1..1 {
+            for param rankV in 1..3 {
                 if v.checkRank(rankV) {
                     return staticTensor.matVecMul(m.forceRank(rankM),v.forceRank(rankV)).eraseRank();
                 }

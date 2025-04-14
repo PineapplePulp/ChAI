@@ -80,12 +80,36 @@ extern "C" bridge_tensor_t conv2d(
     int stride,
     int padding
 ) {
+
+    printf("Hello from conv2d!\n");
     auto t_input = bridge_to_torch(input);
     auto t_kernel = bridge_to_torch(kernel);
     auto t_bias = bridge_to_torch(bias);
     auto output = torch::conv2d(t_input, t_kernel, t_bias, stride, padding);
     return torch_to_bridge(output);
 }
+
+extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
+    auto t_a = bridge_to_torch(a);
+    auto t_b = bridge_to_torch(b);
+    auto output = torch::matmul(t_a, t_b);
+
+    std::cout << "Input A shape: " << t_a.sizes() << std::endl;
+    std::cout << "Input B shape: " << t_b.sizes() << std::endl;
+    std::cout << "Input A: " << t_a.sum() << std::endl;
+    std::cout << "Input B: " << t_b.sum() << std::endl;
+    // std::cout << "Input B: " << t_b << std::endl;
+
+    std::cout << "Output shape: " << output.sizes() << std::endl;
+    std::cout << "Output sum: " << output.sum() << std::endl;
+
+    std::cout.flush();
+
+    printf("Hello from matmul!\n");
+    return torch_to_bridge(output);
+}
+
+// extern "C"
 
 
 //  

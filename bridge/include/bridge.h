@@ -57,6 +57,14 @@ bridge_tensor_t conv2d(
 
 bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b);
 
+bridge_tensor_t max_pool2d(
+    bridge_tensor_t input,
+    int kernel_size,
+    int stride,
+    int padding,
+    int dilation
+);
+
 // bridge_tensor_t conv2d(
 //     bridge_tensor_t input,
 //     bridge_tensor_t kernel,

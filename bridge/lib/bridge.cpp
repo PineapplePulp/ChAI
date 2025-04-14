@@ -92,20 +92,31 @@ extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     auto t_b = bridge_to_torch(b);
     auto output = torch::matmul(t_a, t_b);
 
-    std::cout << "Input A shape: " << t_a.sizes() << std::endl;
-    std::cout << "Input B shape: " << t_b.sizes() << std::endl;
-    std::cout << "Input A: " << t_a.sum() << std::endl;
-    std::cout << "Input B: " << t_b.sum() << std::endl;
-    // std::cout << "Input B: " << t_b << std::endl;
+    // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
+    // std::cout << "Input B shape: " << t_b.sizes() << std::endl;
+    // std::cout << "Input A: " << t_a.sum() << std::endl;
+    // std::cout << "Input B: " << t_b.sum() << std::endl;
+    // // std::cout << "Input B: " << t_b << std::endl;
+    // std::cout << "Output shape: " << output.sizes() << std::endl;
+    // std::cout << "Output sum: " << output.sum() << std::endl;
+    // std::cout.flush();
+    // printf("Hello from matmul!\n");
 
-    std::cout << "Output shape: " << output.sizes() << std::endl;
-    std::cout << "Output sum: " << output.sum() << std::endl;
-
-    std::cout.flush();
-
-    printf("Hello from matmul!\n");
     return torch_to_bridge(output);
 }
+
+extern "C" bridge_tensor_t max_pool2d(
+    bridge_tensor_t input,
+    int kernel_size,
+    int stride,
+    int padding,
+    int dilation
+) {
+    auto t_input = bridge_to_torch(input);
+    auto output = torch::max_pool2d(t_input, kernel_size, stride, padding);
+    return torch_to_bridge(output);
+}
+
 
 // extern "C"
 

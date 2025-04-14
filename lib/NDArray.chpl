@@ -1844,8 +1844,25 @@ proc type ndarray.convolve(features: ndarray(3,?eltType), kernel: ndarray(4,eltT
     return outFeatures;
 }
 
+proc type ndarray.maxPool2d(
+    input: ndarray(?inputRank,?eltType),
+    kernelSize: int,
+    stride: int = kernelSize,
+    padding: int = 0,
+    dilation: int = 1
+): ndarray(inputRank,eltType) {
+    return Bridge.maxPool2d(
+        input : Bridge.tensorHandle(eltType),
+        kernelSize : int(32),
+        stride : int(32),
+        padding: int(32),
+        dilation: int(32)
+    ) : ndarray(inputRank,eltType);
+}
 
-proc type ndarray.maxPool(features: ndarray(3, ?eltType), poolSize: int) do return this.maxPool(features,poolSize,poolSize);
+
+proc type ndarray.maxPool(features: ndarray(3, ?eltType), poolSize: int) do
+    return this.maxPool(features,poolSize,poolSize);
 proc type ndarray.maxPool(features: ndarray(3,?eltType),poolSize: int, stride: int, padding: int = 0, dilation: int = 1): ndarray(3,eltType) {
     const (channels, height, width) = features.shape;
 

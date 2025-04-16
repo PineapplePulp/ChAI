@@ -280,40 +280,14 @@ target_link_options(vgg
     ${CHAI_LINKER_ARGS}
 )
 
+add_custom_command(
+    TARGET vgg
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${PROJECT_ROOT_DIR}/examples/vgg/images"
+            "$<TARGET_FILE_DIR:vgg>/images"
+    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/images to $<TARGET_FILE_DIR:vgg>/images"
+)
 
+# ./vgg images/frog.jpg
 
-# add_custom_command(
-#     TARGET vgg
-#     POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory
-#             "${PROJECT_ROOT_DIR}/examples/vgg/imagenet"
-#             "$<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
-#     COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imagenet to $<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
-# )
-
-# add_custom_command(
-#     TARGET vgg
-#     POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory
-#             "${PROJECT_ROOT_DIR}/examples/vgg/models"
-#             "$<TARGET_FILE_DIR:vgg>/vgg_example/models"
-#     COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/models to $<TARGET_FILE_DIR:vgg>/vgg_example/models"
-# )
-
-# add_custom_command(
-#     TARGET vgg
-#     POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory
-#             "${PROJECT_ROOT_DIR}/examples/vgg/imgs"
-#             "$<TARGET_FILE_DIR:vgg>/vgg_example/images"
-#     COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imgs to $<TARGET_FILE_DIR:vgg>/vgg_example/images"
-# )
-
-# add_custom_command(
-#     TARGET vgg
-#     POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E rename
-#             "$<TARGET_FILE_DIR:vgg>/vgg"
-#             "$<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
-#     COMMENT "Moving executable $<TARGET_FILE_DIR:vgg>/vgg to $<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
-# )

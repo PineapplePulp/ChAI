@@ -282,9 +282,27 @@ add_custom_command(
     TARGET vgg
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${PROJECT_ROOT_DIR}/examples/vgg"
-            "$<TARGET_FILE_DIR:vgg>/vgg_example"
-    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg to $<TARGET_FILE_DIR:vgg>/vgg_example"
+            "${PROJECT_ROOT_DIR}/examples/vgg/imagenet"
+            "$<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
+    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imagenet to $<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
+)
+
+add_custom_command(
+    TARGET vgg
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${PROJECT_ROOT_DIR}/examples/vgg/models"
+            "$<TARGET_FILE_DIR:vgg>/vgg_example/models"
+    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/models to $<TARGET_FILE_DIR:vgg>/vgg_example/models"
+)
+
+add_custom_command(
+    TARGET vgg
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${PROJECT_ROOT_DIR}/examples/vgg/imgs"
+            "$<TARGET_FILE_DIR:vgg>/vgg_example/images"
+    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imgs to $<TARGET_FILE_DIR:vgg>/vgg_example/images"
 )
 
 add_custom_command(

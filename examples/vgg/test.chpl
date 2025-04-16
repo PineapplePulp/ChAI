@@ -43,8 +43,15 @@ proc run(model: borrowed, file: string) {
 }
 
 proc main(args: [] string) {
+  writeln("Loading labels from ", labelFile);
   const labels = getLabels();
+  writeln("Loaded ", labels.size, " labels.");
+
+  writeln("Constructing VGG16 model.");
   const vgg = new VGG16(real(32));
+  writeln("Constructed VGG16 model.");
+
+  writeln("Loading VGG16 model weights.");
   vgg.loadPyTorchDump("models/vgg16/", false);
   writeln("Loaded VGG16 model.");
 

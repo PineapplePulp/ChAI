@@ -735,8 +735,20 @@ class Module {
 
     // Define the loadParameters function
     proc loadParameters(mod, modelPath: string, prefix: string = "", indent: string, param debug, type dtype = real(32)) {
-        for (_, m) in mod.subModules.items() {
+        compilerWarning(mod.type:string);
+        const subModList = mod.subModules.order.toArray();
+        forall mn in subModList {
+            var m: borrowed Module(dtype) = try! mod.subModules.childDict[mn];
             const modName = m.moduleName;
+
+        // }
+        
+        // for (_, m) in mod.subModules.items() {
+        //     const modName = m.moduleName;
+            // writeln(modName, " : ", mod.type:string);
+            writeln(modName, " : ", m.type:string);
+
+            // writeln("loading: ", modelPath, " name: ", modName);
             if var p = m : borrowed Parameter(eltType)? {
                 loadSingleParameter(p, mod, modelPath, prefix, indent+"\t", debug, dtype);
             } else if var sm = m : borrowed Sequential(eltType)? {

@@ -994,7 +994,7 @@ proc dynamicTensor.squeeze(dim: int): dynamicTensor(eltType) {
 //         return (this.squeeze(dShape.tail)).squeeze(dShape.head);
 // }
 
-
+/*
 proc main() {
 
     // Just some examples. 
@@ -1050,7 +1050,7 @@ proc main() {
     const npa = dynamicTensor.loadFromNumpy("notebooks/numpy_y.npy");
 
 
-}
+}*/
 
 
 

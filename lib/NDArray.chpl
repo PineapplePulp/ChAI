@@ -2584,7 +2584,7 @@ proc ndarray.dropout(param inplace: bool = false): ndarray(this.rank, this.eltTy
     }
 }
 
-
+/*
 proc main() {
     // More examples. 
     writeln("Hello!");
@@ -2628,6 +2628,6 @@ proc main() {
 
     // param r = 0..<3;
     // writeln(r);
-}
+}*/
 
 }

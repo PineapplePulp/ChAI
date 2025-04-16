@@ -207,6 +207,7 @@ endforeach()
 # cmake_print_variables(${BRIDGE_OBJECT_FILES})
 # cmake_print_variables(BRIDGE_OBJECT_FILES)
 
+
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
 add_dependencies(TorchBridge ChAI)
@@ -249,3 +250,48 @@ target_link_options(TinyLayerTest
 # chpl -o vgg test.chpl $(../../embed_libtorch.sh .)
 # chpl --fast -o vgg test.chpl $(../../embed_libtorch.sh .)
 
+
+
+
+set(CHAI_LINKER_ARGS
+    -M ${PROJECT_ROOT_DIR}/lib
+    ${BRIDGE_DIR}/include/bridge.h
+    ${BRIDGE_OBJECT_FILES}
+    -L ${LIBTORCH_DIR}/lib
+    ${LIBTORCH_LIBS_LINKER_ARGS}
+    --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
+)
+
+
+
+add_executable(vgg 
+    "${PROJECT_ROOT_DIR}/examples/vgg/test.chpl"
+    ${PROJECT_ROOT_DIR}/examples/vgg/VGG.chpl
+)
+add_dependencies(vgg bridge)
+add_dependencies(vgg ChAI)
+target_link_options(vgg
+    PRIVATE
+    # -M ${PROJECT_ROOT_DIR}/examples/vgg
+    ${CHAI_LINKER_ARGS}
+)
+
+
+
+add_custom_command(
+    TARGET vgg
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${PROJECT_ROOT_DIR}/examples/vgg"
+            "$<TARGET_FILE_DIR:vgg>/vgg_example"
+    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg to $<TARGET_FILE_DIR:vgg>/vgg_example"
+)
+
+add_custom_command(
+    TARGET vgg
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rename
+            "$<TARGET_FILE_DIR:vgg>/vgg"
+            "$<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
+    COMMENT "Moving executable $<TARGET_FILE_DIR:vgg>/vgg to $<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
+)

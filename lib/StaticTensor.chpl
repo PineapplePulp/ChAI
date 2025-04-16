@@ -667,6 +667,7 @@ config const n = 100;
 config const diag = false;
 config const size = 3;
 
+/*
 proc main() {
 
     if diag {
@@ -990,7 +991,7 @@ proc main() {
     // var mExpanded = m.expand(3,4);
     // writeln(mExpanded.data,mExpanded.shape);
 
-}
+}*/
 
 
 

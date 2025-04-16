@@ -1215,6 +1215,7 @@ if diag {
     startVerboseGpu();
 }
 
+/*
 proc main() {
 
     var flower = Tensor.load("data/flower.chdata");
@@ -1292,4 +1293,5 @@ proc main() {
     var fw = f.writer();
     fw.writeln(c);
 }
+*/
 }

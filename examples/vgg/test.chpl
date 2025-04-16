@@ -22,10 +22,18 @@ proc getLabels(): [] {
   return lines;
 }
 
-proc confidence(x: ndarray(1,real(32))): [] {
-  use Math;
-  var expSum = + reduce exp(x.data);
-  return (exp(x.data) / expSum) * 100.0;
+proc confidence(x: ndarray(2,real(32))): [] {
+//   use Math;
+//   var expSum = + reduce exp(x.data);
+//   return (exp(x.data) / expSum) * 100.0;
+
+    // const X: ndarray(1,real(32)) = x.squeeze(1);
+    const (_,i) = x.shape;
+    const X: ndarray(1,real(32)) = x.reshape(i);
+    const smX = X.softmax();
+    return smX.data;
+
+
 }
 
 // returns (top k indicies, top k condiences)
@@ -55,8 +63,47 @@ proc run(model: shared VGG16(real(32)), file: string) {
 
 import Path;
 
+proc runX(file: string) {
+
+
+    writeln("Loading image: ", file);
+    // const image: dynamicTensor(real(32)) = dynamicTensor.loadImage(imagePath=file,eltType=real(32));
+    const imageData: ndarray(3,real(32)) = ndarray.loadImage(imagePath=file,eltType=real(32));
+    writeln("Loaded image: ", file);
+    writeln("Image shape: ", imageData.shape);
+    const image = imageData.toTensor().forceRank(3).array.reshape(1,3,720,1280); // new dynamicTensor(imageData);
+    writeln("Converted image to dynamicTensor (or Tensor).");
+
+    writeln("Running model on image.");
+
+    const output = image.loadRunModel(2, vggExampleDir + "/models/trace_vgg16.pt");
+    writeln("Output shape: ", output.shape);
+    writeln("Output type: ", output.type:string);
+
+    const predictions: ndarray(2,real(32)) = output;
+    const percent = confidence(predictions);
+    
+    const topPredictions: ndarray(2,int) = predictions.topk(k);
+    var percentTopk = [i in 0..<k] percent[topPredictions[0,i]];
+    return (topPredictions.data, percentTopk);
+}
+
 
 proc main(args: [] string) {
+
+
+    // const a = ndarray.loadPyTorchTensorDictWithKey(2,vggExampleDir + "/my_tensor_dict.pt","a");
+    // const b = ndarray.loadPyTorchTensorDictWithKey(2,vggExampleDir + "/my_tensor_dict.pt","b");
+    // writeln("a sum: ", a.sum());
+    // writeln("b sum: ", b.sum());
+
+    // return;
+
+    runX(args[1]);
+    return;
+
+
+
     writeln("Loading labels from ", labelFile);
     const labels = getLabels();
     writeln("Loaded ", labels.size, " labels.");

@@ -1,10 +1,10 @@
 {
-  "name": "classifier.0.bias",
+  "name": "features.11.bias",
   "shape": [
-    4096
+    512
   ],
   "rank": 1,
-  "size": 4096,
+  "size": 512,
   "dtype": "float32",
   "element_bits": 32
 }

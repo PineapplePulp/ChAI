@@ -44,3 +44,4 @@ libtorch/
 .cache/
 build-release/
 libtorch_static/
+examples/vgg/**/*.pt

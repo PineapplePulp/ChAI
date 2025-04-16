@@ -2306,6 +2306,25 @@ proc type ndarray.loadPyTorchTensor(param rank: int,in filePath: string,type elt
     return ndarray.fromBridgeTensor(rank,th) : ndarray(rank,eltType);
 }
 
+proc type ndarray.loadPyTorchTensorDictWithKey(param rank: int,in filePath: string,in tensorKey: string,type eltType = defaultEltType): ndarray(rank,eltType) {
+    use CTypes;
+    const fpPtr: Bridge.string_t = c_ptrTo(filePath);
+    const tkPtr: Bridge.string_t = c_ptrTo(tensorKey);
+    var th = Bridge.load_tensor_dict_from_file(fpPtr,tkPtr);
+    return ndarray.fromBridgeTensor(rank,th) : ndarray(rank,eltType);
+}
+
+proc ndarray.loadRunModel(param outRank: int,in filePath: string,type outEltType = this.eltType): ndarray(outRank,outEltType) {
+    use CTypes;
+    const fpPtr: c_ptr(uint(8)) = c_ptrTo(filePath);
+    var th = Bridge.load_run_model(
+        fpPtr,
+        this : Bridge.tensorHandle(eltType)
+        );
+    return ndarray.fromBridgeTensor(outRank,th) : ndarray(outRank,outEltType);
+}
+
+
 // For printing. 
 proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) throws {
     

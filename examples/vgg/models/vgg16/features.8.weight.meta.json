@@ -1,13 +1,13 @@
 {
-  "name": "features.0.weight",
+  "name": "features.8.weight",
   "shape": [
-    64,
-    3,
+    256,
+    256,
     3,
     3
   ],
   "rank": 4,
-  "size": 1728,
+  "size": 589824,
   "dtype": "float32",
   "element_bits": 32
 }

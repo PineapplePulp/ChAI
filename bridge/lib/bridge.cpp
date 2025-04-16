@@ -1,6 +1,8 @@
 #include <bridge.h>
 
 #include <torch/torch.h>
+#include <torch/script.h>
+
 // #include <torch/script.h>
 // #include <Aten/ATen.h>
 #include <iostream>
@@ -78,27 +80,64 @@ std::vector<char> get_the_bytes(std::string filename) {
 extern "C" bridge_tensor_t load_tensor_from_file(const uint8_t* file_path) {
     // // Load the tensor from a file
     // torch::Tensor tensor;
-    // // torch::load(tensor,file_path);
+    // torch::load(tensor,file_path);
 
     // std::cout << "Tensor loaded from file: " << tensor.sizes() << std::endl;
 
-    // // Convert the tensor to a bridge_tensor_t
-
     std::string fp(reinterpret_cast<const char*>(file_path));
-    std::cout << "File path: " << fp << std::endl;
-
     std::vector<char> f = get_the_bytes(fp);
-    std::cout << "File size: " << f.size() << std::endl;
-
     torch::IValue x = torch::pickle_load(f);
-    // std::cout << "IValue loaded from file: " << x << std::endl;
-
     torch::Tensor t = x.toTensor();
-    std::cout << "Tensor loaded from IValue: " << t.sizes() << std::endl;
-    std::cout << "Tensor sum: " << t.sum() << std::endl;
-
     return torch_to_bridge(t);
 }
+
+extern "C" bridge_tensor_t load_tensor_dict_from_file(const uint8_t* file_path,const uint8_t* tensor_key) {
+    
+
+    std::cout << "Loading tensor from file: " << file_path << std::endl;
+    std::cout << "Tensor key: " << tensor_key << std::endl;
+
+    std::cout.flush();
+
+    std::string fp(reinterpret_cast<const char*>(file_path));
+    std::string tk(reinterpret_cast<const char*>(tensor_key));
+
+    torch::jit::script::Module container = torch::jit::load(fp);
+    torch::Tensor tensor = container.attr(tk).toTensor();
+
+    return torch_to_bridge(tensor);
+
+}
+
+extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tensor_t input) {
+    auto t_input = bridge_to_torch(input);
+    std::string mp(reinterpret_cast<const char*>(model_path));
+
+    std::cout << "Loading model from path: " << mp << std::endl;
+    std::cout.flush();
+
+
+    torch::jit::Module module;
+    try
+    {
+        // Deserialize the ScriptModule from a file using torch::jit::load().
+        module = torch::jit::load(mp);
+    }
+    catch (const c10::Error& e)
+    {
+        std::cerr << "error loading the model\n" << e.msg();
+        std::system("pause");
+    }
+
+    std::vector<torch::jit::IValue> inputs;
+    inputs.push_back(t_input);
+
+    auto output = module.forward(inputs).toTensor();
+
+    std::cout << "Model output: " << output.sizes() << std::endl;
+    return torch_to_bridge(output);
+}
+
 
 
 

@@ -36,13 +36,19 @@ module Bridge {
     extern proc unsafe(const ref arr: [] real(32)): c_ptr(real(32));
 
     // extern proc load_tensor_from_file(file_path: c_ptrConst(u_char)): bridge_tensor_t; // Working
-
-    // extern proc load_tensor_from_file(const ref file_path: uint(8)): bridge_tensor_t;
-    // extern proc load_tensor_from_file(file_path: c_ptrConst(c_uchar)): bridge_tensor_t;
-    
-    // extern proc load_tensor_from_file(const file_path: c_ptr(uint(8))): bridge_tensor_t; // also working
-
     extern proc load_tensor_from_file(const file_path: c_ptr(uint(8))): bridge_tensor_t;
+
+
+
+    type char_t = uint(8);
+    type string_t = c_ptrConst(uint(8));
+    extern proc load_tensor_dict_from_file(
+        file_path: string_t,
+        tensor_key: string_t): bridge_tensor_t;
+
+    extern proc load_run_model(
+        model_path: string_t,
+        in input: bridge_tensor_t): bridge_tensor_t;
 
 
     extern proc convolve2d(

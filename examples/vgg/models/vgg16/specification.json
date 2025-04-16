@@ -1,19 +1,19 @@
 {
   "layerType": "VGG",
   "attributes": {
-    "training": "true"
+    "training": "false"
   },
   "subModules": {
     "features": {
       "layerType": "Sequential",
       "attributes": {
-        "training": "true"
+        "training": "false"
       },
       "subModules": {
         "0": {
           "layerType": "Conv2d",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "in_channels": "3",
             "out_channels": "64",
             "kernel_size": "3",
@@ -31,57 +31,30 @@
         "1": {
           "layerType": "ReLU",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "inplace": "true"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "2": {
-          "layerType": "Conv2d",
+          "layerType": "MaxPool2d",
           "attributes": {
-            "training": "true",
-            "in_channels": "64",
-            "out_channels": "64",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
+            "training": "false",
+            "kernel_size": "2",
+            "stride": "2",
+            "padding": "0",
             "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
+            "return_indices": "false",
+            "ceil_mode": "false"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "3": {
-          "layerType": "ReLU",
-          "attributes": {
-            "training": "true",
-            "inplace": "true"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "4": {
-          "layerType": "MaxPool2d",
-          "attributes": {
-            "training": "true",
-            "kernel_size": "2",
-            "stride": "2",
-            "padding": "0",
-            "dilation": "1",
-            "return_indices": "false",
-            "ceil_mode": "false"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "5": {
           "layerType": "Conv2d",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "in_channels": "64",
             "out_channels": "128",
             "kernel_size": "3",
@@ -96,331 +69,223 @@
           "subModules": {},
           "subModuleOrder": []
         },
-        "6": {
+        "4": {
           "layerType": "ReLU",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "inplace": "true"
+          },
+          "subModules": {},
+          "subModuleOrder": []
+        },
+        "5": {
+          "layerType": "MaxPool2d",
+          "attributes": {
+            "training": "false",
+            "kernel_size": "2",
+            "stride": "2",
+            "padding": "0",
+            "dilation": "1",
+            "return_indices": "false",
+            "ceil_mode": "false"
+          },
+          "subModules": {},
+          "subModuleOrder": []
+        },
+        "6": {
+          "layerType": "Conv2d",
+          "attributes": {
+            "training": "false",
+            "in_channels": "128",
+            "out_channels": "256",
+            "kernel_size": "3",
+            "stride": "1",
+            "padding": "1",
+            "dilation": "1",
+            "transposed": "false",
+            "output_padding": "0",
+            "groups": "1",
+            "padding_mode": "zeros"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "7": {
-          "layerType": "Conv2d",
+          "layerType": "ReLU",
           "attributes": {
-            "training": "true",
-            "in_channels": "128",
-            "out_channels": "128",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
+            "training": "false",
+            "inplace": "true"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "8": {
-          "layerType": "ReLU",
+          "layerType": "Conv2d",
           "attributes": {
-            "training": "true",
-            "inplace": "true"
+            "training": "false",
+            "in_channels": "256",
+            "out_channels": "256",
+            "kernel_size": "3",
+            "stride": "1",
+            "padding": "1",
+            "dilation": "1",
+            "transposed": "false",
+            "output_padding": "0",
+            "groups": "1",
+            "padding_mode": "zeros"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "9": {
-          "layerType": "MaxPool2d",
+          "layerType": "ReLU",
           "attributes": {
-            "training": "true",
-            "kernel_size": "2",
-            "stride": "2",
-            "padding": "0",
-            "dilation": "1",
-            "return_indices": "false",
-            "ceil_mode": "false"
+            "training": "false",
+            "inplace": "true"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "10": {
-          "layerType": "Conv2d",
+          "layerType": "MaxPool2d",
           "attributes": {
-            "training": "true",
-            "in_channels": "128",
-            "out_channels": "256",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
+            "training": "false",
+            "kernel_size": "2",
+            "stride": "2",
+            "padding": "0",
             "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
+            "return_indices": "false",
+            "ceil_mode": "false"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "11": {
-          "layerType": "ReLU",
+          "layerType": "Conv2d",
           "attributes": {
-            "training": "true",
-            "inplace": "true"
+            "training": "false",
+            "in_channels": "256",
+            "out_channels": "512",
+            "kernel_size": "3",
+            "stride": "1",
+            "padding": "1",
+            "dilation": "1",
+            "transposed": "false",
+            "output_padding": "0",
+            "groups": "1",
+            "padding_mode": "zeros"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "12": {
-          "layerType": "Conv2d",
+          "layerType": "ReLU",
           "attributes": {
-            "training": "true",
-            "in_channels": "256",
-            "out_channels": "256",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
+            "training": "false",
+            "inplace": "true"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "13": {
-          "layerType": "ReLU",
+          "layerType": "Conv2d",
           "attributes": {
-            "training": "true",
-            "inplace": "true"
+            "training": "false",
+            "in_channels": "512",
+            "out_channels": "512",
+            "kernel_size": "3",
+            "stride": "1",
+            "padding": "1",
+            "dilation": "1",
+            "transposed": "false",
+            "output_padding": "0",
+            "groups": "1",
+            "padding_mode": "zeros"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "14": {
-          "layerType": "Conv2d",
+          "layerType": "ReLU",
           "attributes": {
-            "training": "true",
-            "in_channels": "256",
-            "out_channels": "256",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
+            "training": "false",
+            "inplace": "true"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "15": {
-          "layerType": "ReLU",
+          "layerType": "MaxPool2d",
           "attributes": {
-            "training": "true",
-            "inplace": "true"
+            "training": "false",
+            "kernel_size": "2",
+            "stride": "2",
+            "padding": "0",
+            "dilation": "1",
+            "return_indices": "false",
+            "ceil_mode": "false"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "16": {
-          "layerType": "MaxPool2d",
+          "layerType": "Conv2d",
           "attributes": {
-            "training": "true",
-            "kernel_size": "2",
-            "stride": "2",
-            "padding": "0",
+            "training": "false",
+            "in_channels": "512",
+            "out_channels": "512",
+            "kernel_size": "3",
+            "stride": "1",
+            "padding": "1",
             "dilation": "1",
-            "return_indices": "false",
-            "ceil_mode": "false"
+            "transposed": "false",
+            "output_padding": "0",
+            "groups": "1",
+            "padding_mode": "zeros"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "17": {
-          "layerType": "Conv2d",
+          "layerType": "ReLU",
           "attributes": {
-            "training": "true",
-            "in_channels": "256",
-            "out_channels": "512",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
+            "training": "false",
+            "inplace": "true"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "18": {
-          "layerType": "ReLU",
+          "layerType": "Conv2d",
           "attributes": {
-            "training": "true",
-            "inplace": "true"
+            "training": "false",
+            "in_channels": "512",
+            "out_channels": "512",
+            "kernel_size": "3",
+            "stride": "1",
+            "padding": "1",
+            "dilation": "1",
+            "transposed": "false",
+            "output_padding": "0",
+            "groups": "1",
+            "padding_mode": "zeros"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "19": {
-          "layerType": "Conv2d",
+          "layerType": "ReLU",
           "attributes": {
-            "training": "true",
-            "in_channels": "512",
-            "out_channels": "512",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
+            "training": "false",
+            "inplace": "true"
           },
           "subModules": {},
           "subModuleOrder": []
         },
         "20": {
-          "layerType": "ReLU",
-          "attributes": {
-            "training": "true",
-            "inplace": "true"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "21": {
-          "layerType": "Conv2d",
-          "attributes": {
-            "training": "true",
-            "in_channels": "512",
-            "out_channels": "512",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "22": {
-          "layerType": "ReLU",
-          "attributes": {
-            "training": "true",
-            "inplace": "true"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "23": {
           "layerType": "MaxPool2d",
           "attributes": {
-            "training": "true",
-            "kernel_size": "2",
-            "stride": "2",
-            "padding": "0",
-            "dilation": "1",
-            "return_indices": "false",
-            "ceil_mode": "false"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "24": {
-          "layerType": "Conv2d",
-          "attributes": {
-            "training": "true",
-            "in_channels": "512",
-            "out_channels": "512",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "25": {
-          "layerType": "ReLU",
-          "attributes": {
-            "training": "true",
-            "inplace": "true"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "26": {
-          "layerType": "Conv2d",
-          "attributes": {
-            "training": "true",
-            "in_channels": "512",
-            "out_channels": "512",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "27": {
-          "layerType": "ReLU",
-          "attributes": {
-            "training": "true",
-            "inplace": "true"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "28": {
-          "layerType": "Conv2d",
-          "attributes": {
-            "training": "true",
-            "in_channels": "512",
-            "out_channels": "512",
-            "kernel_size": "3",
-            "stride": "1",
-            "padding": "1",
-            "dilation": "1",
-            "transposed": "false",
-            "output_padding": "0",
-            "groups": "1",
-            "padding_mode": "zeros"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "29": {
-          "layerType": "ReLU",
-          "attributes": {
-            "training": "true",
-            "inplace": "true"
-          },
-          "subModules": {},
-          "subModuleOrder": []
-        },
-        "30": {
-          "layerType": "MaxPool2d",
-          "attributes": {
-            "training": "true",
+            "training": "false",
             "kernel_size": "2",
             "stride": "2",
             "padding": "0",
@@ -453,23 +318,13 @@
         "17",
         "18",
         "19",
-        "20",
-        "21",
-        "22",
-        "23",
-        "24",
-        "25",
-        "26",
-        "27",
-        "28",
-        "29",
-        "30"
+        "20"
       ]
     },
     "avgpool": {
       "layerType": "AdaptiveAvgPool2d",
       "attributes": {
-        "training": "true",
+        "training": "false",
         "output_size": "7"
       },
       "subModules": {},
@@ -478,13 +333,13 @@
     "classifier": {
       "layerType": "Sequential",
       "attributes": {
-        "training": "true"
+        "training": "false"
       },
       "subModules": {
         "0": {
           "layerType": "Linear",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "in_features": "25088",
             "out_features": "4096"
           },
@@ -494,7 +349,7 @@
         "1": {
           "layerType": "ReLU",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "inplace": "true"
           },
           "subModules": {},
@@ -503,7 +358,7 @@
         "2": {
           "layerType": "Dropout",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "p": "0.5",
             "inplace": "false"
           },
@@ -513,7 +368,7 @@
         "3": {
           "layerType": "Linear",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "in_features": "4096",
             "out_features": "4096"
           },
@@ -523,7 +378,7 @@
         "4": {
           "layerType": "ReLU",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "inplace": "true"
           },
           "subModules": {},
@@ -532,7 +387,7 @@
         "5": {
           "layerType": "Dropout",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "p": "0.5",
             "inplace": "false"
           },
@@ -542,7 +397,7 @@
         "6": {
           "layerType": "Linear",
           "attributes": {
-            "training": "true",
+            "training": "false",
             "in_features": "4096",
             "out_features": "1000"
           },

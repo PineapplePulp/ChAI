@@ -4,6 +4,7 @@ import ChapelArray;
 import Math;
 import Random;
 import IO;
+import Path;
 
 use Env;
 
@@ -2284,6 +2285,27 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
     Image.writeImage(imagePath,format=imgType,pixels=pixelData);
 }
 
+proc ref ndarray.loadChData(fr: IO.fileReader(?)) throws {
+    var r = fr.read(int);
+    if r != rank then
+        err("Error reading tensor: rank mismatch.", r , " != this." , rank);
+    var s = this.shape;
+    for i in 0..#rank do
+        s[i] = fr.read(int);
+    var d = util.domainFromShape((...s));
+    this._domain = d;
+    // for i in d do
+    //     this.data[i] = fr.read(eltType);
+    fr.read(this.data);
+}
+
+proc type ndarray.loadPyTorchTensor(param rank: int,in filePath: string,type eltType = defaultEltType): ndarray(rank,eltType) {
+    use CTypes;
+    const fpPtr: c_ptr(uint(8)) = c_ptrTo(filePath);
+    var th = Bridge.load_tensor_from_file(fpPtr);
+    return ndarray.fromBridgeTensor(rank,th) : ndarray(rank,eltType);
+}
+
 // For printing. 
 proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) throws {
     
@@ -2300,17 +2322,26 @@ proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer
 }
 
 proc ref ndarray.read(fr: IO.fileReader(?)) throws {
-    var r = fr.read(int);
-    if r != rank then
-        err("Error reading tensor: rank mismatch.", r , " != this." , rank);
-    var s = this.shape;
-    for i in 0..#rank do
-        s[i] = fr.read(int);
-    var d = util.domainFromShape((...s));
-    this._domain = d;
-    // for i in d do
-    //     this.data[i] = fr.read(eltType);
-    fr.read(this.data);
+
+    const file = fr.getFile();
+    const filePath: string = file.path;
+    const (_,fileName,fileExt) = util.splitPathParts(filePath);
+
+    select fileExt {
+        when "chdata" do
+            this.loadChData(fr);
+        when "png" do
+            this = ndarray.loadImage(filePath,eltType);
+        when "jpg" do
+            this = ndarray.loadImage(filePath,eltType);
+        when "jpeg" do
+            this = ndarray.loadImage(filePath,eltType);
+        when "bmp" do
+            this = ndarray.loadImage(filePath,eltType);
+    }
+
+
+
 }
 
 

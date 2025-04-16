@@ -4,15 +4,16 @@
 // #include <torch/script.h>
 // #include <Aten/ATen.h>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <cstring>
+#include <sstream>
+#include <cstdlib>
 #include <vector>
-
 #include <cstdint>
 
 
 
-extern "C" float32_t* unsafe(const float32_t* arr) {
-    return const_cast<float32_t*>(arr);
-}
 
 int bridge_tensor_elements(bridge_tensor_t &bt) {
     int size = 1;
@@ -50,6 +51,62 @@ torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     auto shape = at::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+extern "C" float32_t* unsafe(const float32_t* arr) {
+    return const_cast<float32_t*>(arr);
+}
+
+std::vector<char> get_the_bytes(std::string filename) {
+    std::ifstream input(filename, std::ios::binary);
+    std::vector<char> bytes((std::istreambuf_iterator<char>(input)),(std::istreambuf_iterator<char>()));
+    input.close();
+    return bytes;
+}
+
+extern "C" bridge_tensor_t load_tensor_from_file(const uint8_t* file_path) {
+    // // Load the tensor from a file
+    // torch::Tensor tensor;
+    // // torch::load(tensor,file_path);
+
+    // std::cout << "Tensor loaded from file: " << tensor.sizes() << std::endl;
+
+    // // Convert the tensor to a bridge_tensor_t
+
+    std::string fp(reinterpret_cast<const char*>(file_path));
+    std::cout << "File path: " << fp << std::endl;
+
+    std::vector<char> f = get_the_bytes(fp);
+    std::cout << "File size: " << f.size() << std::endl;
+
+    torch::IValue x = torch::pickle_load(f);
+    // std::cout << "IValue loaded from file: " << x << std::endl;
+
+    torch::Tensor t = x.toTensor();
+    std::cout << "Tensor loaded from IValue: " << t.sizes() << std::endl;
+    std::cout << "Tensor sum: " << t.sum() << std::endl;
+
+    return torch_to_bridge(t);
+}
+
+
+
+
+
+
+
+
 
 extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
     auto t = bridge_to_torch(arr);

@@ -10,6 +10,8 @@ extern "C" {
 typedef float float32_t;
 typedef double float64_t;
 typedef char bool_t;
+typedef unsigned char uint8_t;
+typedef unsigned int uint32_t;
 
 typedef struct bridge_tensor_t {
     float* data;
@@ -26,6 +28,10 @@ typedef struct nil_scalar_tensor_t {
     bool_t is_scalar;
     bool_t is_tensor;
 } nil_scalar_tensor_t;
+
+float* unsafe(const float* arr);
+bridge_tensor_t load_tensor_from_file(const uint8_t* file_path);
+
 
 int baz(void);
 
@@ -65,6 +71,7 @@ bridge_tensor_t max_pool2d(
     int dilation
 );
 
+
 // bridge_tensor_t conv2d(
 //     bridge_tensor_t input,
 //     bridge_tensor_t kernel,
@@ -73,7 +80,6 @@ bridge_tensor_t max_pool2d(
 //     nil_scalar_tensor_t padding
 // );
 
-float* unsafe(const float* arr);
 
 
 #ifdef __cplusplus

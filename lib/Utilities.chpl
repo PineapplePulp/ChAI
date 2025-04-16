@@ -318,6 +318,14 @@ module Utilities {
         return tup;
     }
 
+    proc splitPathParts(path: string): (string,string,string) {
+        import Path;
+        const (_, pathExt) = Path.splitPath(path);
+        const ext = pathExt[1..].toLower();
+        const (dirPath,fileName) = Path.dirname(path);
+        return (dirPath,fileName,ext);
+    }
+
     proc getImageType(imagePath: string): Image.imageType {
         import Path;
         const (pfx,pathExt) = Path.splitExt(imagePath);

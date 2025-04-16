@@ -6,6 +6,8 @@ module Bridge {
     use Utilities.Standard;
     use Allocators;
 
+    use CTypes;
+
 
     extern record bridge_tensor_t {
         var data: c_ptr(real(32));
@@ -31,6 +33,17 @@ module Bridge {
         }
     }
 
+    extern proc unsafe(const ref arr: [] real(32)): c_ptr(real(32));
+
+    // extern proc load_tensor_from_file(file_path: c_ptrConst(u_char)): bridge_tensor_t; // Working
+
+    // extern proc load_tensor_from_file(const ref file_path: uint(8)): bridge_tensor_t;
+    // extern proc load_tensor_from_file(file_path: c_ptrConst(c_uchar)): bridge_tensor_t;
+    
+    // extern proc load_tensor_from_file(const file_path: c_ptr(uint(8))): bridge_tensor_t; // also working
+
+    extern proc load_tensor_from_file(const file_path: c_ptr(uint(8))): bridge_tensor_t;
+
 
     extern proc convolve2d(
         in input: bridge_tensor_t, 
@@ -55,8 +68,6 @@ module Bridge {
         in padding: int(32),
         in dilation: int(32)): bridge_tensor_t;
     
-
-    extern proc unsafe(const ref arr: [] real(32)): c_ptr(real(32));
 
 
     proc getSizeArray(const ref arr: [] ?eltType): [] int(32) {

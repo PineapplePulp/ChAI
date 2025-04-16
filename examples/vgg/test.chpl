@@ -53,29 +53,32 @@ proc run(model: shared VGG16(real(32)), file: string) {
     return (topPredictions.data, percentTopk);
 }
 
+import Path;
+
+
 proc main(args: [] string) {
-  writeln("Loading labels from ", labelFile);
-  const labels = getLabels();
-  writeln("Loaded ", labels.size, " labels.");
+    writeln("Loading labels from ", labelFile);
+    const labels = getLabels();
+    writeln("Loaded ", labels.size, " labels.");
 
-  writeln("Constructing VGG16 model.");
-  const vgg = new shared VGG16(real(32));
-  writeln("Constructed VGG16 model.");
+    writeln("Constructing VGG16 model.");
+    const vgg = new shared VGG16(real(32));
+    writeln("Constructed VGG16 model.");
 
-  writeln("Loading VGG16 model weights.");
-  vgg.loadPyTorchDump(modelDir, false);
-  writeln("Loaded VGG16 model.");
+    writeln("Loading VGG16 model weights.");
+    vgg.loadPyTorchDump(modelDir, false);
+    writeln("Loaded VGG16 model.");
 
 
-  var files = args[1..];
+    var files = args[1..];
 
-  for f in files {
-    var (topArr, percent) = run(vgg, f);
-    writeln("For '", f, "' the top ", k, " predictions are: ");
-    for i in 0..<k {
-      writef("  %?: label=%?; confidence=%2.2r%%\n", i, labels[topArr[i]], percent[i]);
+    for f in files {
+        var (topArr, percent) = run(vgg, f);
+        writeln("For '", f, "' the top ", k, " predictions are: ");
+        for i in 0..<k {
+        writef("  %?: label=%?; confidence=%2.2r%%\n", i, labels[topArr[i]], percent[i]);
+        }
+        writeln();
     }
-    writeln();
-  }
 
 }

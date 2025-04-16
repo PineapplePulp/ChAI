@@ -22,16 +22,16 @@ proc getLabels(): [] {
   return lines;
 }
 
-proc confidence(x: ndarray(2,real(32))): [] {
+proc confidence(x: ndarray(2,real(32))): ndarray(1,real(32)) {
 //   use Math;
 //   var expSum = + reduce exp(x.data);
 //   return (exp(x.data) / expSum) * 100.0;
 
     // const X: ndarray(1,real(32)) = x.squeeze(1);
     const (_,i) = x.shape;
-    const X: ndarray(1,real(32)) = x.reshape(i);
+    const X: ndarray(1,real(32)) = x.squeeze(1);
     const smX = X.softmax();
-    return smX.data;
+    return smX;
 
 
 }
@@ -83,8 +83,8 @@ proc runX(file: string) {
     const predictions: ndarray(2,real(32)) = output;
     const percent = confidence(predictions);
     
-    const topPredictions: ndarray(2,int) = predictions.topk(k);
-    var percentTopk = [i in 0..<k] percent[topPredictions[0,i]];
+    const topPredictions: ndarray(1,int) = predictions.squeeze(1).topk(k);
+    var percentTopk = [i in 0..<k] percent[topPredictions[i]];
     return (topPredictions.data, percentTopk);
 }
 
@@ -103,7 +103,7 @@ proc main(args: [] string) {
     return;
 
 
-
+/*
     writeln("Loading labels from ", labelFile);
     const labels = getLabels();
     writeln("Loaded ", labels.size, " labels.");
@@ -127,5 +127,5 @@ proc main(args: [] string) {
         }
         writeln();
     }
-
+*/
 }

@@ -2579,9 +2579,7 @@ proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b
    :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
    :rtype: ndarray(rank, eltType)
 */
-proc ndarray.softmax(): ndarray(this.rank, this.eltType)
-    where isSubtype(this.eltType, real)
-{
+proc ndarray.softmax(): ndarray(this.rank, this.eltType) {
     const dom = this.domain;
     const ref thisData = this.data;
 

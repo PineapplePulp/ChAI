@@ -270,6 +270,7 @@ set(CHAI_LINKER_ARGS
 add_executable(vgg 
     "${PROJECT_ROOT_DIR}/examples/vgg/test.chpl"
     ${PROJECT_ROOT_DIR}/examples/vgg/VGG.chpl
+    ${CHAI_LIB_FILES}
 )
 add_dependencies(vgg bridge)
 add_dependencies(vgg ChAI)

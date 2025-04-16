@@ -88,12 +88,19 @@ record staticTensor : serializable {
     }
 }
 
-operator :(in t: staticTensor(?rank,?eltType), type toType): staticTensor(rank,toType) {
+operator :(in t: staticTensor(?rank,?eltType), type toType): staticTensor(rank,toType)
+        where isNumericType(toType) {
     if toType == t.eltType then
         return t;
-    const a = t.array;
-    const b = a : toType;
-    return new staticTensor(b);
+
+    const device = t.device;
+    var newDataResource = new shared Remote(ndarray(rank,eltType),device);
+    ref dat = newDataResource.ptr;
+    on device do
+        dat = t.array : toType;
+    var newTR = new shared TensorResource(newDataResource);
+
+    return new staticTensor(newTR);
 }
 
 proc staticTensor.shapeArray(): [] int {

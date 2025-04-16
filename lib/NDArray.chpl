@@ -260,7 +260,11 @@ record ndarray : serializable {
 }
 
 
-proc ref ndarray.this(args: int...rank) ref {
+// proc ref ndarray.this(args: int...rank) ref {
+//     return data.this((...args));
+// }
+
+proc ndarray.this(args: int...rank) {
     return data.this((...args));
 }
 
@@ -750,7 +754,7 @@ proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
     const mySize = myDom.size;
     if k > mySize then util.err("Cannot get top ", k, " from ", mySize, " elements.");
     var topK: [0..<k] int = 0..<k;
-    var topKData: [0..<k] eltType = myData(0..<k);
+    var topKData: [0..<k] eltType = myData[0..<k];
 
     // Repeatedly find the minimum from the elements of topKData,
     // and then swap it out with some element from the remaining portion
@@ -2304,8 +2308,9 @@ proc ref ndarray.read(fr: IO.fileReader(?)) throws {
         s[i] = fr.read(int);
     var d = util.domainFromShape((...s));
     this._domain = d;
-    for i in d do
-        this.data[i] = fr.read(eltType);
+    // for i in d do
+    //     this.data[i] = fr.read(eltType);
+    fr.read(this.data);
 }
 
 

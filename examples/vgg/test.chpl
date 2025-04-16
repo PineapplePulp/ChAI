@@ -22,10 +22,10 @@ proc getLabels(): [] {
   return lines;
 }
 
-proc confidence(x: []): [] {
+proc confidence(x: ndarray(1,real(32))): [] {
   use Math;
-  var expSum = + reduce exp(x);
-  return (exp(x) / expSum) * 100.0;
+  var expSum = + reduce exp(x.data);
+  return (exp(x.data) / expSum) * 100.0;
 }
 
 // returns (top k indicies, top k condiences)
@@ -41,16 +41,16 @@ proc run(model: shared VGG16(real(32)), file: string) {
     writeln("Converted image to dynamicTensor (or Tensor).");
 
     writeln("Running model on image.");
-    var output: dynamicTensor(real(32)) = model(image);
+    const output: dynamicTensor(real(32)) = model(image);
     writeln("Output shape: ", output.shape());
     writeln("Output type: ", output.type:string);
 
-    const top = output.topk(k);
-    var topArr = top.forceRank(1).array.data;
-    var percent = confidence(output.forceRank(1).array.data);
-
-    var percentTopk = [i in 0..<k] percent(topArr[i]);
-    return (topArr, percentTopk);
+    const predictions: ndarray(1,real(32)) = output.forceRank(rank=1).array;
+    const percent = confidence(predictions);
+    
+    const topPredictions: ndarray(1,int) = predictions.topk(k);
+    var percentTopk = [i in 0..<k] percent[topPredictions[i]];
+    return (topPredictions.data, percentTopk);
 }
 
 proc main(args: [] string) {

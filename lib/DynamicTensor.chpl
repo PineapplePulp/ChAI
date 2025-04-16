@@ -126,13 +126,22 @@ record dynamicTensor : serializable {
         return this;
     }
 
-    proc array(param rank: int) ref : ndarray(rank,eltType) do
+    inline proc ref rankedArray(param rank: int) ref : ndarray(rank,eltType) do
         return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).array;
 
-    proc grad(param rank: int) ref : ndarray(rank,eltType) do
+    inline proc rankedArray(param rank: int): ndarray(rank,eltType) do
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).array;
+
+    inline proc ref rankedGradArray(param rank: int) ref : ndarray(rank,eltType) do
         return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).grad;
 
-    proc data(param rank: int) ref : [] eltType do
+    inline proc rankedGradArray(param rank: int): ndarray(rank,eltType) do
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).grad;
+
+    inline proc ref rankedData(param rank: int) ref : [] eltType do
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).data;
+
+    inline proc rankedData(param rank: int): [] eltType do
         return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).data;
 
 
@@ -156,12 +165,21 @@ record dynamicTensor : serializable {
     }
 }
 
-operator :(in t: dynamicTensor(?eltType), type toType): dynamicTensor(toType) {
+operator :(in t: dynamicTensor(?eltType), type toType): dynamicTensor(toType)
+        where isNumericType(toType) {
     if eltType == toType then return t;
     for param rank in 1..maxRank do
         if t.checkRank(rank) then
             return (t.forceRank(rank) : toType).eraseRank();
     halt("Could not identify rank for this: ", t);
+}
+
+operator :(in t: dynamicTensor(?eltType), type toType: ndarray(?rank,?toEltType)): ndarray(rank,toEltType)
+        where isNumericType(eltType) && isNumericType(toEltType) {
+    if eltType == toEltType then 
+        return t.toNDArray(rank);
+    else
+        return t.toNDArray(rank) : toEltType;
 }
 
 proc type dynamicTensor.detachMode() param : bool {

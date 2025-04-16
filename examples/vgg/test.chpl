@@ -32,9 +32,6 @@ proc run(model: borrowed, file: string) {
 
   var output = model(img);
 
-  for i in 0..10 do
-    output = model(img);
-    
   writeln("Output shape: ", output.shape());
 
   const top = output.topk(k);

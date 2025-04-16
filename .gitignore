@@ -43,3 +43,4 @@ build/
 libtorch/
 .cache/
 build-release/
+libtorch_static/

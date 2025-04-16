@@ -13,6 +13,7 @@ set(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(PROJECT_BINARY_DIR "${CMAKE_BINARY_DIR}")
 set(PROJECT_CACHE_DIR "${PROJECT_ROOT_DIR}/.cache")
 set(LIBTORCH_DIR "${PROJECT_ROOT_DIR}/libtorch")
+# set(LIBTORCH_STATIC_INSTALL_DIR "${PROJECT_ROOT_DIR}/libtorch_static")
 set(BRIDGE_DIR "${PROJECT_ROOT_DIR}/bridge")
 
 
@@ -33,6 +34,65 @@ download_libtorch(
     CACHE_DIR ${PROJECT_CACHE_DIR}
     DESTINATION ${LIBTORCH_DIR}
 )
+
+
+include(FetchContent)
+include(ExternalProject)
+
+
+# if(NOT EXISTS "${LIBTORCH_STATIC_INSTALL_DIR}/lib/libtorch.a")
+#     ExternalProject_Add(
+#     pytorch
+#     GIT_REPOSITORY      https://github.com/pytorch/pytorch.git
+#     GIT_TAG             v2.6.0                # Example: specify a particular release
+#     UPDATE_COMMAND      ""                     # Don’t auto-run 'git pull'
+#     PATCH_COMMAND       ""                     # No custom patch step
+    
+#     # DOWNLOAD_DIR         "${CMAKE_BINARY_DIR}/pytorch-download" # Where to download the repo
+
+#     # We need all PyTorch submodules. By default, ExternalProject won't do submodule init.
+#     # So we can do that in a separate step if we want a full build. For a minimal CPU build,
+#     # you might not need them all, but let's be safe:
+#     STEP_TARGETS        clone
+#     # After 'clone', run "git submodule update --init --recursive"
+#     # to fetch all submodules.
+#     # We can use a little trick with COMMAND.
+#     #   PATCH_COMMAND       "git submodule update --init --recursive"
+
+#     # CMAKE_ARGS
+#     #     -DBUILD_SHARED_LIBS=OFF              # Build static libraries
+#     #     -DBUILD_PYTHON=OFF                   # Don’t build Python bindings
+#     #     -DBUILD_TEST=OFF                     # Don’t build tests
+#     #     -DUSE_CUDA=OFF                       # Disable CUDA
+#     #     -DUSE_CUDNN=OFF                      # Disable cuDNN
+#     #     -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
+#     #     # -DBUILD_BINARY=ON
+#     #     # -DUSE_DISTRIBUTED=ON
+#     #     # -DBUILD_STATIC_RUNTIME_BENCHMARK=ON
+#     #     # -DBUILD_LITE_INTERPRETER=ON
+#     #     # -DUSE_STATIC_MKL=ON
+#     #     # -DSTATIC_DISPATCH_BACKEND=ON
+#     #     # -DCAFFE2_USE_MSVC_STATIC_RUNTIME=ON
+#     #     # -DUSE_DISTRIBUTED=ON
+#     #     # -DCMAKE_BUILD_TYPE=Release
+#     #     -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
+#     #     # -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+#         CMAKE_ARGS
+#             -DBUILD_SHARED_LIBS=OFF              # Build static libraries
+#             -DBUILD_PYTHON=OFF                   # Don’t build Python bindings
+#             -DBUILD_TEST=OFF                     # Don’t build tests
+#             -DUSE_CUDA=OFF                       # Disable CUDA
+#             -DUSE_CUDNN=OFF                      # Disable cuDNN
+#             -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
+#             -DCMAKE_BUILD_TYPE=Release
+#             # -DSTATIC_DISPATCH_BACKEND=ON
+#             -DCMAKE_INSTALL_PREFIX=${LIBTORCH_STATIC_INSTALL_DIR}
+#             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        
+#     INSTALL_DIR         ${LIBTORCH_STATIC_INSTALL_DIR} # Where to install
+#     )
+# endif()
+
 
 file(GLOB CHAI_LIB_FILES "${PROJECT_ROOT_DIR}/lib/*.chpl")
 
@@ -106,7 +166,10 @@ set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
 
 
-file(GLOB LIBTORCH_ALL_LIB_FILES "${LIBTORCH_DIR}/lib/*.a" "${LIBTORCH_DIR}/lib/*.dylib" "${LIBTORCH_DIR}/lib/*.so")
+file(GLOB LIBTORCH_ALL_LIB_FILES 
+    "${LIBTORCH_DIR}/lib/*.a" 
+    "${LIBTORCH_DIR}/lib/*.dylib" 
+    "${LIBTORCH_DIR}/lib/*.so")
 
 set(LIBTORCH_ALL_LIBS "")
 foreach(lib_path IN LISTS LIBTORCH_ALL_LIB_FILES)

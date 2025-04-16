@@ -2202,7 +2202,7 @@ proc type ndarray.random(shape: ?rank*int,type eltType = defaultEltType,seed: in
     return ndarray.randomArray((...shape),eltType,new Random.randomStream(eltType,seed));
 
 
-proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): ndarray(3,eltType) {
+proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): ndarray(3,eltType) throws {
     import Image;
 
     param chanBits = Image.bitsPerColor; 

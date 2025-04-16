@@ -24,8 +24,11 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT_DIR}/cmake/chapel")
 project(MyProject LANGUAGES CXX C CHPL)
 message(STATUS "Using chpl: ${CMAKE_CHPL_COMPILER}")
 
-set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+
+if(APPLE)
+    set(CMAKE_C_COMPILER "/usr/bin/clang")
+    set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+endif()
 set(CMAKE_CXX_STANDARD 17)
 
 
@@ -273,43 +276,44 @@ add_dependencies(vgg ChAI)
 target_link_options(vgg
     PRIVATE
     # -M ${PROJECT_ROOT_DIR}/examples/vgg
+    -svggExampleDir="${PROJECT_ROOT_DIR}/examples/vgg"
     ${CHAI_LINKER_ARGS}
 )
 
 
 
-add_custom_command(
-    TARGET vgg
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${PROJECT_ROOT_DIR}/examples/vgg/imagenet"
-            "$<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
-    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imagenet to $<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
-)
+# add_custom_command(
+#     TARGET vgg
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#             "${PROJECT_ROOT_DIR}/examples/vgg/imagenet"
+#             "$<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
+#     COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imagenet to $<TARGET_FILE_DIR:vgg>/vgg_example/imagenet"
+# )
 
-add_custom_command(
-    TARGET vgg
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${PROJECT_ROOT_DIR}/examples/vgg/models"
-            "$<TARGET_FILE_DIR:vgg>/vgg_example/models"
-    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/models to $<TARGET_FILE_DIR:vgg>/vgg_example/models"
-)
+# add_custom_command(
+#     TARGET vgg
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#             "${PROJECT_ROOT_DIR}/examples/vgg/models"
+#             "$<TARGET_FILE_DIR:vgg>/vgg_example/models"
+#     COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/models to $<TARGET_FILE_DIR:vgg>/vgg_example/models"
+# )
 
-add_custom_command(
-    TARGET vgg
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${PROJECT_ROOT_DIR}/examples/vgg/imgs"
-            "$<TARGET_FILE_DIR:vgg>/vgg_example/images"
-    COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imgs to $<TARGET_FILE_DIR:vgg>/vgg_example/images"
-)
+# add_custom_command(
+#     TARGET vgg
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#             "${PROJECT_ROOT_DIR}/examples/vgg/imgs"
+#             "$<TARGET_FILE_DIR:vgg>/vgg_example/images"
+#     COMMENT "Copying ${PROJECT_ROOT_DIR}/examples/vgg/imgs to $<TARGET_FILE_DIR:vgg>/vgg_example/images"
+# )
 
-add_custom_command(
-    TARGET vgg
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E rename
-            "$<TARGET_FILE_DIR:vgg>/vgg"
-            "$<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
-    COMMENT "Moving executable $<TARGET_FILE_DIR:vgg>/vgg to $<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
-)
+# add_custom_command(
+#     TARGET vgg
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E rename
+#             "$<TARGET_FILE_DIR:vgg>/vgg"
+#             "$<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
+#     COMMENT "Moving executable $<TARGET_FILE_DIR:vgg>/vgg to $<TARGET_FILE_DIR:vgg>/vgg_example/vgg"
+# )

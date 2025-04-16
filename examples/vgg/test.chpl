@@ -1,8 +1,13 @@
 use VGG;
 use Tensor;
 
+config param vggExampleDir = ".";
+
+writeln("VGG Example Directory: ", vggExampleDir);
+
 config const k = 5;
-config const labelFile = "imagenet/LOC_synset_mapping.txt";
+config const modelDir = vggExampleDir + "/models/vgg16/";
+config const labelFile = vggExampleDir + "/imagenet/LOC_synset_mapping.txt";
 
 
 proc getLabels(): [] {
@@ -24,22 +29,28 @@ proc confidence(x: []): [] {
 }
 
 // returns (top k indicies, top k condiences)
-proc run(model: borrowed, file: string) {
-  const img = Tensor.load(file):real(32);
+proc run(model: shared VGG16(real(32)), file: string) {
 
-  writeln("Loaded image: ", file);
-  writeln("Image shape: ", img.shape());
 
-  var output = model(img);
+    writeln("Loading image: ", file);
+    // const image: dynamicTensor(real(32)) = dynamicTensor.loadImage(imagePath=file,eltType=real(32));
+    const imageData: ndarray(3,real(32)) = ndarray.loadImage(imagePath=file,eltType=real(32));
+    writeln("Loaded image: ", file);
+    writeln("Image shape: ", imageData.shape);
+    const image: dynamicTensor(real(32)) = imageData.toTensor(); // new dynamicTensor(imageData);
+    writeln("Converted image to dynamicTensor (or Tensor).");
 
-  writeln("Output shape: ", output.shape());
+    writeln("Running model on image.");
+    var output: dynamicTensor(real(32)) = model(image);
+    writeln("Output shape: ", output.shape());
+    writeln("Output type: ", output.type:string);
 
-  const top = output.topk(k);
-  var topArr = top.tensorize(1).array.data;
-  var percent = confidence(output.tensorize(1).array.data);
+    const top = output.topk(k);
+    var topArr = top.forceRank(1).array.data;
+    var percent = confidence(output.forceRank(1).array.data);
 
-  var percentTopk = [i in 0..<k] percent(topArr[i]);
-  return (topArr, percentTopk);
+    var percentTopk = [i in 0..<k] percent(topArr[i]);
+    return (topArr, percentTopk);
 }
 
 proc main(args: [] string) {
@@ -48,11 +59,11 @@ proc main(args: [] string) {
   writeln("Loaded ", labels.size, " labels.");
 
   writeln("Constructing VGG16 model.");
-  const vgg = new VGG16(real(32));
+  const vgg = new shared VGG16(real(32));
   writeln("Constructed VGG16 model.");
 
   writeln("Loading VGG16 model weights.");
-  vgg.loadPyTorchDump("models/vgg16/", false);
+  vgg.loadPyTorchDump(modelDir, false);
   writeln("Loaded VGG16 model.");
 
 

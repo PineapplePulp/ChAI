@@ -320,9 +320,10 @@ module Utilities {
 
     proc splitPathParts(path: string): (string,string,string) {
         import Path;
-        const (_, pathExt) = Path.splitPath(path);
+        const (_, pathExt) = Path.splitExt(path);
         const ext = pathExt[1..].toLower();
-        const (dirPath,fileName) = Path.dirname(path);
+        const dirPath = Path.dirname(path);
+        const fileName = Path.basename(path);
         return (dirPath,fileName,ext);
     }
 

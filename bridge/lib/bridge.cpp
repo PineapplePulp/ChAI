@@ -92,13 +92,6 @@ extern "C" bridge_tensor_t load_tensor_from_file(const uint8_t* file_path) {
 }
 
 extern "C" bridge_tensor_t load_tensor_dict_from_file(const uint8_t* file_path,const uint8_t* tensor_key) {
-    
-
-    std::cout << "Loading tensor from file: " << file_path << std::endl;
-    std::cout << "Tensor key: " << tensor_key << std::endl;
-
-    std::cout.flush();
-
     std::string fp(reinterpret_cast<const char*>(file_path));
     std::string tk(reinterpret_cast<const char*>(tensor_key));
 

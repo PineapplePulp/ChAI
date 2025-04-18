@@ -22,16 +22,16 @@ proc getLabels(): [] {
   return lines;
 }
 
-proc confidence(x: ndarray(2,real(32))): ndarray(1,real(32)) {
-//   use Math;
-//   var expSum = + reduce exp(x.data);
-//   return (exp(x.data) / expSum) * 100.0;
-
+// proc confidence(x: ndarray(2,real(32))): ndarray(1,real(32)) {
+proc confidence(x: ndarray(1,real(32))) {
+    use Math;
+    var expSum = + reduce exp(x.data);
+    const res = (exp(x.data) / expSum) * 100.0;
+    return new ndarray(res);
     // const X: ndarray(1,real(32)) = x.squeeze(1);
-    const (_,i) = x.shape;
-    const X: ndarray(1,real(32)) = x.squeeze(1);
-    const smX = X.softmax();
-    return smX;
+    // const (_,i) = x.shape;
+    // const smX = x.softmax();
+    // return smX;
 
 
 }
@@ -40,25 +40,58 @@ proc confidence(x: ndarray(2,real(32))): ndarray(1,real(32)) {
 proc run(model: shared VGG16(real(32)), file: string) {
 
 
-    writeln("Loading image: ", file);
-    // const image: dynamicTensor(real(32)) = dynamicTensor.loadImage(imagePath=file,eltType=real(32));
-    const imageData: ndarray(3,real(32)) = ndarray.loadImage(imagePath=file,eltType=real(32));
-    writeln("Loaded image: ", file);
-    writeln("Image shape: ", imageData.shape);
-    const image: dynamicTensor(real(32)) = imageData.toTensor(); // new dynamicTensor(imageData);
-    writeln("Converted image to dynamicTensor (or Tensor).");
+    // writeln("Loading image: ", file);
+    // // const image: dynamicTensor(real(32)) = dynamicTensor.loadImage(imagePath=file,eltType=real(32));
+    // const imageData: ndarray(3,real(32)) = ndarray.loadImage(imagePath=file,eltType=real(32));
+    // writeln("Loaded image: ", file);
+    // writeln("Image shape: ", imageData.shape);
+    // const image: dynamicTensor(real(32)) = imageData.toTensor(); // new dynamicTensor(imageData);
+    // writeln("Converted image to dynamicTensor (or Tensor).");
 
-    writeln("Running model on image.");
-    const output: dynamicTensor(real(32)) = model(image);
-    writeln("Output shape: ", output.shape());
-    writeln("Output type: ", output.type:string);
+    // writeln("Running model on image.");
+    // const output: dynamicTensor(real(32)) = model(image);
+    // writeln("Output shape: ", output.shape());
+    // writeln("Output type: ", output.type:string);
 
-    const predictions: ndarray(1,real(32)) = output.forceRank(rank=1).array;
-    const percent = confidence(predictions);
+    // const img = Tensor.load(file):real(32);
+    // const imageData: ndarray(3,real(32)) = ndarray.loadImage(imagePath=file,eltType=real(32));
+    const imageData = ndarray.loadFrom(file,3,real(32));
+    const img = new dynamicTensor(imageData);
+
+    writeln("imageData shape: ", imageData.shape);
+    writeln("img shape: ", img.shape());
+    const output = model(img);
+
+
+    // const predictions: ndarray(1,real(32)) = output.forceRank(rank=1).array;
+    // const percent = confidence(predictions);
     
-    const topPredictions: ndarray(1,int) = predictions.topk(k);
-    var percentTopk = [i in 0..<k] percent[topPredictions[i]];
-    return (topPredictions.data, percentTopk);
+    // const topPredictions: ndarray(1,int) = predictions.topk(k);
+    // var percentTopk = [i in 0..<k] percent[topPredictions[i]];
+    // return (topPredictions.data, percentTopk);
+
+    const top = output.topk(k);
+    var topArr = top.tensorize(1).array.data;
+    var percent = confidence(output.tensorize(1).array);
+
+    var percentTopk = [i in 0..<k] percent(topArr[i]);
+    return (topArr, percentTopk);
+
+
+
+    // const imageData: ndarray(3,real(32)) = ndarray.loadImage(imagePath=file,eltType=real(32));
+    // writeln("Loaded image: ", file);
+    // writeln("Image shape: ", imageData.shape);
+    // const img = imageData.toTensor();
+    // const output = model(img);
+
+    // const top = output.topk(k);
+    // var topArr = top.tensorize(1).array.data;
+    // var percent = confidence(output.tensorize(1).array.data);
+
+    // var percentTopk = [i in 0..<k] percent(topArr[i]);
+    // return (topArr, percentTopk);
+
 }
 
 import Path;
@@ -89,6 +122,8 @@ proc runX(file: string) {
 }
 
 
+config const runNewVgg = false;
+
 proc main(args: [] string) {
 
 
@@ -97,13 +132,6 @@ proc main(args: [] string) {
     // writeln("a sum: ", a.sum());
     // writeln("b sum: ", b.sum());
 
-    // return;
- ;
-    runX(args[1]);
-    return;
-
-
-/*
     writeln("Loading labels from ", labelFile);
     const labels = getLabels();
     writeln("Loaded ", labels.size, " labels.");
@@ -127,5 +155,4 @@ proc main(args: [] string) {
         }
         writeln();
     }
-*/
 }

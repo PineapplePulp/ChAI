@@ -2287,16 +2287,42 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
 
 proc ref ndarray.loadChData(fr: IO.fileReader(?)) throws {
     var r = fr.read(int);
+    writeln("Rank: ", r);
     if r != rank then
-        err("Error reading tensor: rank mismatch.", r , " != this." , rank);
+        util.err("Error reading tensor: rank mismatch.", r , " != this." , rank);
     var s = this.shape;
     for i in 0..#rank do
         s[i] = fr.read(int);
-    var d = util.domainFromShape((...s));
-    this._domain = d;
-    // for i in d do
-    //     this.data[i] = fr.read(eltType);
-    fr.read(this.data);
+    var dom = util.domainFromShape((...s));
+    this._domain = dom;
+    const eltBits = fr.read(int);
+    for param attemptBytes in 4..6 {
+        param attemptBits: int = 2 ** attemptBytes;
+        type loadType = if attemptBits == 16 
+                            then uint(16) 
+                            else real(attemptBits);
+        if attemptBits == eltBits {
+            var A: [dom] loadType;
+            
+            try! {
+                fr.read(A);
+            } catch e : IO.UnexpectedEofError {
+                IO.stderr.writeln(e);
+                IO.stderr.writeln("Error reading from ", fr.getFile().path, " with precision ", attemptBits, " with shape ", shape);
+                halt("Error reading from ", fr.getFile().path, " with precision ", attemptBits, " with shape ", shape);
+            }
+            
+            if attemptBits == 16 then
+                this.data = [i in dom] util.uint16ToReal32(A[i]) : eltType;
+            else
+                this.data = A : eltType;
+
+            return;
+        }
+    }
+    // // for i in d do
+    // //     this.data[i] = fr.read(eltType);
+    // fr.read(this.data);
 }
 
 proc type ndarray.loadPyTorchTensor(param rank: int,in filePath: string,type eltType = defaultEltType): ndarray(rank,eltType) {
@@ -2340,6 +2366,15 @@ proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer
     writer.writeln(")");
 }
 
+proc type ndarray.loadImageInPlace(
+    ref arr: ndarray(?rank,?srcEltType),
+    filePath: string,
+    type eltType = defaultEltType) throws {
+    var img = ndarray.loadImage(filePath,eltType);
+    arr.reshapeDomain(img.domain);
+    arr.data = img.data;
+}
+
 proc ref ndarray.read(fr: IO.fileReader(?)) throws {
 
     const file = fr.getFile();
@@ -2350,17 +2385,38 @@ proc ref ndarray.read(fr: IO.fileReader(?)) throws {
         when "chdata" do
             this.loadChData(fr);
         when "png" do
-            this = ndarray.loadImage(filePath,eltType);
+            ndarray.loadImageInPlace(this,filePath,eltType);
         when "jpg" do
-            this = ndarray.loadImage(filePath,eltType);
+            ndarray.loadImageInPlace(this,filePath,eltType);
         when "jpeg" do
-            this = ndarray.loadImage(filePath,eltType);
+            ndarray.loadImageInPlace(this,filePath,eltType);
         when "bmp" do
-            this = ndarray.loadImage(filePath,eltType);
+            ndarray.loadImageInPlace(this,filePath,eltType);
     }
 
+    writeln("Read file: ",filePath, " with ext: ", fileExt);
+}
 
+proc type ndarray.multiReader(path: string) throws {
+    var file = IO.open(path, IO.ioMode.r);
+    var deserializer = new IO.binaryDeserializer(IO.endianness.native);
+    var fr = file.reader(locking=false,deserializer=deserializer);
+    return fr;
+}
 
+proc type ndarray.loadFrom(filePath: string, param rank: int, type eltType = defaultEltType): ndarray(rank,eltType) throws {
+    // var arr = new ndarray(rank,eltType);
+    // var file = IO.open(filePath, IO.ioMode.r);
+    // var fr = file.reader();
+    // arr.read(fr);
+    // return arr;
+
+    // return ndarray.readInPlace(multiReader(filePath),rank,eltType);
+
+    var arr = new ndarray(rank,eltType);
+    var fr = ndarray.multiReader(filePath);
+    arr.read(fr);
+    return arr;
 }
 
 

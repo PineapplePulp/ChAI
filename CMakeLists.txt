@@ -293,3 +293,4 @@ add_custom_command(
 # ./vgg images/frog.jpg
 
 add_subdirectory(examples)
+add_subdirectory("test")

@@ -2287,7 +2287,6 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
 
 proc ref ndarray.loadChData(fr: IO.fileReader(?)) throws {
     var r = fr.read(int);
-    writeln("Rank: ", r);
     if r != rank then
         util.err("Error reading tensor: rank mismatch.", r , " != this." , rank);
     var s = this.shape;

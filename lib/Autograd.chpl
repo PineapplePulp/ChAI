@@ -939,10 +939,30 @@ record matVecMulOp : serializable {
 
     proc children do return (mat,vec);
 
-    proc forward() do
-        return ndarray.matvecmul(mat.array,vec.array);
+    proc forward() {
+        writeln("a shape: ", mat.array.shape);
+        writeln("b shape: ", vec.array.shape);
+        writeln("a sum: ", mat.array.sum());
+        writeln("b sum: ", vec.array.sum());
+        return ndarray.matmul(mat.array,vec.array);
+        // return ndarray.matvecmul(mat.array,vec.array);
+    }
 
     proc spec : GradOpSpec do return new dict(("operation","MatVecMul"));
+}
+
+record matMulOp : serializable {
+    var a: shared BaseTensorResource(?);
+    var b: shared BaseTensorResource(a.eltType,?);
+
+    proc outRank param : int do
+        return ndarray.mmOutputRank(a.array.rank,b.array.rank);
+
+    proc children do return (a,b);
+    proc forward(): ndarray(outRank,a.eltType) do
+        return ndarray.matmul(a.array,b.array);
+    
+    proc spec : GradOpSpec do return new dict(("operation","MatMul"));
 }
 
 // https://www.adityaagrawal.net/blog/deep_learning/bprop_strided_conv

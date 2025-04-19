@@ -32,3 +32,16 @@ new_sun.png
 new_sun*.png
 new_sun_hello.png
 test/correspondence/gh.out
+!Makefile
+!modules/*
+modules/build
+!bridge/*
+bridge/build
+bridge/libtorch
+# pytorch/
+build/
+libtorch/
+.cache/
+build-release/
+libtorch_static/
+examples/vgg/**/*.pt

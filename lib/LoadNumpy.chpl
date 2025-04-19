@@ -91,7 +91,7 @@ proc loadNumpyArray(path: string): owned NoRankArray {
     }
 }
 
-
+/*
 proc main() {
     var result = loadNumpyArray("/Users/iainmoncrief/Documents/gputil/notebooks/numpy_x.npy");
 
@@ -108,3 +108,4 @@ proc main() {
         writeln(r2Arr.rank, " ", r2Arr.data);
     }
 }
+*/

@@ -88,12 +88,19 @@ record staticTensor : serializable {
     }
 }
 
-operator :(in t: staticTensor(?rank,?eltType), type toType): staticTensor(rank,toType) {
+operator :(in t: staticTensor(?rank,?eltType), type toType): staticTensor(rank,toType)
+        where isNumericType(toType) {
     if toType == t.eltType then
         return t;
-    const a = t.array;
-    const b = a : toType;
-    return new staticTensor(b);
+
+    const device = t.device;
+    var newDataResource = new shared Remote(ndarray(rank,eltType),device);
+    ref dat = newDataResource.ptr;
+    on device do
+        dat = t.array : toType;
+    var newTR = new shared TensorResource(newDataResource);
+
+    return new staticTensor(newTR);
 }
 
 proc staticTensor.shapeArray(): [] int {
@@ -476,15 +483,34 @@ proc type staticTensor.batchNorm(
 // }
 
 
-proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
-    var ctx = new matVecMulOp(mat.meta,vec.meta);
-    return tensorFromCtx(1,eltType,ctx);
+proc type staticTensor.matmul(
+    a: staticTensor(?aRank,?eltType),
+    b: staticTensor(?bRank,eltType)
+): staticTensor(ndarray.mmOutputRank(aRank,bRank),eltType)
+        where ndarray.mmInputRanksValid(aRank,bRank) {
+    var ctx = new matMulOp(a.meta,b.meta);
+    return tensorFromCtx(ctx.outRank,eltType,ctx);
 }
 
-proc type staticTensor.matVecMul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
-    var ctx = new matVecMulOp(mat.meta,vec.meta);
-    return tensorFromCtx(2,eltType,ctx);
-}
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(1,eltType,ctx);
+// }
+
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(2,eltType,ctx);
+// }
+
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(1,eltType)): staticTensor(1,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(1,eltType,ctx);
+// }
+
+// proc type staticTensor.matmul(mat: staticTensor(2,?eltType),vec: staticTensor(2,eltType)): staticTensor(2,eltType) {
+//     var ctx = new matVecMulOp(mat.meta,vec.meta);
+//     return tensorFromCtx(2,eltType,ctx);
+// }
 
 proc type staticTensor.nllLoss(
     input: staticTensor(2,?eltType),
@@ -543,13 +569,25 @@ proc staticTensor.dilate(dil: int): staticTensor(3,eltType) where this.rank == 3
     return dilated;
 }
 
+proc staticTensor.maxPool2d(
+    kernelSize: int,
+    stride: int = kernelSize,
+    padding: int = 0,
+    dilation: int = 1
+): staticTensor(this.rank,eltType) {
+    return ndarray.maxPool2d(this.array,kernelSize,stride,padding,dilation);
+}
+
+
 proc staticTensor.maxPool(poolSize:int) do return this.maxPool(poolSize,poolSize,padding=0,dilation=1);
 proc staticTensor.maxPool(poolSize: int, stride: int, padding: int, dilation: int): staticTensor(3,eltType) where this.rank == 3 {
     var pool = new staticTensor(3,eltType);
     on this.device {
         ref dat = this.array;
         ref pl = pool.array;
-        const p = ndarray.maxPool(dat,poolSize, stride, padding, dilation);
+        const p = ndarray.maxPool2d(dat,poolSize, stride, padding, dilation);
+
+        // const p = ndarray.maxPool(dat,poolSize, stride, padding, dilation);
         pl.reshapeDomain(p.domain);
         pl = p;
     }
@@ -636,6 +674,7 @@ config const n = 100;
 config const diag = false;
 config const size = 3;
 
+/*
 proc main() {
 
     if diag {
@@ -959,7 +998,7 @@ proc main() {
     // var mExpanded = m.expand(3,4);
     // writeln(mExpanded.data,mExpanded.shape);
 
-}
+}*/
 
 
 

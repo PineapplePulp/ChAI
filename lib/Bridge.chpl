@@ -78,6 +78,9 @@ module Bridge {
         in input: bridge_tensor_t, 
         in height: int(32), 
         in width: int(32)): bridge_tensor_t;
+
+    extern "imagenet_normalize" proc imageNetNormalize(
+        in input: bridge_tensor_t): bridge_tensor_t;
     
 
 

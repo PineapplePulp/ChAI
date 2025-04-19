@@ -11,17 +11,24 @@ proc main(args: [] string) {
     writeln("Loaded image: ", args[1]);
     writeln("Image shape: ", image.shape);
 
-    image = image.resize(224,224);
-    writeln("Resized image: ", image.shape);
+    writeln("image : ", max reduce image.data);
 
-    var batchedImage = ndarray.loadFrom(args[1],3,real(32)).unsqueeze(0);
-    writeln("Batched image: ", batchedImage.shape);
+    image = image.imageNetNormalize();
+    writeln("image : ", max reduce image.data);
 
-    batchedImage = batchedImage.resize(224,224);
-    writeln("Batched image resized: ", batchedImage.shape);
 
-    image = batchedImage.squeeze(3);
-    writeln("Squeezed image: ", image.shape);
+
+    // image = image.resize(224,224).imageNetNormalize();
+    // writeln("Resized image: ", image.shape);
+
+    // var batchedImage = ndarray.loadFrom(args[1],3,real(32)).unsqueeze(0);
+    // writeln("Batched image: ", batchedImage.shape);
+
+    // batchedImage = batchedImage.resize(224,224);
+    // writeln("Batched image resized: ", batchedImage.shape);
+
+    // image = batchedImage.squeeze(3).imageNetNormalize();
+    // writeln("Squeezed image: ", image.shape);
 
     image.saveImage("test.jpg");
 }

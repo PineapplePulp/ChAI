@@ -206,57 +206,6 @@ extern "C" bridge_tensor_t max_pool2d(
     return torch_to_bridge(output);
 }
 
-/*
-
- * Resize the last two dimensions of a tensor, mimicking torchvision.transforms.Resize.
- *
- *  • Works with 2‑D (H,W), 3‑D (C,H,W or N,H,W), 4‑D (N,C,H,W) … tensors – any rank ≥ 2.  
- *  • Leading dimensions are preserved; only the final H × W are resized.  
- *  • Defaults match torchvision: bilinear for floating tensors, align_corners=false.  
- *
- * @param input          Tensor on CPU or CUDA.
- * @param new_h          Target height.
- * @param new_w          Target width.
- * @param mode           Interpolation mode (“bilinear”, “nearest”, “bicubic”, …).
- * @param align_corners  Forwarded to F::interpolate (ignored for “nearest”).
- * @return               Tensor with shape …, new_h, new_w and same dtype / device.
-
-inline torch::Tensor resize_tensor_last2(
-        const torch::Tensor& input,
-        int64_t              new_h,
-        int64_t              new_w,
-        const std::string&   mode           = "bilinear",
-        bool                 align_corners  = false) {
-
-    // Keep dtype/device; cast to float if interpolate needs it
-    const bool need_cast = !input.is_floating_point() && mode != "nearest";
-    auto x = need_cast ? input.to(torch::kFloat32) : input;
-    x = x.contiguous();                         // guarantees a re‑view is safe
-
-    // Collapse every axis except the last two into a single batch dimension.
-    const int64_t h  = x.size(-2);
-    const int64_t w  = x.size(-1);
-    const int64_t flat = x.numel() / (h * w);   // product of leading dims
-
-    auto x4d = x.view({flat, 1, h, w});         // N=flat, C=1, H, W
-
-    // Interpolate – equivalent to torchvision.transforms.Resize for tensors.
-    auto y4d = torch::nn::functional::interpolate(
-        x4d,
-        torch::nn::functional::InterpolateFuncOptions()
-            .size(std::vector<int64_t>{new_h, new_w})
-            .mode(mode)
-            .align_corners(align_corners));
-
-    // Restore the original leading shape.
-    std::vector<int64_t> out_shape(input.sizes().begin(), input.sizes().end() - 2);
-    out_shape.push_back(new_h);
-    out_shape.push_back(new_w);
-
-    auto y = y4d.view(out_shape);
-    return need_cast ? y.to(input.scalar_type()) : y;
-}
-*/
 extern "C" bridge_tensor_t resize(
     bridge_tensor_t input,
     int height,
@@ -293,6 +242,26 @@ extern "C" bridge_tensor_t resize(
         return input; // Return the original tensor if the dimension is unsupported
     }
 }
+
+extern "C" bridge_tensor_t imagenet_normalize(bridge_tensor_t input) {
+    auto t_input = bridge_to_torch(input);
+    torch::Tensor image = t_input; //.to(torch::kFloat32);// / 255.0;
+
+    static const std::vector<float> kMean{0.485, 0.456, 0.406};
+    static const std::vector<float> kStd {0.229, 0.224, 0.225};
+    auto opts = image.options();
+    auto mean = torch::tensor(kMean).reshape({3, 1, 1});  // (3,1,1)
+    auto std  = torch::tensor(kStd).reshape({3, 1, 1});
+
+    // if (image.dim() == 4) {
+    //     mean = mean.unsqueeze(0); // (1,3,1,1)
+    //     std = std.unsqueeze(0);
+    // }
+
+    auto output = (image - mean) / std;
+    return torch_to_bridge(output);
+}
+
 
 
 // extern "C"

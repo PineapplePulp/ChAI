@@ -2230,6 +2230,11 @@ proc ndarray.resize(height: int,width: int) {
         width : int(32)) : ndarray(rank,eltType);
 }
 
+proc ndarray.imageNetNormalize() {
+    return Bridge.imageNetNormalize(
+        this : Bridge.tensorHandle(eltType)) : ndarray(rank,eltType);
+}
+
 proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): ndarray(3,eltType) throws {
     import Image;
 

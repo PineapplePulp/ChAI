@@ -14,7 +14,7 @@ proc main(args: [] string) {
     image = image.resize(224,224);
     writeln("Resized image: ", image.shape);
 
-    var batchedImage = image.unsqueeze(0);
+    var batchedImage = ndarray.loadFrom(args[1],3,real(32)).unsqueeze(0);
     writeln("Batched image: ", batchedImage.shape);
 
     batchedImage = batchedImage.resize(224,224);

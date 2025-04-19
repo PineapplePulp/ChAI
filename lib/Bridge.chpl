@@ -73,6 +73,11 @@ module Bridge {
         in stride: int(32),
         in padding: int(32),
         in dilation: int(32)): bridge_tensor_t;
+
+    extern proc resize(
+        in input: bridge_tensor_t, 
+        in height: int(32), 
+        in width: int(32)): bridge_tensor_t;
     
 
 
@@ -121,6 +126,7 @@ module Bridge {
         var result: bridge_tensor_t;
         result.data = c_ptrToConst(data) : c_ptr(real(32));
         result.sizes = allocate(int(32),data.rank);
+        result.created_by_c = false;
         const sizeArr = getSizeArray(data);
         for i in 0..<data.rank do
             result.sizes[i] = sizeArr[i];

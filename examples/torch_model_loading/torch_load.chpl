@@ -11,5 +11,8 @@ proc main(args: [] string) {
     writeln("Loaded image: ", args[1]);
     writeln("Image shape: ", image.shape);
 
+    image = image.resize(224,224);
+    writeln("Resized image: ", image.shape);
+
     image.saveImage("test.jpg");
 }

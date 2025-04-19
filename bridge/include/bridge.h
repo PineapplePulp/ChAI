@@ -33,6 +33,7 @@ float* unsafe(const float* arr);
 bridge_tensor_t load_tensor_from_file(const uint8_t* file_path);
 bridge_tensor_t load_tensor_dict_from_file(const uint8_t* file_path,const uint8_t* tensor_key);
 bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tensor_t input);
+bridge_tensor_t resize(bridge_tensor_t input,int height,int width);
 
 
 int baz(void);

@@ -2207,6 +2207,13 @@ proc type ndarray.random(shape: ?rank*int,type eltType = defaultEltType,seed: in
     return ndarray.randomArray((...shape),eltType,new Random.randomStream(eltType,seed));
 
 
+proc ndarray.resize(height: int,width: int) {
+    return Bridge.resize(
+        this : Bridge.tensorHandle(eltType),
+        height : int(32),
+        width : int(32)) : ndarray(rank,eltType);
+}
+
 proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): ndarray(3,eltType) throws {
     import Image;
 

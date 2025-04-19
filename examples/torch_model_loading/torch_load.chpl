@@ -14,5 +14,14 @@ proc main(args: [] string) {
     image = image.resize(224,224);
     writeln("Resized image: ", image.shape);
 
+    var batchedImage = image.unsqueeze(0);
+    writeln("Batched image: ", batchedImage.shape);
+
+    batchedImage = batchedImage.resize(224,224);
+    writeln("Batched image resized: ", batchedImage.shape);
+
+    image = batchedImage.squeeze(3);
+    writeln("Squeezed image: ", image.shape);
+
     image.saveImage("test.jpg");
 }

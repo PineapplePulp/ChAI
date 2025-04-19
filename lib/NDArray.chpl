@@ -449,6 +449,22 @@ proc ndarray.expand(axes: int...rank) {
 }
 
 
+proc ndarray.unsqueeze(dim: int): ndarray(rank + 1,eltType) {
+    const shape = this.domain.shape;
+    param newRank: int = rank + 1;
+    var offset: int = 0;
+    var newShape: newRank * int;
+    for param i in 0..<newRank {
+        if i == dim {
+            newShape(i) = 1;
+            offset = 1;
+        } else {
+            newShape(i) = shape(i - offset);
+        }
+    }
+    return this.reshape((...newShape));
+}
+
 proc ref ndarray.sumOneAxis(axis: int): ndarray(rank,eltType) {
     const dims = this.domain.dims();
     const sumAxis = dims(axis);

@@ -253,10 +253,10 @@ extern "C" bridge_tensor_t imagenet_normalize(bridge_tensor_t input) {
     auto mean = torch::tensor(kMean).reshape({3, 1, 1});  // (3,1,1)
     auto std  = torch::tensor(kStd).reshape({3, 1, 1});
 
-    // if (image.dim() == 4) {
-    //     mean = mean.unsqueeze(0); // (1,3,1,1)
-    //     std = std.unsqueeze(0);
-    // }
+    if (image.dim() == 4) {
+        mean = mean.unsqueeze(0); // (1,3,1,1)
+        std = std.unsqueeze(0);
+    }
 
     auto output = (image - mean) / std;
     return torch_to_bridge(output);

@@ -20,13 +20,11 @@ struct Model : torch::nn::Module {
       // Initialize the tensor with random values
       r = torch::rand(x.sizes(), torch::kFloat32).to(x.device());
       uninitialized = false;
+      std::cout << "Input sizes: " << x.sizes() << std::endl;
     }
-  //   x = torch::relu(fc1->forward(x.reshape({x.size(0), 784})));
-  //   x = torch::log_softmax(fc2->forward(x), /*dim=*/1);
-      // auto m = torch::max(x);
-      // std::cout << "forwardX: " << x.sizes() << "max: " << m << std::endl;
-      // std::cout << "forwardR: " << r.sizes() << std::endl;
-    return x + r;
+    // auto output = x + r;
+    auto output = imagenet_normalize_tensor(x);
+    return output;
   }
 
   torch::nn::Linear fc1{nullptr}, fc2{nullptr};
@@ -85,6 +83,12 @@ int main(int argc, char** argv) {
   module.eval();
   module.to(device);
 
+  // std::string module_path = argv[1];
+  // std::cout << "Loading model from path: " << module_path << std::endl;
+  // torch::jit::Module module = load_module_from_file(model_path);
+  // std::cout << "Model loaded successfully" << std::endl;
+
+
   // 3. Setup webcam
   // cv::VideoCapture cap(cam_index, cv::CAP_AVFOUNDATION);
   // if (!cap.isOpened()) {
@@ -93,7 +97,17 @@ int main(int argc, char** argv) {
   // }
   // cap.set(cv::CAP_PROP_BUFFERSIZE, 1);        // minimal internal buffering
   // cap.set(cv::CAP_PROP_FPS, 60);              // request higher FPS if possible
-  cv::VideoCapture cap = open_camera(cam_index);
+
+  bool video_loop = false;
+  std::string vid_path;
+  cv::VideoCapture cap;
+  if (argc > 3) { 
+    vid_path = argv[3];
+    cap = open_camera(vid_path);
+    video_loop = true;
+  } else {
+    cap = open_camera(cam_index);
+  }
 
 
   // 4. Pre‑allocate tensor to avoid dynamic allocations
@@ -130,7 +144,15 @@ int main(int argc, char** argv) {
 
   while (true) {
     // std::cout << "\r[INFO] Processing frame... " << frame_count + 1 << std::flush;
+
     if (!cap.read(frame_bgr) || frame_bgr.empty()) {
+      if (video_loop && frame_count > 0) {
+        cap = open_camera(vid_path);
+        frame_count = 0;
+        cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+        std::cout << "\r[INFO] Replaying video..." << std::flush;
+        continue;
+      }
       std::cerr << "[WARN] Empty frame, exiting" << std::endl;
       break;
     }

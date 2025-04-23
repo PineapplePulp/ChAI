@@ -294,3 +294,29 @@ add_custom_command(
 
 add_subdirectory(examples)
 add_subdirectory("test")
+add_subdirectory(demos)
+
+
+
+add_executable(MPSTest
+    "${PROJECT_ROOT_DIR}/test/tiny/mps.cpp"
+)
+
+target_include_directories(MPSTest
+    PRIVATE
+        ${LIBTORCH_DIR}/include
+        ${LIBTORCH_DIR}/include/torch/csrc/api/include
+)
+
+target_link_directories(MPSTest
+    PRIVATE
+        ${LIBTORCH_DIR}/lib
+)
+
+target_link_libraries(MPSTest
+    PRIVATE 
+        -ltorch
+        -ltorch_cpu
+        -lc10
+        -ltorch_global_deps
+)

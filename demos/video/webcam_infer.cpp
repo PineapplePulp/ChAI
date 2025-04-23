@@ -139,8 +139,13 @@ int main(int argc, char** argv) {
 
   torch::NoGradGuard no_grad;                 // inference only
 
-  auto start_total = std::chrono::steady_clock::now();
+  std::chrono::time_point<std::chrono::system_clock> start_total = std::chrono::system_clock::now();
+  std::chrono::time_point<std::chrono::system_clock> last_update = std::chrono::system_clock::now();
+  const double max_fps = 30.0;
+  const double max_frame_delay = 1000.0 / max_fps;
+
   size_t frame_count = 0;
+  size_t last_frame_count = 0;
 
   while (true) {
     // std::cout << "\r[INFO] Processing frame... " << frame_count + 1 << std::flush;
@@ -149,6 +154,9 @@ int main(int argc, char** argv) {
       if (video_loop && frame_count > 0) {
         cap = open_camera(vid_path);
         frame_count = 0;
+        last_frame_count = 0;
+        start_total = std::chrono::system_clock::now();
+        last_update = std::chrono::system_clock::now(); // ??? not sure
         cap.set(cv::CAP_PROP_POS_FRAMES, 0);
         std::cout << "\r[INFO] Replaying video..." << std::flush;
         continue;
@@ -183,17 +191,39 @@ int main(int argc, char** argv) {
 
     // Display FPS
     ++frame_count;
-    auto now = std::chrono::steady_clock::now();
-    auto seconds = std::chrono::duration_cast<std::chrono::duration<double>>(now - start_total).count();
-    if (seconds >= 1.0) {
-      double fps = frame_count / seconds;
-      std::cout << "\r[INFO] FPS: " << fps << std::flush;
-      frame_count = 0;
-      start_total = now;
-    }
+    const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+    auto delta = now - last_update;
+    // std::chrono::milliseconds delta_millis = std::chrono::duration_cast<std::chrono::microseconds>(delta);
+    double delta_time = std::chrono::duration_cast<std::chrono::duration<double,std::milli>>(delta).count();
+    std::cout << "\r[INFO] Frame time: " << delta_time * 1000.0 << " ms" << std::flush;
+
+
+    // auto now = std::chrono::steady_clock::now();
+    // auto delta = std::chrono::duration_cast<std::chrono::duration<double>>(now - start_total);
+    // double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(delta).count();
+    // double max_frame_count = max_fps / seconds;
+    // double fps = frame_count / seconds;
+
+
+
+    // std::this_thread::sleep_for(delta);
+
+    // Sleep just to avoid too high FPS
+
+    // if (fps > max_fps) {
+    //   double missed_frames = fps - max_fps;
+    //   std::this_thread::sleep_for(std::chrono::milliseconds(missed_frames / max_fps));
+    // }
+  
+
+
+    double fps = (frame_count - last_frame_count) / delta_time;
+    std::cout << "\r[INFO] FPS: " << fps << std::flush;
+    last_update = now;
 
     // Display (optional)
     cv::imshow("webcam", output_bgr);
+    last_frame_count = frame_count;
     if (cv::waitKey(1) == 27) { // ESC key
       break;
     }
@@ -205,3 +235,12 @@ int main(int argc, char** argv) {
 }
 
 
+
+
+
+    // if (seconds >= 1.0) {
+    //   double fps = frame_count / seconds;
+    //   std::cout << "\r[INFO] FPS: " << fps << std::flush;
+    //   frame_count = 0;
+    //   start_total = now;
+    // }

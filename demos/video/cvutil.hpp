@@ -114,7 +114,7 @@ cv::Mat to_mat(torch::Tensor &tensor) {
 
 torch::Device get_default_device() {
     if (torch::mps::is_available()) {
-        default_device = torch::Device(torch::kMPS);
+        // default_device = torch::Device(torch::kMPS);
         std::cout << "[INFO] Running on MPS" << std::endl;
     } else {
         std::cout << "[INFO] MPS not available, falling back to CPU" << std::endl;

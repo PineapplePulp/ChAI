@@ -86,12 +86,13 @@ cv::Mat to_mat(torch::Tensor &tensor) {
     
     int height = tensor.size(2);
     int width = tensor.size(3);
-    auto t = tensor.squeeze()
+    auto t = tensor
+                .mul(255)
+                .squeeze()
                 .detach()
                 .permute({1, 2, 0})
                 .contiguous()
                 .to(torch::kUInt8)
-                .mul(255)
                 // .clamp(0, 255)
                 .clone()
                 .to(torch::kCPU);
@@ -113,7 +114,7 @@ cv::Mat to_mat(torch::Tensor &tensor) {
 
 torch::Device get_default_device() {
     if (torch::mps::is_available()) {
-        // default_device = torch::Device(torch::kMPS);
+        default_device = torch::Device(torch::kMPS);
         std::cout << "[INFO] Running on MPS" << std::endl;
     } else {
         std::cout << "[INFO] MPS not available, falling back to CPU" << std::endl;

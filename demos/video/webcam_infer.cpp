@@ -54,8 +54,8 @@ struct Model : torch::nn::Module {
     }
     // auto output = x + r;
     auto input = x;
-    auto output = imageops::sobel_rgb(input);
-    // auto output = imagenet_normalize_tensor(input);
+    // auto output = imageops::sobel_rgb(input);
+    auto output = imagenet_normalize_tensor(input);
     return output;
   }
 
@@ -68,6 +68,8 @@ struct Model : torch::nn::Module {
 int max_fps = 60;
 
 int main(int argc, char** argv) {
+
+  show_webcam(0);
 
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " <path/to/torchscript_model.pt> [cam_index]" << std::endl;

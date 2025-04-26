@@ -48,3 +48,4 @@ examples/vgg/**/*.pt
 segmentation_models.pytorch/
 .idea/
 cmake-build-debug/
+libtorch_old/

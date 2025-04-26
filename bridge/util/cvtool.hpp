@@ -46,12 +46,12 @@ std::shared_ptr<cv::Mat> create_frame_buffer(int height, int width) {
 
 
 
-// std::shared_ptr<torch::Tensor> get_frame_buffer_tensor(int height,int width) {
+// std::shared_ptr<at::Tensor> get_frame_buffer_tensor(int height,int width) {
 //     auto options_cpu  = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
 //     torch::Tensor frame_tensor_cpu = torch::empty({1, height, width, 3}, options_cpu);  
 // }
 
-std::shared_ptr<torch::Tensor> create_buffer_tensor(
+std::shared_ptr<at::Tensor> create_buffer_tensor(
     torch::IntArrayRef sizes,
     torch::ScalarType = torch::kFloat32,
     torch::Device device = get_default_device()) {
@@ -59,29 +59,29 @@ std::shared_ptr<torch::Tensor> create_buffer_tensor(
                         .dtype(torch::kFloat32)
                         .device(default_device);
     auto tensor = torch::empty(sizes, options_device);
-    auto frame_tensor_device = std::make_shared<torch::Tensor>(tensor);
+    auto frame_tensor_device = std::make_shared<at::Tensor>(tensor);
     return frame_tensor_device;
 }
 
 
-std::shared_ptr<torch::Tensor> create_frame_buffer_tensor(int height,int width,torch::Device device = get_default_device()) {
+std::shared_ptr<at::Tensor> create_frame_buffer_tensor(int height,int width,torch::Device device = get_default_device()) {
     torch::IntArrayRef sizes = {1, height, width, 3};
     return create_buffer_tensor(sizes, torch::kFloat32);
 }
 
-torch::Tensor to_tensor(cv::Mat &img) {
+at::Tensor to_tensor(cv::Mat &img) {
     auto t = torch::from_blob(img.data, {1, img.rows, img.cols, 3}, torch::kUInt8).clone();
     t = t.to(default_device);
     t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
     return t;//.to(default_device,true);
 }
 
-cv::Mat to_mat(torch::Tensor &tensor) {
+cv::Mat to_mat(at::Tensor &tensor) {
     // Ensure the tensor is on the CPU and not on the GPU
-    // torch::Tensor cpu_tensor = tensor.to(torch::kCPU);
+    // at::Tensor cpu_tensor = tensor.to(torch::kCPU);
 
     // Clone the tensor to avoid modifying the original data
-    // torch::Tensor cloned_tensor = cpu_tensor.clone();
+    // at::Tensor cloned_tensor = cpu_tensor.clone();
 
     
     int height = tensor.size(2);
@@ -146,7 +146,7 @@ torch::Device get_default_device() {
 //     return module;
 // }
 
-torch::Tensor imagenet_resize(torch::Tensor& image, int height, int width) {
+at::Tensor imagenet_resize(at::Tensor& image, int height, int width) {
     // Resize the image to the specified height and width
     auto resized_image = torch::nn::functional::interpolate(
         image,
@@ -158,7 +158,7 @@ torch::Tensor imagenet_resize(torch::Tensor& image, int height, int width) {
     return resized_image;
 }
 
-torch::Tensor imagenet_normalize_tensor(torch::Tensor& input) {
+at::Tensor imagenet_normalize_tensor(at::Tensor& input) {
     // Normalize the image using ImageNet mean and std
     // auto mean = torch::tensor({0.485, 0.456, 0.406}).view({1, 3, 1, 1});
     // auto std = torch::tensor({0.229, 0.224, 0.225}).view({1, 3, 1, 1});
@@ -166,7 +166,7 @@ torch::Tensor imagenet_normalize_tensor(torch::Tensor& input) {
 
     // std::cout << "Input sizes: " << input.sizes() << std::endl;
 
-    torch::Tensor image = input.to(torch::kFloat32).clone();// / 255.0;
+    at::Tensor image = input.to(torch::kFloat32).clone();// / 255.0;
     // std::cout << "Image sizes: " << image.sizes() << std::endl;
 
     static const std::vector<float> mean_data{0.485, 0.456, 0.406};
@@ -189,4 +189,47 @@ torch::Tensor imagenet_normalize_tensor(torch::Tensor& input) {
     output = output;
     // std::cout << "Output sizes: " << output.sizes() << std::endl;
     return output;
+}
+
+
+int show_webcam(int cam_index) {
+    cv::VideoCapture cap = open_camera(cam_index);
+    if (!cap.isOpened()) {
+        std::cerr << "Could not open camera index " << cam_index << std::endl;
+        return -1;
+    }
+
+    cv::Mat frame;
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) {
+            std::cerr << "Failed to capture image from camera" << std::endl;
+            break;
+        }
+
+        cv::imshow("Webcam", frame);
+        if (cv::waitKey(30) >= 0) break; // Exit on any key press
+    }
+    return 0;
+}
+
+
+
+at::Tensor capture_webcam(int cam_index) {
+    cv::VideoCapture cap = open_camera(cam_index);
+    if (!cap.isOpened()) {
+        std::cerr << "Could not open camera index " << cam_index << std::endl;
+        return at::Tensor();
+    }
+
+    cv::Mat frame;
+    cap >> frame;
+
+    if (frame.empty()) {
+        std::cerr << "Failed to capture image from camera" << std::endl;
+        return at::Tensor();
+    }
+
+    auto tensor = to_tensor(frame);
+    return tensor;
 }

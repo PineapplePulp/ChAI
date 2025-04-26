@@ -185,7 +185,7 @@ set(REQUIRED_LIBS
     "libtorch"
     "libtorch_cpu"
     "libc10"
-    "libtorch_global_deps"
+    # "libtorch_global_deps"
 )
 
 set(DISALLOWED_LIBS
@@ -206,10 +206,17 @@ foreach(lib_name IN LISTS LIBTORCH_ALL_LIBS)
     list(APPEND LIBTORCH_LIBS_LINKER_ARGS "-l${lib_name_short}")
 endforeach()
 
-# cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
+cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
 # cmake_print_variables(${BRIDGE_OBJECT_FILES})
 # cmake_print_variables(BRIDGE_OBJECT_FILES)
 
+
+set(LIBTORCH_LIBS_LINKER_ARGS 
+    "-ltorch"
+    "-ltorch_cpu"
+    "-lc10"
+    "-ltorch_global_deps"
+)
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
@@ -219,10 +226,10 @@ target_link_options(TorchBridge
         ${BRIDGE_DIR}/include/bridge.h
         ${BRIDGE_OBJECT_FILES}
         -L ${LIBTORCH_DIR}/lib
-        # "-ltorch"
-        # "-ltorch_cpu"
-        # "-lc10"
-        # "-ltorch_global_deps"
+        "-ltorch"
+        "-ltorch_cpu"
+        "-lc10"
+        "-ltorch_global_deps"
         ${LIBTORCH_LIBS_LINKER_ARGS}
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
 )

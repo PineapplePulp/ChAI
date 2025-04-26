@@ -1,3 +1,13 @@
+
+
+find_package(OpenCV 4 REQUIRED)
+
+find_library(ACCELERATE Accelerate REQUIRED)
+find_library(METAL Metal REQUIRED)
+find_library(FOUNDATION Foundation REQUIRED)
+
+
+
 add_library(BridgeUtil INTERFACE)
 
 # Tell consumers where to find the headers

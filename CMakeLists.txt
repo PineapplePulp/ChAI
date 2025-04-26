@@ -162,6 +162,7 @@ target_include_directories(
     ${BRIDGE_DIR}/include
     ${LIBTORCH_DIR}/include
     ${LIBTORCH_DIR}/include/torch/csrc/api/include
+    ${BRIDGE_DIR}/util
 )
 
 set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)

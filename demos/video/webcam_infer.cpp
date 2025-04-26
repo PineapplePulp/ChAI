@@ -6,6 +6,34 @@
 #include <utility>
 
 #include "cvutil.hpp"
+#include "imageops.hpp"
+
+
+torch::Tensor sobel_dx = torch::tensor({{-1, 0, 1},
+                                    {-2, 0, 2},
+                                    {-1, 0, 1}}).to(torch::kFloat32);
+torch::Tensor sobel_dy = torch::tensor({{-1, -2, -1},
+                                    {0, 0, 0},
+                                    {1, 2, 1}}).to(torch::kFloat32);
+
+torch::Tensor sobel_kernel = torch::cat({sobel_dx, sobel_dy}, 0).unsqueeze(0).unsqueeze(0);
+
+torch::Tensor sobel_conv(torch::Tensor& input) {
+    // Convert input to float32
+    // input = input.to(torch::kFloat32);
+
+    // // Apply Sobel filter
+    // auto sobel_x = at::conv2d(input, sobel_kernel, /*bias=*/{}, /*stride=*/1, /*padding=*/1);
+    // auto sobel_y = at::conv2d(input, sobel_kernel.transpose(0, 1), /*bias=*/{}, /*stride=*/1, /*padding=*/1);
+
+    // // Compute magnitude
+    // auto sobel_magnitude = torch::sqrt(sobel_x.pow(2) + sobel_y.pow(2));
+
+
+    auto output = torch::conv2d(input, sobel_kernel, {},1,1);
+
+    return output;
+}
 
 struct Model : torch::nn::Module {
   Model() {
@@ -13,6 +41,8 @@ struct Model : torch::nn::Module {
     fc2 = register_module("fc2", torch::nn::Linear(64, 10));
     r = register_parameter("r", torch::rand({1, 3, 224, 224}));
     uninitialized = true;
+
+    std::cout << "Sobel kernel: " << sobel_kernel.sizes() << std::endl;
   }
 
   torch::Tensor forward(torch::Tensor x) {
@@ -23,7 +53,9 @@ struct Model : torch::nn::Module {
       std::cout << "Input sizes: " << x.sizes() << std::endl;
     }
     // auto output = x + r;
-    auto output = imagenet_normalize_tensor(x);
+    auto input = x;
+    auto output = imageops::sobel_rgb(input);
+    // auto output = imagenet_normalize_tensor(input);
     return output;
   }
 
@@ -32,6 +64,8 @@ struct Model : torch::nn::Module {
   bool uninitialized;
 };
 
+
+int max_fps = 60;
 
 int main(int argc, char** argv) {
 
@@ -141,8 +175,6 @@ int main(int argc, char** argv) {
 
   std::chrono::time_point<std::chrono::system_clock> start_total = std::chrono::system_clock::now();
   std::chrono::time_point<std::chrono::system_clock> last_update = std::chrono::system_clock::now();
-  const double max_fps = 30.0;
-  const double max_frame_delay = 1000.0 / max_fps;
 
   size_t frame_count = 0;
   size_t last_frame_count = 0;
@@ -158,26 +190,33 @@ int main(int argc, char** argv) {
         start_total = std::chrono::system_clock::now();
         last_update = std::chrono::system_clock::now(); // ??? not sure
         cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-        std::cout << "\r[INFO] Replaying video..." << std::flush;
+        std::cout << "[INFO] Replaying video..." << std::endl;
         continue;
       }
       std::cerr << "[WARN] Empty frame, exiting" << std::endl;
       break;
     }
 
-    // Convert BGR -> RGB + float32 scaled 0‑1 directly into pre‑allocated tensor
-    // cv::cvtColor(frame_bgr, frame_rgb, cv::COLOR_BGR2RGB);
-    // frame_rgb.convertTo(frame_rgb, CV_32F, 1.f/255.f);
 
-    // Rearrange NHWC -> NCHW (in‑place view, no copy)
-    // torch::Tensor input_tensor = frame_tensor_cpu.permute({0,3,1,2});
+    ++frame_count;
+    const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+    auto delta = now - last_update;
+    // std::chrono::milliseconds delta_millis = std::chrono::duration_cast<std::chrono::microseconds>(delta);
+    double delta_time = std::chrono::duration_cast<std::chrono::duration<double>>(delta).count();
+    auto fps = 1.0 / delta_time;
+    std::cout << "\r[INFO] FPS: " << fps << " fps" << std::flush;
+
+    // Display (optional)
+
+    double sleep_time = (1.0 / ((double)max_fps)) - delta_time;
+    
+    std::this_thread::sleep_for(std::chrono::duration<double>(sleep_time));
+
 
 
 
     auto input_tensor = to_tensor(frame_bgr);
     // auto input_tensor = frame_tensor_device->permute({0, 3, 1, 2});
-
-
 
     // std::cout << "input_tensor: " << input_tensor.sizes() << std::endl;
     // std::cout << "input_tensor max: " << torch::max(input_tensor) << std::endl;
@@ -189,41 +228,26 @@ int main(int argc, char** argv) {
     // auto output_bgr = to_mat(output);
     output_bgr = to_mat(output);
 
-    // Display FPS
-    ++frame_count;
-    const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-    auto delta = now - last_update;
-    // std::chrono::milliseconds delta_millis = std::chrono::duration_cast<std::chrono::microseconds>(delta);
-    double delta_time = std::chrono::duration_cast<std::chrono::duration<double,std::milli>>(delta).count();
-    std::cout << "\r[INFO] Frame time: " << delta_time * 1000.0 << " ms" << std::flush;
-
-
-    // auto now = std::chrono::steady_clock::now();
-    // auto delta = std::chrono::duration_cast<std::chrono::duration<double>>(now - start_total);
-    // double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(delta).count();
-    // double max_frame_count = max_fps / seconds;
-    // double fps = frame_count / seconds;
-
-
-
-    // std::this_thread::sleep_for(delta);
-
-    // Sleep just to avoid too high FPS
-
-    // if (fps > max_fps) {
-    //   double missed_frames = fps - max_fps;
-    //   std::this_thread::sleep_for(std::chrono::milliseconds(missed_frames / max_fps));
-    // }
-  
-
-
-    double fps = (frame_count - last_frame_count) / delta_time;
-    std::cout << "\r[INFO] FPS: " << fps << std::flush;
-    last_update = now;
-
-    // Display (optional)
     cv::imshow("webcam", output_bgr);
+
+    // Display FPS
+
+    // std::cout << "[INFO] dt: " << delta_time << std::endl;
+    // std::cout << "[INFO] FPS: " << fps << std::endl;
+
+
+
+
+    // std::thread::sleep_for(std::chrono::milliseconds(700));
+
+    // std::thread::sleep_for()
+
+
+    // std::thread::sleep_for(std::chrono::milliseconds(expected_time_index - (delta_time + last_time_index)));
+
+
     last_frame_count = frame_count;
+    last_update = now; // std::chrono::system_clock::now();
     if (cv::waitKey(1) == 27) { // ESC key
       break;
     }
@@ -233,14 +257,3 @@ int main(int argc, char** argv) {
   cv::destroyAllWindows();
   return 0;
 }
-
-
-
-
-
-    // if (seconds >= 1.0) {
-    //   double fps = frame_count / seconds;
-    //   std::cout << "\r[INFO] FPS: " << fps << std::flush;
-    //   frame_count = 0;
-    //   start_total = now;
-    // }

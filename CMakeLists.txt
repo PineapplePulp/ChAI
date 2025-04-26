@@ -292,6 +292,8 @@ add_custom_command(
 
 # ./vgg images/frog.jpg
 
+add_subdirectory(bridge)
+
 add_subdirectory(examples)
 add_subdirectory("test")
 add_subdirectory(demos)

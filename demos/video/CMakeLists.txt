@@ -11,7 +11,7 @@ find_library(FOUNDATION Foundation REQUIRED)
 
 add_executable(VidStreamer
     ${CMAKE_CURRENT_SOURCE_DIR}/webcam_infer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/cvutil.hpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/cvutil.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/imageops.hpp
 )
 
@@ -37,6 +37,7 @@ target_link_libraries(VidStreamer
         ${ACCELERATE}
         ${METAL}
         ${FOUNDATION}
+        BridgeUtil
 )
 
 set_target_properties(VidStreamer PROPERTIES

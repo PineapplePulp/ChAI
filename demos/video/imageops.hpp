@@ -21,28 +21,28 @@ namespace imageops {
 
         /* ----- build 3-channel Sobel kernels -------------------------------- */
         // (out_channels, in_channels / groups, kH, kW) with groups = 3
-        torch::Tensor kx = torch::tensor({{ -1,  0,  1},
+        at::Tensor kx = torch::tensor({{ -1,  0,  1},
                                         { -2,  0,  2},
                                         { -1,  0,  1}}, opts);
-        torch::Tensor ky = torch::tensor({{ -1, -2, -1},
+        at::Tensor ky = torch::tensor({{ -1, -2, -1},
                                         {  0,  0,  0},
                                         {  1,  2,  1}}, opts);
 
         // Replicate each kernel for the three groups (RGB)
-        torch::Tensor weight_x = kx.expand({3, 1, 3, 3}).clone();
-        torch::Tensor weight_y = ky.expand({3, 1, 3, 3}).clone();
+        at::Tensor weight_x = kx.expand({3, 1, 3, 3}).clone();
+        at::Tensor weight_y = ky.expand({3, 1, 3, 3}).clone();
 
         /* ----- convolutions -------------------------------------------------- */
         const int64_t groups = 3;
         const int64_t padding = 1;  // keep spatial size
 
-        torch::Tensor gx = torch::conv2d(img, weight_x, /*bias=*/{}, /*stride=*/1,
+        at::Tensor gx = torch::conv2d(img, weight_x, /*bias=*/{}, /*stride=*/1,
                                         padding, /*dilation=*/1, groups);
-        torch::Tensor gy = torch::conv2d(img, weight_y, /*bias=*/{}, /*stride=*/1,
+        at::Tensor gy = torch::conv2d(img, weight_y, /*bias=*/{}, /*stride=*/1,
                                         padding, /*dilation=*/1, groups);
 
         /* ----- gradient magnitude ------------------------------------------- */
-        torch::Tensor magnitude = torch::sqrt(gx.pow(2) + gy.pow(2) + 1e-12);
+        at::Tensor magnitude = torch::sqrt(gx.pow(2) + gy.pow(2) + 1e-12);
 
         return magnitude;
     }

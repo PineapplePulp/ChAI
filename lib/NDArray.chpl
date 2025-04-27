@@ -852,7 +852,7 @@ inline proc ndarray.square() {
 
    .. math::
 
-       \mathrm{GELU}(x) = 0.5 * x * \mathrm{erf}(x * \frac{1}{\sqrt{2}})
+       \mathrm{GELU}(x) = 0.5 \cdot x \cdot \mathrm{erf}(x \cdot \frac{1}{\sqrt{2}})
 
    :returns: A new :record:`ndarray` where every element has been passed through ``GELU`` as defined above.
  */
@@ -872,6 +872,16 @@ inline proc ndarray.gelu() {
 }
 
 
+/* Computes the Sigmoid linear unit function for each element.
+
+   This function is also known as the swish function.
+
+  .. math::
+
+    \mathrm{silu}(x) = \frac{x}{\sigma(x)}\mathrm{,\ where}\ \sigma(x)\ \mathrm{is\ the\ logistic\ sigmoid.}
+
+  :returns: A new :record:`ndarray` where the ``silu`` has been computed for each element, as defined above.
+*/
 inline proc ndarray.silu() {
     const ref thisData = data;
     const dom = this.domain;
@@ -885,6 +895,14 @@ inline proc ndarray.silu() {
 }
 
 
+/* Computes the mish function for each element.
+
+  .. math::
+
+    \mathrm{mish}(x) = x\tanh(\ln(1 + e^x))
+
+  :returns: A new :record:`ndarray` where ``mish`` has been computed for each element, as defined above.
+ */
 inline proc ndarray.mish() {
     const ref thisData = data;
     const dom = this.domain;

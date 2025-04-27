@@ -4,6 +4,7 @@ import ChapelArray;
 import Math;
 import Random;
 import IO;
+import Path;
 
 use Env;
 
@@ -13,6 +14,8 @@ use SimpleDomain;
 import Utilities as util;
 use Utilities.Standard;
 use Utilities.Types;
+
+import Bridge;
 
 type domainType = _domain(?);
 
@@ -258,7 +261,11 @@ record ndarray : serializable {
 }
 
 
-proc ref ndarray.this(args: int...rank) ref {
+// proc ref ndarray.this(args: int...rank) ref {
+//     return data.this((...args));
+// }
+
+proc ndarray.this(args: int...rank) {
     return data.this((...args));
 }
 
@@ -748,7 +755,7 @@ proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
     const mySize = myDom.size;
     if k > mySize then util.err("Cannot get top ", k, " from ", mySize, " elements.");
     var topK: [0..<k] int = 0..<k;
-    var topKData: [0..<k] eltType = myData(0..<k);
+    var topKData: [0..<k] eltType = myData[0..<k];
 
     // Repeatedly find the minimum from the elements of topKData,
     // and then swap it out with some element from the remaining portion
@@ -1263,6 +1270,31 @@ proc ndarray.degenerateFlatten(): [] eltType {
     return flat;
 }
 
+proc ndarray.toBridgeTensor(): Bridge.tensorHandle(eltType) do
+    return Bridge.createBridgeTensor(this.data);
+
+proc type ndarray.fromBridgeTensor(param rank: int, handle: Bridge.tensorHandle(real(32))): ndarray(rank,real(32)) {
+    const arr = Bridge.bridgeTensorToArray(rank,handle);
+    return new ndarray(arr);
+}
+
+
+proc ref ndarray.loadFromBridgeTensor(handle: Bridge.tensorHandle(eltType)): void {
+    const shape = Bridge.bridgeTensorShape(rank,handle);
+    if shape != this.shape then
+        this.reshapeDomain(util.domainFromShape((...shape)));
+    Bridge.bridgeTensorToExistingArray(this.data,handle);
+}
+
+operator :(a: ndarray(?rank,?eltType), type t: Bridge.tensorHandle(eltType)): Bridge.tensorHandle(eltType) do
+    return a.toBridgeTensor();
+
+operator :(th: Bridge.tensorHandle(real(32)), type t: ndarray(?rank,?eltType)): ndarray(rank,eltType) do
+    if eltType == real(32) then
+        return ndarray.fromBridgeTensor(rank,th);
+    else
+        return ndarray.fromBridgeTensor(rank,th) : eltType;
+
 proc ndarray.shapeArray(): [] int do
     return util.tupleToArray((...this.shape));
 
@@ -1532,10 +1564,28 @@ operator /(c: ?scalarType,a: ndarray(?rank,?eltType)): ndarray(rank,eltType)
 //     return c;
 // }
 
+proc type ndarray.conv2d(
+    input: ndarray(?inputRank,?eltType),
+    weight: ndarray(4,eltType),
+    bias: ndarray(1,eltType),
+    stride: int,
+    padding: int
+    ): ndarray(inputRank,eltType)
+        where inputRank == 3 || inputRank == 4 {
+    return Bridge.conv2d(
+        input : Bridge.tensorHandle(eltType),
+        weight : Bridge.tensorHandle(eltType),
+        bias : Bridge.tensorHandle(eltType),
+        stride : int(32),
+        padding: int(32)
+    ) : ndarray(inputRank,eltType);
+}
+
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), stride: int) do
     return ndarray.convolve(features,kernel,stride,padding = (0,0));
 
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), bias: ndarray(1,eltType), stride: int, padding: 2*int): ndarray(3,eltType) {
+    writeln("hello1");
     const (channels,inHeight,inWidth) = features.shape;
     const (filters,channels_,kernelHeight,kernelWidth) = kernel.shape;
     const (filters_,) = bias.shape;
@@ -1607,6 +1657,8 @@ proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltTy
 
 
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), stride: int, padding: int): ndarray(3,eltType) {
+    writeln("hello2");
+
     const (channels, inHeight, inWidth) = features.shape;
     const (filters, channels_, kernelHeight, kernelWidth) = kernel.shape;
     if channels != channels_ then halt("Channels must match.");
@@ -1655,6 +1707,8 @@ proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltTy
 }
 
 proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltType), bias: ndarray(1,eltType), stride: int): ndarray(3,eltType) {
+    writeln("hello3");
+
     const (channels,inHeight,inWidth) = features.shape;
     const (filters,channels_,kernelHeight,kernelWidth) = kernel.shape;
     const (filters_,) = bias.shape;
@@ -1725,6 +1779,9 @@ proc type ndarray.convolve(features: ndarray(3,?eltType),kernel: ndarray(4,eltTy
 }
 
 proc type ndarray.convolve(features: ndarray(3,?eltType), kernel: ndarray(4,eltType), bias: ndarray(1,eltType), stride: int, padding: int): ndarray(3,eltType) {
+    return ndarray.conv2d(features, kernel, bias, stride, padding);
+    // compilerError("Not implemented yet.");
+
     const (channels, inHeight, inWidth) = features.shape;
     const (filters, channels_, kernelHeight, kernelWidth) = kernel.shape;
     const (filters_,) = bias.shape;
@@ -1810,8 +1867,25 @@ proc type ndarray.convolve(features: ndarray(3,?eltType), kernel: ndarray(4,eltT
     return outFeatures;
 }
 
+proc type ndarray.maxPool2d(
+    input: ndarray(?inputRank,?eltType),
+    kernelSize: int,
+    stride: int = kernelSize,
+    padding: int = 0,
+    dilation: int = 1
+): ndarray(inputRank,eltType) {
+    return Bridge.maxPool2d(
+        input : Bridge.tensorHandle(eltType),
+        kernelSize : int(32),
+        stride : int(32),
+        padding: int(32),
+        dilation: int(32)
+    ) : ndarray(inputRank,eltType);
+}
 
-proc type ndarray.maxPool(features: ndarray(3, ?eltType), poolSize: int) do return this.maxPool(features,poolSize,poolSize);
+
+proc type ndarray.maxPool(features: ndarray(3, ?eltType), poolSize: int) do
+    return this.maxPool(features,poolSize,poolSize);
 proc type ndarray.maxPool(features: ndarray(3,?eltType),poolSize: int, stride: int, padding: int = 0, dilation: int = 1): ndarray(3,eltType) {
     const (channels, height, width) = features.shape;
 
@@ -1907,6 +1981,39 @@ proc type ndarray.sqrt(array: ndarray(?rank,?eltType)): ndarray(rank,eltType) {
         sqrtData[i] = Math.sqrt(thisData[i]);
     }
     return sqrtArr;
+}
+
+proc type ndarray.matvecmul_torch(
+    a: ndarray(2,?eltType),
+    b: ndarray(?outRank,eltType)
+): ndarray(outRank,eltType) {
+    return Bridge.matmul(
+        a : Bridge.tensorHandle(eltType),
+        b : Bridge.tensorHandle(eltType)
+    ) : ndarray(outRank,eltType);
+}
+
+proc type ndarray.mmOutputRank(param aRank: int, param bRank: int) param : int {
+    if aRank == 1 && bRank == 1 then return 1;
+    if aRank == 2 && bRank == 1 then return 1;
+    if aRank == 3 && bRank == 1 then return 2;
+    if aRank == 3 && bRank == 3 then return 3;
+    if aRank == 3 && bRank == 2 then return 3;
+    return -1;
+}
+
+proc type ndarray.mmInputRanksValid(param aRank: int, param bRank: int) param : bool {
+    return ndarray.mmOutputRank(aRank,bRank) != -1;
+}
+
+proc type ndarray.matmul(
+    a: ndarray(?aRank,?eltType),
+    b: ndarray(?bRank,eltType)
+): ndarray(mmOutputRank(aRank,bRank),eltType) {
+    return Bridge.matmul(
+        a : Bridge.tensorHandle(eltType),
+        b : Bridge.tensorHandle(eltType)
+    ): ndarray(mmOutputRank(aRank,bRank),eltType);
 }
 
 proc type ndarray.matvecmul(mat: ndarray(2,?eltType),vec: ndarray(1,eltType)): ndarray(1,eltType) {
@@ -2118,7 +2225,7 @@ proc type ndarray.random(shape: ?rank*int,type eltType = defaultEltType,seed: in
     return ndarray.randomArray((...shape),eltType,new Random.randomStream(eltType,seed));
 
 
-proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): ndarray(3,eltType) {
+proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): ndarray(3,eltType) throws {
     import Image;
 
     param chanBits = Image.bitsPerColor; 
@@ -2155,7 +2262,7 @@ proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): n
     return img;
 }
 
-proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
+proc ref ndarray.saveImage(imagePath: string) throws where rank == 3 {
 
     // compilerWarning("I have not implemented ndarray.saveImage");
     import Image;
@@ -2196,6 +2303,71 @@ proc ref ndarray.saveImage(imagePath: string) where rank == 3 {
     Image.writeImage(imagePath,format=imgType,pixels=pixelData);
 }
 
+proc ref ndarray.loadChData(fr: IO.fileReader(?)) throws {
+    var r = fr.read(int);
+    if r != rank then
+        util.err("Error reading tensor: rank mismatch.", r , " != this." , rank);
+    var s = this.shape;
+    for i in 0..#rank do
+        s[i] = fr.read(int);
+    var dom = util.domainFromShape((...s));
+    this._domain = dom;
+    const eltBits = fr.read(int);
+    for param attemptBytes in 4..6 {
+        param attemptBits: int = 2 ** attemptBytes;
+        type loadType = if attemptBits == 16 
+                            then uint(16) 
+                            else real(attemptBits);
+        if attemptBits == eltBits {
+            var A: [dom] loadType;
+            
+            try! {
+                fr.read(A);
+            } catch e : IO.UnexpectedEofError {
+                IO.stderr.writeln(e);
+                IO.stderr.writeln("Error reading from ", fr.getFile().path, " with precision ", attemptBits, " with shape ", shape);
+                halt("Error reading from ", fr.getFile().path, " with precision ", attemptBits, " with shape ", shape);
+            }
+            
+            if attemptBits == 16 then
+                this.data = [i in dom] util.uint16ToReal32(A[i]) : eltType;
+            else
+                this.data = A : eltType;
+
+            return;
+        }
+    }
+    // // for i in d do
+    // //     this.data[i] = fr.read(eltType);
+    // fr.read(this.data);
+}
+
+proc type ndarray.loadPyTorchTensor(param rank: int,in filePath: string,type eltType = defaultEltType): ndarray(rank,eltType) {
+    use CTypes;
+    const fpPtr: c_ptr(uint(8)) = c_ptrTo(filePath);
+    var th = Bridge.load_tensor_from_file(fpPtr);
+    return ndarray.fromBridgeTensor(rank,th) : ndarray(rank,eltType);
+}
+
+proc type ndarray.loadPyTorchTensorDictWithKey(param rank: int,in filePath: string,in tensorKey: string,type eltType = defaultEltType): ndarray(rank,eltType) {
+    use CTypes;
+    const fpPtr: Bridge.string_t = c_ptrTo(filePath);
+    const tkPtr: Bridge.string_t = c_ptrTo(tensorKey);
+    var th = Bridge.load_tensor_dict_from_file(fpPtr,tkPtr);
+    return ndarray.fromBridgeTensor(rank,th) : ndarray(rank,eltType);
+}
+
+proc ndarray.loadRunModel(param outRank: int,in filePath: string,type outEltType = this.eltType): ndarray(outRank,outEltType) {
+    use CTypes;
+    const fpPtr: c_ptr(uint(8)) = c_ptrTo(filePath);
+    var th = Bridge.load_run_model(
+        fpPtr,
+        this : Bridge.tensorHandle(eltType)
+        );
+    return ndarray.fromBridgeTensor(outRank,th) : ndarray(outRank,outEltType);
+}
+
+
 // For printing. 
 proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer),ref serializer: IO.defaultSerializer) throws {
     
@@ -2211,17 +2383,57 @@ proc ndarray.serialize(writer: IO.fileWriter(locking=false, IO.defaultSerializer
     writer.writeln(")");
 }
 
+proc type ndarray.loadImageInPlace(
+    ref arr: ndarray(?rank,?srcEltType),
+    filePath: string,
+    type eltType = defaultEltType) throws {
+    var img = ndarray.loadImage(filePath,eltType);
+    arr.reshapeDomain(img.domain);
+    arr.data = img.data;
+}
+
 proc ref ndarray.read(fr: IO.fileReader(?)) throws {
-    var r = fr.read(int);
-    if r != rank then
-        err("Error reading tensor: rank mismatch.", r , " != this." , rank);
-    var s = this.shape;
-    for i in 0..#rank do
-        s[i] = fr.read(int);
-    var d = util.domainFromShape((...s));
-    this._domain = d;
-    for i in d do
-        this.data[i] = fr.read(eltType);
+
+    const file = fr.getFile();
+    const filePath: string = file.path;
+    const (_,fileName,fileExt) = util.splitPathParts(filePath);
+
+    select fileExt {
+        when "chdata" do
+            this.loadChData(fr);
+        when "png" do
+            ndarray.loadImageInPlace(this,filePath,eltType);
+        when "jpg" do
+            ndarray.loadImageInPlace(this,filePath,eltType);
+        when "jpeg" do
+            ndarray.loadImageInPlace(this,filePath,eltType);
+        when "bmp" do
+            ndarray.loadImageInPlace(this,filePath,eltType);
+    }
+
+    writeln("Read file: ",filePath, " with ext: ", fileExt);
+}
+
+proc type ndarray.multiReader(path: string) throws {
+    var file = IO.open(path, IO.ioMode.r);
+    var deserializer = new IO.binaryDeserializer(IO.endianness.native);
+    var fr = file.reader(locking=false,deserializer=deserializer);
+    return fr;
+}
+
+proc type ndarray.loadFrom(filePath: string, param rank: int, type eltType = defaultEltType): ndarray(rank,eltType) throws {
+    // var arr = new ndarray(rank,eltType);
+    // var file = IO.open(filePath, IO.ioMode.r);
+    // var fr = file.reader();
+    // arr.read(fr);
+    // return arr;
+
+    // return ndarray.readInPlace(multiReader(filePath),rank,eltType);
+
+    var arr = new ndarray(rank,eltType);
+    var fr = ndarray.multiReader(filePath);
+    arr.read(fr);
+    return arr;
 }
 
 
@@ -2440,9 +2652,7 @@ proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b
    :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
    :rtype: ndarray(rank, eltType)
 */
-proc ndarray.softmax(): ndarray(this.rank, this.eltType)
-    where isSubtype(this.eltType, real)
-{
+proc ndarray.softmax(): ndarray(this.rank, this.eltType) {
     const dom = this.domain;
     const ref thisData = this.data;
 
@@ -2500,7 +2710,7 @@ proc ndarray.dropout(param inplace: bool = false): ndarray(this.rank, this.eltTy
     }
 }
 
-
+/*
 proc main() {
     // More examples. 
     writeln("Hello!");
@@ -2544,6 +2754,6 @@ proc main() {
 
     // param r = 0..<3;
     // writeln(r);
-}
+}*/
 
 }

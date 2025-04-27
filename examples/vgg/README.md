@@ -20,3 +20,7 @@ Run `python3 test.py <path to image>` to run the model in python. The output wil
 
 #### Compare with `python3 run_vgg.py imgs/frog.jpg` and `./vgg imgs/frog.chdata`
 
+
+```bash
+$ chpl --fast -o vgg test.chpl -M ../../lib /Users/iainmoncrief/Documents/Github/ChAI/bridge/include/bridge.h /Users/iainmoncrief/Documents/Github/ChAI/build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L /Users/iainmoncrief/Documents/Github/ChAI/libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,/Users/iainmoncrief/Documents/Github/ChAI/libtorch/lib"
+```

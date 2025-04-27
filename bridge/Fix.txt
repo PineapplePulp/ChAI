@@ -1,0 +1,4 @@
+
+https://github.com/pytorch/pytorch/issues/20030
+
+install_name_tool -add_rpath /opt/homebrew/opt/libomp/lib /Users/iainmoncrief/Documents/Github/ChAI/bridge/libtorch/lib/libtorch_cpu.dylib

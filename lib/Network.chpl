@@ -735,7 +735,9 @@ class Module {
 
     // Define the loadParameters function
     proc loadParameters(mod, modelPath: string, prefix: string = "", indent: string, param debug, type dtype = real(32)) {
-        for (_, m) in mod.subModules.items() {
+        const subModList = mod.subModules.order.toArray();
+        forall mn in subModList {
+            var m: borrowed Module(dtype) = try! mod.subModules.childDict[mn];
             const modName = m.moduleName;
             if var p = m : borrowed Parameter(eltType)? {
                 loadSingleParameter(p, mod, modelPath, prefix, indent+"\t", debug, dtype);
@@ -1215,6 +1217,7 @@ if diag {
     startVerboseGpu();
 }
 
+/*
 proc main() {
 
     var flower = Tensor.load("data/flower.chdata");
@@ -1292,4 +1295,5 @@ proc main() {
     var fw = f.writer();
     fw.writeln(c);
 }
+*/
 }

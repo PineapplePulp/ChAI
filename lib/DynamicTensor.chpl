@@ -126,13 +126,22 @@ record dynamicTensor : serializable {
         return this;
     }
 
-    proc array(param rank: int) ref : ndarray(rank,eltType) do
+    inline proc ref rankedArray(param rank: int) ref : ndarray(rank,eltType) do
         return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).array;
 
-    proc grad(param rank: int) ref : ndarray(rank,eltType) do
+    inline proc rankedArray(param rank: int): ndarray(rank,eltType) do
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).array;
+
+    inline proc ref rankedGradArray(param rank: int) ref : ndarray(rank,eltType) do
         return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).grad;
 
-    proc data(param rank: int) ref : [] eltType do
+    inline proc rankedGradArray(param rank: int): ndarray(rank,eltType) do
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).grad;
+
+    inline proc ref rankedData(param rank: int) ref : [] eltType do
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).data;
+
+    inline proc rankedData(param rank: int): [] eltType do
         return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).data;
 
 
@@ -156,12 +165,21 @@ record dynamicTensor : serializable {
     }
 }
 
-operator :(in t: dynamicTensor(?eltType), type toType): dynamicTensor(toType) {
+operator :(in t: dynamicTensor(?eltType), type toType): dynamicTensor(toType)
+        where isNumericType(toType) {
     if eltType == toType then return t;
     for param rank in 1..maxRank do
         if t.checkRank(rank) then
             return (t.forceRank(rank) : toType).eraseRank();
     halt("Could not identify rank for this: ", t);
+}
+
+operator :(in t: dynamicTensor(?eltType), type toType: ndarray(?rank,?toEltType)): ndarray(rank,toEltType)
+        where isNumericType(eltType) && isNumericType(toEltType) {
+    if eltType == toEltType then 
+        return t.toNDArray(rank);
+    else
+        return t.toNDArray(rank) : toEltType;
 }
 
 proc type dynamicTensor.detachMode() param : bool {
@@ -643,6 +661,20 @@ proc dynamicTensor.softmax(): dynamicTensor(eltType) {
     return new dynamicTensor(eltType);
 }
 
+proc dynamicTensor.maxPool2d(
+    kernelSize: int,
+    stride: int = kernelSize,
+    padding: int = 0,
+    dilation: int = 1
+): dynamicTensor(eltType) {
+    for param rank in 3..4 do
+        if this.checkRank(rank) then
+            return this.forceRank(rank).maxPool(kernelSize, stride, padding, dilation).eraseRank();
+    
+    halt("Could not determine rank in dynamicTensor.maxPool2d.");
+    return new dynamicTensor(eltType);
+}
+
 proc dynamicTensor.maxPool(poolSize: int) do return this.maxPool(poolSize,stride=poolSize, padding=0, dilation=1);
 proc dynamicTensor.maxPool(poolSize: int, stride: int, padding: int, dilation: int): dynamicTensor(eltType) {
     for param rank in 3..3 {
@@ -766,10 +798,25 @@ proc dynamicTensor.argmax(): int {
     return a.argmax();
 }
 
+proc type dynamicTensor.matmul(
+    a: dynamicTensor(?eltType),
+    b: dynamicTensor(eltType)
+): dynamicTensor(eltType) {
+    for param rankA in 1..3 do
+        if a.checkRank(rankA) then
+            for param rankB in 1..3 do
+                if ndarray.mmInputRanksValid(rankA,rankB) then
+                    if b.checkRank(rankB) then
+                        return staticTensor.matmul(a.forceRank(rankA),b.forceRank(rankB)).eraseRank();
+
+    halt("Could not determine rank in dynamicTensor.matmul.");
+    return new dynamicTensor(eltType);
+}
+
 proc type dynamicTensor.matVecMul(m: dynamicTensor(?eltType),v: dynamicTensor(eltType)): dynamicTensor(eltType) {
-    for param rankM in 2..2 {
+    for param rankM in 2..3 {
         if m.checkRank(rankM) {
-            for param rankV in 1..1 {
+            for param rankV in 1..3 {
                 if v.checkRank(rankV) {
                     return staticTensor.matVecMul(m.forceRank(rankM),v.forceRank(rankV)).eraseRank();
                 }
@@ -965,7 +1012,7 @@ proc dynamicTensor.squeeze(dim: int): dynamicTensor(eltType) {
 //         return (this.squeeze(dShape.tail)).squeeze(dShape.head);
 // }
 
-
+/*
 proc main() {
 
     // Just some examples. 
@@ -1021,7 +1068,7 @@ proc main() {
     const npa = dynamicTensor.loadFromNumpy("notebooks/numpy_y.npy");
 
 
-}
+}*/
 
 
 

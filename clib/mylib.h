@@ -1,0 +1,4 @@
+
+
+int myfunction(int a);
+

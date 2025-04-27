@@ -20,6 +20,6 @@ module ChAI {
     writeln(Tensor.Tensor.arange(3,5));
 
 
-    writeln("New mason package: ChAI");
+    writeln("New mason package: ChAI!");
   }
 }

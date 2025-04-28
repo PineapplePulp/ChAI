@@ -23,7 +23,7 @@ endif()
 if(APPLE)
     set(TORCH_DISTRIBUTION "${TORCH_URL_PREFIX}/libtorch-macos-arm64-latest.zip")
 elseif(LINUX)
-    set(TORCH_DISTRIBUTION "$${TORCH_URL_PREFIX}/libtorch-shared-with-deps-latest.zip")
+    set(TORCH_DISTRIBUTION "${TORCH_URL_PREFIX}/libtorch-cxx11-abi-shared-with-deps-latest.zip")
 endif()
 
 function(download_libtorch)

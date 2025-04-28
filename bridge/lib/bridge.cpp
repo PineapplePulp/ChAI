@@ -14,7 +14,12 @@
 #include <vector>
 #include <cstdint>
 
-
+#define def_bridge_simple(Name) \
+    extern "C" bridge_tensor_t Name(bridge_tensor_t input) { \
+        auto t_input = bridge_to_torch(input); \
+        auto t_output = torch::Name(t_input); \
+        return torch_to_bridge(t_output); \
+    }
 
 
 int bridge_tensor_elements(bridge_tensor_t &bt) {
@@ -53,18 +58,6 @@ torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     auto shape = at::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 extern "C" float32_t* unsafe(const float32_t* arr) {
     return const_cast<float32_t*>(arr);
@@ -131,15 +124,6 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
     return torch_to_bridge(output);
 }
 
-
-
-
-
-
-
-
-
-
 extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
     auto t = bridge_to_torch(arr);
     // Increment the tensor
@@ -205,6 +189,28 @@ extern "C" bridge_tensor_t max_pool2d(
     auto output = torch::max_pool2d(t_input, kernel_size, stride, padding);
     return torch_to_bridge(output);
 }
+
+def_bridge_simple(relu);
+
+def_bridge_simple(relu6);
+
+def_bridge_simple(gelu);
+
+def_bridge_simple(logsigmoid);
+
+def_bridge_simple(mish);
+
+def_bridge_simple(selu);
+
+def_bridge_simple(silu);
+
+def_bridge_simple(softmax);
+
+def_bridge_simple(softmin);
+
+def_bridge_simple(softsign);
+
+def_bridge_simple(tanhshrink);
 
 
 // extern "C"

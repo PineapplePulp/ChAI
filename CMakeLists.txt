@@ -29,7 +29,7 @@ if(APPLE)
     set(CMAKE_C_COMPILER "/usr/bin/clang")
     set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 endif()
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 
 
 include(LibTorchDL)
@@ -37,7 +37,6 @@ download_libtorch(
     CACHE_DIR ${PROJECT_CACHE_DIR}
     DESTINATION ${LIBTORCH_DIR}
 )
-
 
 include(FetchContent)
 include(ExternalProject)
@@ -170,7 +169,7 @@ set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
 
 file(GLOB LIBTORCH_ALL_LIB_FILES 
-    "${LIBTORCH_DIR}/lib/*.a" 
+    # "${LIBTORCH_DIR}/lib/*.a" 
     "${LIBTORCH_DIR}/lib/*.dylib" 
     "${LIBTORCH_DIR}/lib/*.so")
 
@@ -185,7 +184,6 @@ set(REQUIRED_LIBS
     "libtorch"
     "libtorch_cpu"
     "libc10"
-    "libtorch_global_deps"
 )
 
 set(DISALLOWED_LIBS
@@ -206,10 +204,13 @@ foreach(lib_name IN LISTS LIBTORCH_ALL_LIBS)
     list(APPEND LIBTORCH_LIBS_LINKER_ARGS "-l${lib_name_short}")
 endforeach()
 
-# cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
-# cmake_print_variables(${BRIDGE_OBJECT_FILES})
-# cmake_print_variables(BRIDGE_OBJECT_FILES)
-
+if(LINUX)
+    set(LIBTORCH_LINKER_ARGS
+        "-ltorch"
+        "-ltorch_cpu"
+        "-lc10"
+    )
+endif()
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)

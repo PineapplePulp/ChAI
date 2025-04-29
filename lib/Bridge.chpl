@@ -82,8 +82,8 @@ module Bridge {
     extern "imagenet_normalize" proc imageNetNormalize(
         in input: bridge_tensor_t): bridge_tensor_t;
 
-    extern "capture_webcam_bridge" proc captureWebcam(
-        in cam_index: int(32)): bridge_tensor_t;
+    // extern "capture_webcam_bridge" proc captureWebcam(
+    //     in cam_index: int(32)): bridge_tensor_t;
 
 
     proc getSizeArray(const ref arr: [] ?eltType): [] int(32) {

@@ -14,7 +14,6 @@
 #include <vector>
 #include <cstdint>
 
-#include <cvtool.hpp>
 
 
 
@@ -264,10 +263,10 @@ extern "C" bridge_tensor_t imagenet_normalize(bridge_tensor_t input) {
     return torch_to_bridge(output);
 }
 
-extern "C" bridge_tensor_t capture_webcam_bridge(int cam_index) {
-    torch::Tensor image = capture_webcam(cam_index);
-    return torch_to_bridge(image);
-}
+// extern "C" bridge_tensor_t capture_webcam_bridge(int cam_index) {
+//     torch::Tensor image = capture_webcam(cam_index);
+//     return torch_to_bridge(image);
+// }
 
 
 

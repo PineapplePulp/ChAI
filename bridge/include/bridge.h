@@ -37,7 +37,7 @@ bridge_tensor_t resize(bridge_tensor_t input,int height,int width);
 bridge_tensor_t imagenet_normalize(bridge_tensor_t input);
 
 
-bridge_tensor_t capture_webcam_bridge(int cam_index);
+// bridge_tensor_t capture_webcam_bridge(int cam_index);
 
 int baz(void);
 

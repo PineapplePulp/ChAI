@@ -30,3 +30,19 @@ Input: [1, 3, 10, 10]
 Output: [1, 3, 10, 10]
 ```
 
+
+
+
+Locally, you can do
+```bash
+$ export Torch_DIR=<ChAI-root>/libtorch
+$ cd demos/torchtest
+$ mkdir build
+$ cd build
+$ cmake -DCMAKE_PREFIX_PATH=<ChAI-root>/libtorch/share/cmake ..
+$ make
+$ ./MyProject
+Input: [1, 3, 10, 10]
+Output: [1, 3, 10, 10]
+```
+

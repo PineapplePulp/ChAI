@@ -38,6 +38,9 @@ download_libtorch(
     DESTINATION ${LIBTORCH_DIR}
 )
 
+list(APPEND CMAKE_PREFIX_PATH "${LIBTORCH_DIR}/share/cmake")
+
+
 
 include(FetchContent)
 include(ExternalProject)

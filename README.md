@@ -99,3 +99,88 @@ Note: To change the maximum `rank` of `staticTensor(rank,eltType)`, you can spec
 ```bash
 $ chpl -M <ChAI>/lib -sEnv.maxNeededRank=15 my_program.chpl
 ```
+
+
+
+# Current Status
+
+Currently, you need to have a working installation of CMake, PyThon, and Chapel to use ChAI. 
+
+## General build instructions
+
+After cloning,
+```bash
+$ git clone https://github.com/chapel-lang/ChAI.git
+$ cd ChAI
+```
+
+use CMake to build the project. 
+
+```bash
+$ mkdir build
+$ cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+```
+
+This will create a `build` directory and run CMake to generate the necessary build files. 
+
+To test if the build environment is working, you can run the following command:
+```bash
+$ make MyExample && make TorchTestBridge
+
+$ ./MyExample
+Hello, world!
+a: ndarray([[ 0,  1,  2],
+         [ 3,  4,  5],
+         [ 6,  7,  8]],
+       shape = (3, 3),
+       rank = 2)
+
+b: ndarray([[ 0,  1,  2],
+         [ 3,  4,  5],
+         [ 6,  7,  8]],
+       shape = (3, 3),
+       rank = 2)
+
+c: ndarray([[15, 18, 21],
+         [42, 54, 66],
+         [69, 90, 111]],
+       shape = (3, 3),
+       rank = 2)
+
+$ ./TorchTestBridge
+Input: [1, 3, 10, 10]
+Output: [1, 3, 10, 10]
+
+```
+
+The first command will compile the `MyExample` program, which is a simple "Hello, world!" program that uses ChAI. The second command will compile the `TorchTestBridge` program, which tests the PyTorch interop functionality of ChAI.
+
+See `docker-dev-run.md` for instructions on how to run the examples in a Docker container. This is useful if either of these build steps fail on your system. 
+
+
+You may also try
+```bash
+$ cd examples/vgg
+$ python3 dump_weights.py
+$ cd ../..
+$ make vgg
+$ ./vgg images/frog.jpg
+VGG Example Directory: .../ChAI/examples/vgg
+Loading labels from .../ChAI/examples/vgg/imagenet/LOC_synset_mapping.txt
+Loaded 1000 labels.
+Constructing VGG16 model.
+Constructed VGG16 model.
+Loading VGG16 model weights.
+Loaded VGG16 model.
+Read file: .../ChAI/build/images/frog.jpg with ext: jpg
+imageData shape: (3, 720, 1280)
+normalizedImageData shape: (3, 720, 1280)
+inputImage shape: (size = 3, sizes = 3 720 1280)
+For 'images/frog.jpg' the top 5 predictions are: 
+  0: label=tree frog, tree-frog; confidence=27%
+  1: label=tailed frog, bell toad, ribbed toad, tailed toad, Ascaphus trui; confidence=8.2%
+  2: label=leafhopper; confidence=4.5%
+  3: label=leaf beetle, chrysomelid; confidence=1.9%
+  4: label=weevil; confidence=1.5%
+```

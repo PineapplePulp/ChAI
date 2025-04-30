@@ -22,6 +22,7 @@
     }
 
 
+
 int bridge_tensor_elements(bridge_tensor_t &bt) {
     int size = 1;
     for (int i = 0; i < bt.dim; ++i) {
@@ -37,14 +38,15 @@ size_t bridge_tensor_size(bridge_tensor_t &bt) {
 void store_tensor(torch::Tensor &input, float32_t* dest) {
     float32_t * data = input.data_ptr<float32_t>();
     size_t bytes_size = sizeof(float32_t) * input.numel();
-    std::memmove(dest,data,bytes_size);
+    // std::memmove(dest,data,bytes_size);
+    std::memcpy(dest,data,bytes_size);
 }
 
 bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
     bridge_tensor_t result;
     result.created_by_c = true;
     result.dim = tensor.dim();
-    result.sizes = new int[result.dim];
+    result.sizes = new int32_t[result.dim];
     for (int i = 0; i < result.dim; ++i) {
         result.sizes[i] = tensor.size(i);
     }
@@ -55,7 +57,7 @@ bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
 
 torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
-    auto shape = at::IntArrayRef(sizes_vec);
+    auto shape = torch::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
 
@@ -112,7 +114,7 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
     catch (const c10::Error& e)
     {
         std::cerr << "error loading the model\n" << e.msg();
-        std::system("pause");
+        // std::system("pause");
     }
 
     std::vector<torch::jit::IValue> inputs;
@@ -163,6 +165,11 @@ extern "C" bridge_tensor_t conv2d(
 extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     auto t_a = bridge_to_torch(a);
     auto t_b = bridge_to_torch(b);
+
+    // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
+    // std::cout << "Input B shape: " << t_b.sizes() << std::endl;
+    // std::cout.flush();
+
     auto output = torch::matmul(t_a, t_b);
 
     // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
@@ -174,8 +181,19 @@ extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     // std::cout << "Output sum: " << output.sum() << std::endl;
     // std::cout.flush();
     // printf("Hello from matmul!\n");
-
     return torch_to_bridge(output);
+
+    // auto output_copy = output.clone();
+    // std::cout << "Output copy shape: " << output_copy.sizes() << std::endl;
+    // std::cout.flush();
+
+    // auto bt = torch_to_bridge(output_copy);
+    // std::cout << "Bridge tensor sizes: " << bt.sizes << std::endl;
+    // std::cout << "Bridge tensor dim: " << bt.dim << std::endl;
+
+    // std::cout.flush();
+
+    // return bt;
 }
 
 extern "C" bridge_tensor_t max_pool2d(
@@ -190,27 +208,67 @@ extern "C" bridge_tensor_t max_pool2d(
     return torch_to_bridge(output);
 }
 
-def_bridge_simple(relu);
+extern "C" bridge_tensor_t resize(
+    bridge_tensor_t input,
+    int height,
+    int width
+) {
+    auto image = bridge_to_torch(input);
 
-def_bridge_simple(relu6);
+    // auto output = resize_tensor_last2(image, height, width);
+    
+    // at::Tensor output = at::upsample_bilinear2d(t_input.unsqueeze(0), {height, width}, false);
+    if (image.dim() == 3) {
+        auto output = torch::nn::functional::interpolate(
+            image.unsqueeze(0),
+            torch::nn::functional::InterpolateFuncOptions()
+            .size(std::vector<int64_t>({ height, width }))
+            .mode(torch::kBilinear)
+            .align_corners(false)
+        ).squeeze(0);
+        return torch_to_bridge(output);
+    } else if (image.dim() == 4) {
+        auto output = torch::nn::functional::interpolate(
+            image,
+            torch::nn::functional::InterpolateFuncOptions()
+            .size(std::vector<int64_t>({ height, width }))
+            .mode(torch::kBilinear)
+            .align_corners(false)
+        );
+        return torch_to_bridge(output);
+    } else {
+        std::cerr << "Unsupported tensor dimension: " << image.dim() << std::endl;
+        std::cerr.flush();
+        std::cout << "Unsupported tensor dimension: " << image.dim() << std::endl;
+        std::cout.flush();
+        return input; // Return the original tensor if the dimension is unsupported
+    }
+}
 
-def_bridge_simple(gelu);
+extern "C" bridge_tensor_t imagenet_normalize(bridge_tensor_t input) {
+    auto t_input = bridge_to_torch(input);
+    torch::Tensor image = t_input; //.to(torch::kFloat32);// / 255.0;
 
-def_bridge_simple(logsigmoid);
+    static const std::vector<float> kMean{0.485, 0.456, 0.406};
+    static const std::vector<float> kStd {0.229, 0.224, 0.225};
+    auto opts = image.options();
+    auto mean = torch::tensor(kMean).reshape({3, 1, 1});  // (3,1,1)
+    auto std  = torch::tensor(kStd).reshape({3, 1, 1});
 
-def_bridge_simple(mish);
+    if (image.dim() == 4) {
+        mean = mean.unsqueeze(0); // (1,3,1,1)
+        std = std.unsqueeze(0);
+    }
 
-def_bridge_simple(selu);
+    auto output = (image - mean) / std;
+    return torch_to_bridge(output);
+}
 
-def_bridge_simple(silu);
+// extern "C" bridge_tensor_t capture_webcam_bridge(int cam_index) {
+//     torch::Tensor image = capture_webcam(cam_index);
+//     return torch_to_bridge(image);
+// }
 
-def_bridge_simple(softmax);
-
-def_bridge_simple(softmin);
-
-def_bridge_simple(softsign);
-
-def_bridge_simple(tanhshrink);
 
 
 // extern "C"

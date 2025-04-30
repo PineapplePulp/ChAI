@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -10,7 +10,6 @@ include(CMakePrintHelpers)
 # set(TORCH_COMPUTE_PLATFORM "cpu") # cu118, cu124, cu126, cpu
 # set(TORCH_VERSION "2.1.0")
 set(TORCH_URL_PREFIX "https://download.pytorch.org/libtorch/nightly/cpu")
-
 
 
 

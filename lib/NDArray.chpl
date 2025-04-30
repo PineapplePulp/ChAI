@@ -449,6 +449,22 @@ proc ndarray.expand(axes: int...rank) {
 }
 
 
+proc ndarray.unsqueeze(dim: int): ndarray(rank + 1,eltType) {
+    const shape = this.domain.shape;
+    param newRank: int = rank + 1;
+    var offset: int = 0;
+    var newShape: newRank * int;
+    for param i in 0..<newRank {
+        if i == dim {
+            newShape(i) = 1;
+            offset = 1;
+        } else {
+            newShape(i) = shape(i - offset);
+        }
+    }
+    return this.reshape((...newShape));
+}
+
 proc ref ndarray.sumOneAxis(axis: int): ndarray(rank,eltType) {
     const dims = this.domain.dims();
     const sumAxis = dims(axis);
@@ -1978,6 +1994,7 @@ proc type ndarray.matvecmul_torch(
 proc type ndarray.mmOutputRank(param aRank: int, param bRank: int) param : int {
     if aRank == 1 && bRank == 1 then return 1;
     if aRank == 2 && bRank == 1 then return 1;
+    if aRank == 2 && bRank == 2 then return 2;
     if aRank == 3 && bRank == 1 then return 2;
     if aRank == 3 && bRank == 3 then return 3;
     if aRank == 3 && bRank == 2 then return 3;
@@ -1991,11 +2008,11 @@ proc type ndarray.mmInputRanksValid(param aRank: int, param bRank: int) param : 
 proc type ndarray.matmul(
     a: ndarray(?aRank,?eltType),
     b: ndarray(?bRank,eltType)
-): ndarray(mmOutputRank(aRank,bRank),eltType) {
+) where ndarray.mmInputRanksValid(aRank,bRank) {
     return Bridge.matmul(
         a : Bridge.tensorHandle(eltType),
         b : Bridge.tensorHandle(eltType)
-    ): ndarray(mmOutputRank(aRank,bRank),eltType);
+    ): ndarray(ndarray.mmOutputRank(aRank,bRank),eltType);
 }
 
 proc type ndarray.matvecmul(mat: ndarray(2,?eltType),vec: ndarray(1,eltType)): ndarray(1,eltType) {
@@ -2206,6 +2223,18 @@ proc type ndarray.random(shape: int...?rank): ndarray(rank,defaultEltType) do
 proc type ndarray.random(shape: ?rank*int,type eltType = defaultEltType,seed: int = ndarray.getNextSeed()): ndarray(rank,eltType) do
     return ndarray.randomArray((...shape),eltType,new Random.randomStream(eltType,seed));
 
+
+proc ndarray.resize(height: int,width: int) {
+    return Bridge.resize(
+        this : Bridge.tensorHandle(eltType),
+        height : int(32),
+        width : int(32)) : ndarray(rank,eltType);
+}
+
+proc ndarray.imageNetNormalize() {
+    return Bridge.imageNetNormalize(
+        this : Bridge.tensorHandle(eltType)) : ndarray(rank,eltType);
+}
 
 proc type ndarray.loadImage(imagePath: string, type eltType = defaultEltType): ndarray(3,eltType) throws {
     import Image;

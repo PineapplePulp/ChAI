@@ -45,3 +45,7 @@ libtorch/
 build-release/
 libtorch_static/
 examples/vgg/**/*.pt
+segmentation_models.pytorch/
+.idea/
+cmake-build-debug/
+libtorch_old/

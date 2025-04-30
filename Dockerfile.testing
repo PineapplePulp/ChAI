@@ -1,0 +1,37 @@
+FROM ubuntu:24.04
+
+
+# RUN apt update > /dev/null && apt install -y apt-utils && apt upgrade -y > /dev/null
+
+
+COPY deb /
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt update > /dev/null && \
+    apt upgrade -y > /dev/null && \
+    apt install -y apt-utils > /dev/null && \
+    apt install -y python3-pip > /dev/null && \
+    (apt install -y ./chapel-2.4.0-1.ubuntu25.arm64.deb > /dev/null) || (apt install -y ./chapel-2.4.0-1.ubuntu25.amd64.deb > /dev/null)
+
+
+
+RUN pip3 install numpy > /dev/null
+
+RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cpu > /dev/null
+
+
+COPY lib /lib
+COPY examples /examples
+COPY test /test
+
+# Run tests
+RUN cd test/correspondence && python3 correspondence.py
+RUN cd test/correspondence && python3 correspondence.py --print-compiler-errors
+
+
+# Build instructions
+# force (last resort): docker system prune --all --force
+# docker builder prune --all
+# docker build --no-cache -t chapel-deb .
+# docker build -t chapel-deb .
+# docker container run -it chapel-deb bash

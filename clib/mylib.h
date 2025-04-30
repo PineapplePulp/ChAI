@@ -1,4 +1,0 @@
-
-
-int myfunction(int a);
-

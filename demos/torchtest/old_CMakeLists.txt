@@ -1,0 +1,28 @@
+
+
+add_executable(TorchTest
+    ${CMAKE_CURRENT_SOURCE_DIR}/torch_test.cpp
+)
+
+target_include_directories(TorchTest
+    PRIVATE
+        ${LIBTORCH_DIR}/include
+        ${LIBTORCH_DIR}/include/torch/csrc/api/include
+)
+
+target_link_directories(TorchTest
+    PRIVATE
+        ${LIBTORCH_DIR}/lib
+)
+
+target_link_libraries(TorchTest
+    PRIVATE 
+        -ltorch
+        -ltorch_cpu
+        -lc10
+        -ltorch_global_deps
+)
+
+set_target_properties(TorchTest PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)

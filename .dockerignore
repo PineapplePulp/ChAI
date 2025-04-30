@@ -1,0 +1,11 @@
+presentation
+libtorch_static
+libtorch
+target
+docs
+dependencies
+build
+cmake-build-debug
+.git
+learning
+.cache

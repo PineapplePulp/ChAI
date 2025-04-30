@@ -17,15 +17,22 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 import chai
 
+os.makedirs('models', exist_ok=True)
+
 os.makedirs('models/vgg16', exist_ok=True)
 model.chai_dump('models/vgg16','vgg16', with_json=False, verbose=True)
 
 # # print(model.state_dict().keys())
 # # print([(n,w.dtype) for (n,w) in model.state_dict().items()])
 
-
 for vggxx in vgg.model_urls.keys():
+    
     print(vggxx)
+
+    if vggxx != 'vgg16':
+        print(f'skipping {vggxx}...')
+        continue
+
     model = vgg.__dict__[vggxx](pretrained=True)
     model = model.to(torch.float16)
     model.eval()

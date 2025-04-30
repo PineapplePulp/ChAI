@@ -33,7 +33,8 @@ size_t bridge_tensor_size(bridge_tensor_t &bt) {
 void store_tensor(torch::Tensor &input, float32_t* dest) {
     float32_t * data = input.data_ptr<float32_t>();
     size_t bytes_size = sizeof(float32_t) * input.numel();
-    std::memmove(dest,data,bytes_size);
+    // std::memmove(dest,data,bytes_size);
+    std::memcpy(dest,data,bytes_size);
 }
 
 bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
@@ -51,7 +52,7 @@ bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
 
 torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
-    auto shape = at::IntArrayRef(sizes_vec);
+    auto shape = torch::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
 
@@ -180,16 +181,21 @@ extern "C" bridge_tensor_t conv2d(
 extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     auto t_a = bridge_to_torch(a);
     auto t_b = bridge_to_torch(b);
-    auto output = at::matmul(t_a, t_b);
+
+    std::cout << "Input A shape: " << t_a.sizes() << std::endl;
+    std::cout << "Input B shape: " << t_b.sizes() << std::endl;
+    std::cout.flush();
+
+    auto output = torch::matmul(t_a, t_b);
 
     // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
     // std::cout << "Input B shape: " << t_b.sizes() << std::endl;
     // std::cout << "Input A: " << t_a.sum() << std::endl;
     // std::cout << "Input B: " << t_b.sum() << std::endl;
     // // std::cout << "Input B: " << t_b << std::endl;
-    // std::cout << "Output shape: " << output.sizes() << std::endl;
-    // std::cout << "Output sum: " << output.sum() << std::endl;
-    // std::cout.flush();
+    std::cout << "Output shape: " << output.sizes() << std::endl;
+    std::cout << "Output sum: " << output.sum() << std::endl;
+    std::cout.flush();
     // printf("Hello from matmul!\n");
 
     return torch_to_bridge(output);

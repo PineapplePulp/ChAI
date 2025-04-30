@@ -15,7 +15,7 @@ set(PROJECT_CACHE_DIR "${PROJECT_ROOT_DIR}/.cache")
 set(LIBTORCH_DIR "${PROJECT_ROOT_DIR}/libtorch")
 # set(LIBTORCH_STATIC_INSTALL_DIR "${PROJECT_ROOT_DIR}/libtorch_static")
 set(BRIDGE_DIR "${PROJECT_ROOT_DIR}/bridge")
-
+set(Torch_DIR "${PROJECT_ROOT_DIR}/libtorch")
 
 find_package(chpl REQUIRED HINTS ${PROJECT_ROOT_DIR}/cmake/chapel)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT_DIR}/cmake")
@@ -39,65 +39,15 @@ download_libtorch(
 )
 
 list(APPEND CMAKE_PREFIX_PATH "${LIBTORCH_DIR}/share/cmake")
+find_package(Torch REQUIRED)  
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -lm -ldl ${TORCH_CXX_FLAGS}")
 
 
-
-include(FetchContent)
-include(ExternalProject)
-
-
-# if(NOT EXISTS "${LIBTORCH_STATIC_INSTALL_DIR}/lib/libtorch.a")
-#     ExternalProject_Add(
-#     pytorch
-#     GIT_REPOSITORY      https://github.com/pytorch/pytorch.git
-#     GIT_TAG             v2.6.0                # Example: specify a particular release
-#     UPDATE_COMMAND      ""                     # Don’t auto-run 'git pull'
-#     PATCH_COMMAND       ""                     # No custom patch step
-    
-#     # DOWNLOAD_DIR         "${CMAKE_BINARY_DIR}/pytorch-download" # Where to download the repo
-
-#     # We need all PyTorch submodules. By default, ExternalProject won't do submodule init.
-#     # So we can do that in a separate step if we want a full build. For a minimal CPU build,
-#     # you might not need them all, but let's be safe:
-#     STEP_TARGETS        clone
-#     # After 'clone', run "git submodule update --init --recursive"
-#     # to fetch all submodules.
-#     # We can use a little trick with COMMAND.
-#     #   PATCH_COMMAND       "git submodule update --init --recursive"
-
-#     # CMAKE_ARGS
-#     #     -DBUILD_SHARED_LIBS=OFF              # Build static libraries
-#     #     -DBUILD_PYTHON=OFF                   # Don’t build Python bindings
-#     #     -DBUILD_TEST=OFF                     # Don’t build tests
-#     #     -DUSE_CUDA=OFF                       # Disable CUDA
-#     #     -DUSE_CUDNN=OFF                      # Disable cuDNN
-#     #     -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
-#     #     # -DBUILD_BINARY=ON
-#     #     # -DUSE_DISTRIBUTED=ON
-#     #     # -DBUILD_STATIC_RUNTIME_BENCHMARK=ON
-#     #     # -DBUILD_LITE_INTERPRETER=ON
-#     #     # -DUSE_STATIC_MKL=ON
-#     #     # -DSTATIC_DISPATCH_BACKEND=ON
-#     #     # -DCAFFE2_USE_MSVC_STATIC_RUNTIME=ON
-#     #     # -DUSE_DISTRIBUTED=ON
-#     #     # -DCMAKE_BUILD_TYPE=Release
-#     #     -DCMAKE_INSTALL_PREFIX=${PYTORCH_INSTALL_DIR}
-#     #     # -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-#         CMAKE_ARGS
-#             -DBUILD_SHARED_LIBS=OFF              # Build static libraries
-#             -DBUILD_PYTHON=OFF                   # Don’t build Python bindings
-#             -DBUILD_TEST=OFF                     # Don’t build tests
-#             -DUSE_CUDA=OFF                       # Disable CUDA
-#             -DUSE_CUDNN=OFF                      # Disable cuDNN
-#             -DUSE_MKLDNN=OFF                     # Disable MKLDNN for simplicity
-#             -DCMAKE_BUILD_TYPE=Release
-#             # -DSTATIC_DISPATCH_BACKEND=ON
-#             -DCMAKE_INSTALL_PREFIX=${LIBTORCH_STATIC_INSTALL_DIR}
-#             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-        
-#     INSTALL_DIR         ${LIBTORCH_STATIC_INSTALL_DIR} # Where to install
-#     )
-# endif()
+cmake_print_variables(TORCH_LIBRARIES)
+cmake_print_variables(TORCH_INCLUDE_DIRS)
+cmake_print_variables(TORCH_INSTALL_PREFIX)
+cmake_print_variables(TORCH_CXX_FLAGS)
+cmake_print_variables(TORCH_LIBRARY)
 
 
 file(GLOB CHAI_LIB_FILES "${PROJECT_ROOT_DIR}/lib/*.chpl")
@@ -156,9 +106,20 @@ function(watch)
 endfunction()
 
 
+
 # cmake_print_variables(CHAI_LIB_FILES)
 
-add_library(bridge STATIC ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
+add_library(bridge OBJECT ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
+
+target_link_libraries(
+    bridge
+    PRIVATE
+    ${TORCH_LIBRARIES}
+    # ${LIBTORCH_DIR}/lib/libtorch.so
+    # ${LIBTORCH_DIR}/lib/libtorch_cpu.so
+    # ${LIBTORCH_DIR}/lib/libc10.so
+    # ${LIBTORCH_DIR}/lib/libtorch_global_deps.so
+)
 
 target_include_directories(
     bridge
@@ -166,8 +127,9 @@ target_include_directories(
     ${BRIDGE_DIR}/include
     ${LIBTORCH_DIR}/include
     ${LIBTORCH_DIR}/include/torch/csrc/api/include
-    ${BRIDGE_DIR}/util
+    # ${BRIDGE_DIR}/util
 )
+
 
 set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
@@ -218,9 +180,9 @@ cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
 
 set(LIBTORCH_LIBS_LINKER_ARGS 
     "-ltorch"
-    "-ltorch_cpu"
-    "-lc10"
-    "-ltorch_global_deps"
+    # "-ltorch_cpu"
+    # "-lc10"
+    # "-ltorch_global_deps"
 )
 cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
 
@@ -306,7 +268,7 @@ add_custom_command(
 
 # ./vgg images/frog.jpg
 
-add_subdirectory(bridge)
+# add_subdirectory(bridge)
 
 add_subdirectory(examples)
 add_subdirectory("test")

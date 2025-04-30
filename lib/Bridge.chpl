@@ -1,5 +1,6 @@
 module Bridge {
     // require "bridge.h";
+    // require "-ltorch";
     require "-ltorch", "-ltorch_cpu", "-lc10", "-ltorch_global_deps";
 
     import Utilities as util;

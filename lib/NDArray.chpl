@@ -1994,6 +1994,7 @@ proc type ndarray.matvecmul_torch(
 proc type ndarray.mmOutputRank(param aRank: int, param bRank: int) param : int {
     if aRank == 1 && bRank == 1 then return 1;
     if aRank == 2 && bRank == 1 then return 1;
+    if aRank == 2 && bRank == 2 then return 2;
     if aRank == 3 && bRank == 1 then return 2;
     if aRank == 3 && bRank == 3 then return 3;
     if aRank == 3 && bRank == 2 then return 3;
@@ -2007,11 +2008,11 @@ proc type ndarray.mmInputRanksValid(param aRank: int, param bRank: int) param : 
 proc type ndarray.matmul(
     a: ndarray(?aRank,?eltType),
     b: ndarray(?bRank,eltType)
-): ndarray(mmOutputRank(aRank,bRank),eltType) {
+) where ndarray.mmInputRanksValid(aRank,bRank) {
     return Bridge.matmul(
         a : Bridge.tensorHandle(eltType),
         b : Bridge.tensorHandle(eltType)
-    ): ndarray(mmOutputRank(aRank,bRank),eltType);
+    ): ndarray(ndarray.mmOutputRank(aRank,bRank),eltType);
 }
 
 proc type ndarray.matvecmul(mat: ndarray(2,?eltType),vec: ndarray(1,eltType)): ndarray(1,eltType) {

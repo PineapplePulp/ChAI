@@ -2,6 +2,16 @@ use Tensor;
 
 
 proc main() {
-    var a = ndarray.arange(1, 10);
+    writeln("Hello, world!");
+
+    var a = ndarray.arange(3, 3);
     writeln("a: ", a);
+
+    var b = ndarray.arange(3, 3);
+    writeln("b: ", b);
+
+    var c = ndarray.matmul(a, b);
+    writeln("c: ", c);
+
+
 }

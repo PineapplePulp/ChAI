@@ -180,7 +180,7 @@ extern "C" bridge_tensor_t conv2d(
 extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     auto t_a = bridge_to_torch(a);
     auto t_b = bridge_to_torch(b);
-    auto output = torch::matmul(t_a, t_b);
+    auto output = at::matmul(t_a, t_b);
 
     // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
     // std::cout << "Input B shape: " << t_b.sizes() << std::endl;

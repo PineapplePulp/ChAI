@@ -29,7 +29,23 @@ root@chai-vm:/app/demos/torchtest/build# ./MyProject
 Input: [1, 3, 10, 10]
 Output: [1, 3, 10, 10]
 ```
-
+OR
+```bash
+root@chai-vm:/app# cd build
+root@chai-vm:/app/build# cmake -DCMAKE_BUILD_TYPE=Release ..
+root@chai-vm:/app/build# make -j2
+root@chai-vm:/app/build# ./MyExample
+...
+root@chai-vm:/app/build# ./examples/torch_model_loading/TorchLoad images/dog.jpg
+Read file: /app/build/images/dog.jpg with ext: jpg
+Resized image: (3, 224, 224)
+Read file: /app/build/images/dog.jpg with ext: jpg
+Batched image: (1, 3, 734, 1100)
+Batched image resized: (1, 3, 734, 1100)
+Squeezed image: (3, 734, 1100)
+root@chai-vm:/app/build# ./vgg images/frog.jpg
+ # no pytorch installed, and no weights preprocessed. 
+```
 
 
 

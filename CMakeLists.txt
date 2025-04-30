@@ -29,7 +29,7 @@ if(APPLE)
     set(CMAKE_C_COMPILER "/usr/bin/clang")
     set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 endif()
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 
 
 include(LibTorchDL)
@@ -137,7 +137,7 @@ set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
 
 file(GLOB LIBTORCH_ALL_LIB_FILES 
-    "${LIBTORCH_DIR}/lib/*.a" 
+    # "${LIBTORCH_DIR}/lib/*.a" 
     "${LIBTORCH_DIR}/lib/*.dylib" 
     "${LIBTORCH_DIR}/lib/*.so")
 
@@ -152,7 +152,6 @@ set(REQUIRED_LIBS
     "libtorch"
     "libtorch_cpu"
     "libc10"
-    "libtorch_global_deps"
 )
 
 set(DISALLOWED_LIBS

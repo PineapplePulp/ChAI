@@ -7,6 +7,9 @@
 extern "C" {
 #endif
 
+#define proto_bridge_simple(Name) \
+    bridge_tensor_t Name(bridge_tensor_t input)
+
 typedef float float32_t;
 typedef double float64_t;
 typedef char bool_t;
@@ -76,6 +79,28 @@ bridge_tensor_t max_pool2d(
     int padding,
     int dilation
 );
+
+proto_bridge_simple(relu);
+
+proto_bridge_simple(relu6);
+
+proto_bridge_simple(gelu);
+
+proto_bridge_simple(logsigmoid);
+
+proto_bridge_simple(mish);
+
+proto_bridge_simple(selu);
+
+proto_bridge_simple(silu);
+
+proto_bridge_simple(softmax);
+
+proto_bridge_simple(softmin);
+
+proto_bridge_simple(softsign);
+
+proto_bridge_simple(tanhshrink);
 
 
 // bridge_tensor_t conv2d(

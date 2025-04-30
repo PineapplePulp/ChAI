@@ -14,7 +14,12 @@
 #include <vector>
 #include <cstdint>
 
-
+#define def_bridge_simple(Name) \
+    extern "C" bridge_tensor_t Name(bridge_tensor_t input) { \
+        auto t_input = bridge_to_torch(input); \
+        auto t_output = torch::Name(t_input); \
+        return torch_to_bridge(t_output); \
+    }
 
 
 
@@ -55,18 +60,6 @@ torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     auto shape = torch::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 extern "C" float32_t* unsafe(const float32_t* arr) {
     return const_cast<float32_t*>(arr);
@@ -132,15 +125,6 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
     std::cout << "Model output: " << output.sizes() << std::endl;
     return torch_to_bridge(output);
 }
-
-
-
-
-
-
-
-
-
 
 extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
     auto t = bridge_to_torch(arr);

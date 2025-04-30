@@ -41,7 +41,7 @@ bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
     bridge_tensor_t result;
     result.created_by_c = true;
     result.dim = tensor.dim();
-    result.sizes = new int[result.dim];
+    result.sizes = new int32_t[result.dim];
     for (int i = 0; i < result.dim; ++i) {
         result.sizes[i] = tensor.size(i);
     }
@@ -182,9 +182,9 @@ extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     auto t_a = bridge_to_torch(a);
     auto t_b = bridge_to_torch(b);
 
-    std::cout << "Input A shape: " << t_a.sizes() << std::endl;
-    std::cout << "Input B shape: " << t_b.sizes() << std::endl;
-    std::cout.flush();
+    // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
+    // std::cout << "Input B shape: " << t_b.sizes() << std::endl;
+    // std::cout.flush();
 
     auto output = torch::matmul(t_a, t_b);
 
@@ -193,12 +193,23 @@ extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     // std::cout << "Input A: " << t_a.sum() << std::endl;
     // std::cout << "Input B: " << t_b.sum() << std::endl;
     // // std::cout << "Input B: " << t_b << std::endl;
-    std::cout << "Output shape: " << output.sizes() << std::endl;
-    std::cout << "Output sum: " << output.sum() << std::endl;
-    std::cout.flush();
+    // std::cout << "Output shape: " << output.sizes() << std::endl;
+    // std::cout << "Output sum: " << output.sum() << std::endl;
+    // std::cout.flush();
     // printf("Hello from matmul!\n");
-
     return torch_to_bridge(output);
+
+    // auto output_copy = output.clone();
+    // std::cout << "Output copy shape: " << output_copy.sizes() << std::endl;
+    // std::cout.flush();
+
+    // auto bt = torch_to_bridge(output_copy);
+    // std::cout << "Bridge tensor sizes: " << bt.sizes << std::endl;
+    // std::cout << "Bridge tensor dim: " << bt.dim << std::endl;
+
+    // std::cout.flush();
+
+    // return bt;
 }
 
 extern "C" bridge_tensor_t max_pool2d(

@@ -54,6 +54,12 @@ COPY . /app
 
 RUN ls
 
+RUN cd /app \
+    && mkdir -p build \
+    && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=Debug .. \
+    && make MyExample
+
 # RUN mkdir build \
 #     && cd build \
 #     && cmake -DCMAKE_BUILD_TYPE=Debug .. \

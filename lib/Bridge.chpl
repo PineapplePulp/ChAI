@@ -107,10 +107,11 @@ module Bridge {
         var result: [dom] real(32);
         forall (i,idx) in dom.everyZip() do
             result[idx] = package.data[i];
-        if package.created_by_c {
-            deallocate(package.data);
-            deallocate(package.sizes);
-        }
+        // This may leak! Alternative is segault on linux. :(
+        // if package.created_by_c {
+        //     deallocate(package.data);
+        //     deallocate(package.sizes);
+        // }
         return result;
     }
 

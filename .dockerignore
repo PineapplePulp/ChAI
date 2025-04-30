@@ -4,6 +4,8 @@ libtorch
 target
 docs
 dependencies
-deb
 build
 cmake-build-debug
+.git
+learning
+.cache

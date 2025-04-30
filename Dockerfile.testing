@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 
 # RUN apt update > /dev/null && apt install -y apt-utils && apt upgrade -y > /dev/null
@@ -11,7 +11,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt upgrade -y > /dev/null && \
     apt install -y apt-utils > /dev/null && \
     apt install -y python3-pip > /dev/null && \
-    (apt install -y ./chapel-2.3.0-1.ubuntu22.arm64.deb > /dev/null) || (apt install -y ./chapel-2.3.0-1.ubuntu22.amd64.deb > /dev/null)
+    (apt install -y ./chapel-2.4.0-1.ubuntu25.arm64.deb > /dev/null) || (apt install -y ./chapel-2.4.0-1.ubuntu25.amd64.deb > /dev/null)
 
 
 

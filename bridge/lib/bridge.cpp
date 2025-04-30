@@ -120,7 +120,7 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
     catch (const c10::Error& e)
     {
         std::cerr << "error loading the model\n" << e.msg();
-        std::system("pause");
+        // std::system("pause");
     }
 
     std::vector<torch::jit::IValue> inputs;

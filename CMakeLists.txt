@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # project(MyProject LANGUAGES CXX)
 
 include(CMakePrintHelpers)
@@ -152,6 +152,7 @@ function(watch)
     )
 endfunction()
 
+
 # cmake_print_variables(CHAI_LIB_FILES)
 
 add_library(bridge STATIC ${BRIDGE_DIR}/include/bridge.h ${BRIDGE_DIR}/lib/bridge.cpp)
@@ -186,7 +187,7 @@ set(REQUIRED_LIBS
     "libtorch"
     "libtorch_cpu"
     "libc10"
-    # "libtorch_global_deps"
+    "libtorch_global_deps"
 )
 
 set(DISALLOWED_LIBS
@@ -218,6 +219,8 @@ set(LIBTORCH_LIBS_LINKER_ARGS
     "-lc10"
     "-ltorch_global_deps"
 )
+cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
+
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)

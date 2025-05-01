@@ -5,7 +5,7 @@
 #include <chrono>
 #include <utility>
 
-#include <cvtool.hpp>
+#include "cvtool.hpp"
 #include "imageops.hpp"
 
 
@@ -54,8 +54,8 @@ struct Model : torch::nn::Module {
     }
     // auto output = x + r;
     auto input = x;
-    // auto output = imageops::sobel_rgb(input);
-    auto output = imagenet_normalize_tensor(input);
+    auto output = imageops::sobel_rgb(input);
+    // auto output = imagenet_normalize_tensor(input);
     return output;
   }
 

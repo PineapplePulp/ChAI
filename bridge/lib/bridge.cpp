@@ -264,6 +264,16 @@ extern "C" bridge_tensor_t imagenet_normalize(bridge_tensor_t input) {
     return torch_to_bridge(output);
 }
 
+
+extern "C" bridge_tensor_t add_two_arrays(bridge_tensor_t a, bridge_tensor_t b) {
+    torch::Tensor t_a = bridge_to_torch(a);
+    torch::Tensor t_b = bridge_to_torch(b);
+
+    torch::Tensor output = t_a + t_b;
+
+    return torch_to_bridge(output);
+}
+
 // extern "C" bridge_tensor_t capture_webcam_bridge(int cam_index) {
 //     torch::Tensor image = capture_webcam(cam_index);
 //     return torch_to_bridge(image);

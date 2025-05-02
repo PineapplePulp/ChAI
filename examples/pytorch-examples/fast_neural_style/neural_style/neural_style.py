@@ -179,10 +179,14 @@ def stylize(args):
                     style_model, content_image, args.export_onnx, opset_version=11,
                 ).cpu()            
             else:
+                print('Content image shape:', content_image.shape)
                 output = style_model(content_image).cpu()
+
+            utils.save_image(args.output_image, output[0])
             from pathlib import Path
             model_name = Path(args.model).stem
-            torch.save(style_model.state_dict(), model_name)
+            sm = torch.jit.script(style_model)
+            sm.save(f"models/{model_name}.pt")
 
     utils.save_image(args.output_image, output[0])
 

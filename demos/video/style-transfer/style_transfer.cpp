@@ -14,7 +14,7 @@
 
 int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, bool is_video_loop, std::string vid_path);
 
-static torch::Device default_device_st = torch::Device(torch::kCPU);
+static torch::Device default_device_st = torch::Device(torch::kMPS);
 
 
 torch::jit::Module load_model(const std::string& model_path) {
@@ -48,6 +48,23 @@ torch::Tensor preprocess_input(const torch::Tensor& input) {
 }
 
 torch::Tensor run_model(torch::jit::Module& module, const torch::Tensor& input) {
+
+    auto input_dtype = input.dtype();
+    std::cout.flush();
+    std::cout << "Input dtype: " << input.dtype() << std::endl;
+    std::cout << "Input sizes: " << input.sizes() << std::endl;
+    std::cout << "Input device: " << input.device() << std::endl;
+    std::cout.flush();
+    std::system("pause");
+
+    // auto model_dtype = module.dtype();
+    // std::cout << "Module: " << module << std::endl;
+
+
+    module.to(torch::kMPS);
+    module.eval();
+
+
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(input);
 
@@ -80,7 +97,7 @@ int main() {
 
     // default_device = default_device_st;
 
-    std::string model_path = "style-transfer/models/mosaic.pt";
+    std::string model_path = "style-transfer/models/mosaic_float32.pt";
     torch::jit::Module module = load_model(model_path);
     torch::Tensor input = torch::randn({1, 3, 1428, 1904}, device);
     torch::Tensor output = run_model(module, input);

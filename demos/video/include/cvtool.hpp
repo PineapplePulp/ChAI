@@ -28,6 +28,14 @@ namespace cvtool {
         }
         return default_device;
     }
+
+    bool can_get_default_device() {
+        return default_device_set || !torch::mps::is_available();
+    }
+
+    torch::Device get_host_device() {
+        return torch::Device(torch::kCPU);
+    }
 }
 
 static torch::Device default_device(torch::kCPU);
@@ -92,11 +100,46 @@ std::shared_ptr<at::Tensor> create_frame_buffer_tensor(int height,int width,torc
 }
 
 at::Tensor to_tensor(cv::Mat &img) {
+
+
     auto t = torch::from_blob(img.data, {1, img.rows, img.cols, 3}, torch::kUInt8).clone();
     t = t.to(default_device);
     t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
     return t;//.to(default_device,true);
 }
+
+//--------------------------------------------------------------------
+// • img : any H×W×C OpenCV matrix (CV_8U, CV_32F, CV_16F …, planar or packed)
+// • device : torch::kCUDA, torch::kMPS or torch::kCPU (default = current CUDA if available)
+//--------------------------------------------------------------------
+at::Tensor to_tensor_(const cv::Mat& img, torch::Device device = get_default_device())
+{
+    // 1. Make sure the source data are contiguous
+    cv::Mat contiguous = img.isContinuous() ? img : img.clone();
+
+    // 2. Convert pixel type to 32‑bit float in [0,1] so we keep enough
+    //    head‑room for the later FP16 cast.  (OpenCV has only limited
+    //    native FP16 support, so converting to CV_32F first is usually
+    //    safer and portable.)
+    cv::Mat float32;
+    contiguous.convertTo(float32, CV_32F, 1.0 / 255.0);   // scale if img was CV_8U
+
+    // 3. Wrap the OpenCV buffer with a *view* tensor (no copy yet).
+    auto tmp = torch::from_blob(
+                  float32.data,                             // raw pointer
+                  {float32.rows, float32.cols, float32.channels()},
+                  torch::TensorOptions().dtype(torch::kFloat32));
+
+    // 4. Re‑arrange to CHW, move to wanted device, cast to FP16 *and* copy
+    //    so that the returned tensor owns its storage (clone() is mandatory).
+    auto t = tmp.permute({2, 0, 1})                        // HWC → CHW
+                 .to(device, /*dtype=*/torch::kFloat16,
+                     /*non_blocking=*/true, /*copy=*/true) // copy = true ⇒ owns memory
+                 .clone();                                 // guarantees ownership
+
+    return t; //  C×H×W, float16, on CUDA / MPS / CPU
+}
+
 
 cv::Mat to_mat(at::Tensor &tensor) {
     // Ensure the tensor is on the CPU and not on the GPU

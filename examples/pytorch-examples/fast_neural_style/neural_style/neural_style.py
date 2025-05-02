@@ -185,8 +185,9 @@ def stylize(args):
             utils.save_image(args.output_image, output[0])
             from pathlib import Path
             model_name = Path(args.model).stem
-            sm = torch.jit.script(style_model)
-            sm.save(f"models/{model_name}.pt")
+
+            sm = torch.jit.script(style_model.to(torch.float32))
+            sm.save(f"models/{model_name}_float32.pt")
 
             sm = torch.jit.script(style_model.to(torch.float16))
             sm.save(f"models/{model_name}_float16.pt")

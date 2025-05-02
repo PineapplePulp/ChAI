@@ -167,6 +167,7 @@ cv::Mat to_mat(at::Tensor &tensor) {
                 .to(torch::kUInt8)
                 // .clamp(0, 255)
                 .clone()
+                // .to(cvtool::get_default_device(), /*non_blocking=*/true, /*copy=*/true)
                 .to(torch::kCPU);
     cv::Mat mat = cv::Mat(height, width, CV_8UC3, t.data_ptr());
     return mat;

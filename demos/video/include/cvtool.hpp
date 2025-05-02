@@ -108,6 +108,13 @@ at::Tensor to_tensor(cv::Mat &img) {
     return t;//.to(default_device,true);
 }
 
+// at::Tensor to_tensor(cv::Mat &img, torch::Device device = cvtool::get_default_device()) {
+//     auto img_t = torch::from_blob(img.data, {1, img.rows, img.cols, 3}, torch::kUInt8);
+//     auto t = img_t.clone().to(device);
+//     t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
+//     return t;//.to(default_device,true);
+// }
+
 //--------------------------------------------------------------------
 // • img : any H×W×C OpenCV matrix (CV_8U, CV_32F, CV_16F …, planar or packed)
 // • device : torch::kCUDA, torch::kMPS or torch::kCPU (default = current CUDA if available)

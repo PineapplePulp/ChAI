@@ -83,6 +83,10 @@ module Bridge {
     extern "imagenet_normalize" proc imageNetNormalize(
         in input: bridge_tensor_t): bridge_tensor_t;
 
+    extern "add_two_arrays" proc addTwoArrays(
+        in a: bridge_tensor_t, 
+        in b: bridge_tensor_t): bridge_tensor_t;
+
     // extern "capture_webcam_bridge" proc captureWebcam(
     //     in cam_index: int(32)): bridge_tensor_t;
 

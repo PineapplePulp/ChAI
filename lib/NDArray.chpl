@@ -1881,6 +1881,13 @@ proc type ndarray.maxPool2d(
     ) : ndarray(inputRank,eltType);
 }
 
+proc type ndarray.addTwoArrays(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType)): ndarray(rank,eltType) {
+    return Bridge.addTwoArrays(
+        a : Bridge.tensorHandle(eltType),
+        b : Bridge.tensorHandle(eltType)
+    ) : ndarray(rank,eltType);
+}
+
 
 proc type ndarray.maxPool(features: ndarray(3, ?eltType), poolSize: int) do
     return this.maxPool(features,poolSize,poolSize);

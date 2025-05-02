@@ -188,6 +188,9 @@ def stylize(args):
             sm = torch.jit.script(style_model)
             sm.save(f"models/{model_name}.pt")
 
+            sm = torch.jit.script(style_model.to(torch.float16))
+            sm.save(f"models/{model_name}_float16.pt")
+
     utils.save_image(args.output_image, output[0])
 
 

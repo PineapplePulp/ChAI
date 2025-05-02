@@ -8,6 +8,28 @@
 #include <utility>
 
 
+namespace cvtool {
+    static torch::Device default_device(torch::kCPU);
+    static bool default_device_set = false;
+    static torch::Device set_default_device(torch::Device device) {
+        default_device = device;
+        default_device_set = true;
+        return default_device;
+    }
+    torch::Device get_default_device() {
+        if (!default_device_set) {
+            if (torch::mps::is_available()) {
+                std::cout << "[INFO] Running on MPS" << std::endl;
+                default_device = torch::Device(torch::kMPS);
+            } else {
+                std::cout << "[INFO] MPS not available, falling back to CPU" << std::endl;
+                default_device = torch::Device(torch::kCPU);
+            }
+        }
+        return default_device;
+    }
+}
+
 static torch::Device default_device(torch::kCPU);
 torch::Device get_default_device();
 
@@ -114,8 +136,8 @@ cv::Mat to_mat(at::Tensor &tensor) {
 
 torch::Device get_default_device() {
     if (torch::mps::is_available()) {
-        // default_device = torch::Device(torch::kMPS);
         std::cout << "[INFO] Running on MPS" << std::endl;
+        default_device = torch::Device(torch::kMPS);
     } else {
         std::cout << "[INFO] MPS not available, falling back to CPU" << std::endl;
     }

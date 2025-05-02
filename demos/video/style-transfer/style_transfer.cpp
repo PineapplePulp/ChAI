@@ -26,7 +26,8 @@ torch::jit::Module load_model(const std::string& model_path) {
         std::cout << "Model loaded successfully." << std::endl;
 
         std::cout << "Moving model to device..." << std::endl;
-        module.to(default_device_st);
+        auto device = cvtool::get_default_device();
+        module.to(device);
         std::cout << "Model moved to device." << std::endl;
 
     } catch (const c10::Error& e) {
@@ -50,9 +51,9 @@ torch::Tensor run_model(torch::jit::Module& module, const torch::Tensor& input) 
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(input);
 
-    std::cout << "Input tensor: " << input.sizes() << std::endl;
+    // std::cout << "Input tensor: " << input.sizes() << std::endl;
     auto output = module.forward(inputs).toTensor();
-    std::cout << "Model output: " << output.sizes() << std::endl;
+    // std::cout << "Model output: " << output.sizes() << std::endl;
     return output;
 }
 
@@ -71,14 +72,17 @@ int main() {
         std::cout << "MPS is available and set as the default device." << std::endl;
     } else {
         default_device_st = torch::Device(torch::kCPU);
-        std::cout << "MPS is not available. Using CPU instead." << std::endl;
+        std::cout << "MPS is not available. Using CPU instead. " << std::endl;
     }
+    cvtool::set_default_device(default_device_st);
+
+    auto device = cvtool::get_default_device();
 
     // default_device = default_device_st;
 
     std::string model_path = "style-transfer/models/mosaic.pt";
     torch::jit::Module module = load_model(model_path);
-    torch::Tensor input = torch::randn({1, 3, 1428, 1904}, default_device_st);
+    torch::Tensor input = torch::randn({1, 3, 1428, 1904}, device);
     torch::Tensor output = run_model(module, input);
 
     // Print the output tensor
@@ -90,7 +94,7 @@ int main() {
 
 int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, bool is_video_loop, std::string vid_path = "") {
 
-    torch::Device device = default_device_st;
+    torch::Device device = cvtool::get_default_device();
 
     module.eval();
     module.to(device);
@@ -104,31 +108,13 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
         cap = open_camera(cam_index);
     }
 
-
-    // 4. Pre‑allocate tensor to avoid dynamic allocations
-    // int width  = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
-    // int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
     auto camera_resolution = get_camera_resolution(cap);
     int height = std::get<0>(camera_resolution);
     int width  = std::get<1>(camera_resolution);
 
 
-
-    // // NHWC float32 frame buffer (1, H, W, 3)
-    // auto options_cpu  = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
-    // torch::Tensor frame_tensor_cpu  = torch::empty({1, height, width, 3}, options_cpu);
-
-    // // MPS device tensor gets created lazily (to avoid copies when MPS unavailable)
-    // torch::Tensor frame_tensor_device;
-    // if (device.is_mps()) {
-    //   frame_tensor_device = frame_tensor_cpu.to(device, /*non_blocking=*/true);
-    // }
-
-    // auto frame_tensor_device = create_frame_buffer_tensor(height, width, device);
-
     cv::Mat frame_bgr;
     cv::Mat output_bgr;
-    // cv::Mat frame_rgb(height, width, CV_32FC3, frame_tensor_device->data_ptr());
 
     const auto to_mps = [&](torch::Tensor& t){ return device.is_mps() ? t.to(device, /*non_blocking=*/true) : t; };
 
@@ -162,26 +148,22 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
         ++frame_count;
         const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
         auto delta = now - last_update;
-        // std::chrono::milliseconds delta_millis = std::chrono::duration_cast<std::chrono::microseconds>(delta);
         double delta_time = std::chrono::duration_cast<std::chrono::duration<double>>(delta).count();
         auto fps = 1.0 / delta_time;
         std::cout << "\r[INFO] FPS: " << fps << " fps" << std::flush;
-
-        // Display (optional)
-
         double sleep_time = (1.0 / ((double)max_fps)) - delta_time;
-        
         std::this_thread::sleep_for(std::chrono::duration<double>(sleep_time));
 
 
-        auto input_tensor = to_tensor(frame_bgr).clone();
-        auto mps_tensor = input_tensor.to(torch::kMPS,true).clone();
+
+        auto input_tensor = to_tensor(frame_bgr);
+        auto mps_tensor = input_tensor.to(device,true);
 
         auto prepped_input = preprocess_input(mps_tensor);
 
         // Forward pass
-        auto output = run_model(module, prepped_input).clone();
-        auto processed_output = output.to(torch::kCPU,true).clone();
+        auto output = run_model(module, prepped_input);
+        auto processed_output = output.to(torch::kCPU,true);
 
         output_bgr = to_mat(processed_output);
 

@@ -201,16 +201,21 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
             auto prepped_input = preprocess_input(mps_tensor);
             std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
             std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
-
-            auto output = prepped_input;
+            
+            auto output_tensor = prepped_input;
+            auto output = output_tensor;
             auto processed_output = output.to(torch::kCPU,true);
 
             // output_bgr = to_mat(processed_output);
 
             cv::Mat output_rgb = to_mat(processed_output);
             // output_bgr = output_rgb;
-            cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
             // cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
+            // cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
+
+
+            cv::cvtColor(frame_rgb, output_bgr, cv::COLOR_RGB2BGR);
+
 
 
         } else {

@@ -214,9 +214,15 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
             // cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
 
             // working?
-            auto out_mps_tensor = mps_tensor.to(torch::kCPU,true);
-            frame_rgb = to_mat(out_mps_tensor);
+            auto processed_input = prepped_input;
+            auto out_processed_input = processed_input.to(torch::kCPU,true);
+            frame_rgb = to_mat(out_processed_input);
             cv::cvtColor(frame_rgb, output_bgr, cv::COLOR_RGB2BGR); 
+
+            // works
+            // auto out_mps_tensor = mps_tensor.to(torch::kCPU,true);
+            // frame_rgb = to_mat(out_mps_tensor);
+            // cv::cvtColor(frame_rgb, output_bgr, cv::COLOR_RGB2BGR); 
 
 
 

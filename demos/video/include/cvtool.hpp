@@ -38,6 +38,11 @@ namespace cvtool {
     }
 }
 
+// enum CVToColorPermutation {
+//     RGB_TO_BGR = cv::COLOR_RGB2BGR,
+//     BGR_TO_RGB = cv::COLOR_BGR2RGB,
+// };
+
 static torch::Device default_device(torch::kCPU);
 torch::Device get_default_device();
 
@@ -107,6 +112,20 @@ at::Tensor to_tensor(cv::Mat &img) {
     t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
     return t;//.to(default_device,true);
 }
+
+// at::Tensor to_tensor(cv::Mat &img, cv::ColorConversionCodes color_conversion = cv::COLOR_BGR2RGB) {
+//     auto t = torch::from_blob(img.data, {1, img.rows, img.cols, 3}, torch::kUInt8).clone();
+//     t = t.to(default_device);
+//     t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
+//     return t;//.to(default_device,true);
+// }
+
+// at::Tensor to_tensor(cv::Mat &img, cv::ColorConversionCodes color_conversion = cv::COLOR_BGR2RGB, device = ) {
+//     auto t = torch::from_blob(img.data, {1, img.rows, img.cols, 3}, torch::kUInt8).clone();
+//     t = t.to(default_device);
+//     t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
+//     return t;//.to(default_device,true);
+// }
 
 // at::Tensor to_tensor(cv::Mat &img, torch::Device device = cvtool::get_default_device()) {
 //     auto img_t = torch::from_blob(img.data, {1, img.rows, img.cols, 3}, torch::kUInt8);

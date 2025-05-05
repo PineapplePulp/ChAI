@@ -112,7 +112,7 @@ int main() {
     torch::jit::Module module = load_model(model_path);
 
     // module.to(torch::kFloat16);
-    torch::Tensor input = torch::randn({1, 3, 1428, 1904}, device);
+    torch::Tensor input = torch::randn({1, 3, 1080, 1920}, device);
     std::cout << "Input tensor: " << input.sizes() << std::endl;
     std::cout << "Input tensor dtype: " << input.dtype() << std::endl;
     std::cout << "Input tensor device: " << input.device() << std::endl;
@@ -191,17 +191,42 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
         std::this_thread::sleep_for(std::chrono::duration<double>(sleep_time));
 
 
+        bool skip = true;
+        if (skip) {
+            cv::Mat frame_rgb;
+            cv::cvtColor(frame_bgr, frame_rgb, cv::COLOR_BGR2RGB);
 
-        auto input_tensor = to_tensor(frame_bgr);
-        auto mps_tensor = input_tensor.to(device,true);
+            auto input_tensor = to_tensor(frame_rgb);
+            auto mps_tensor = input_tensor.to(device,true);
+            auto prepped_input = preprocess_input(mps_tensor);
+            std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
+            std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
 
-        auto prepped_input = preprocess_input(mps_tensor);
+            auto output = prepped_input;
+            auto processed_output = output.to(torch::kCPU,true);
 
-        // Forward pass
-        auto output = eval_model(module, prepped_input);
-        auto processed_output = output.to(torch::kCPU,true);
+            // output_bgr = to_mat(processed_output);
 
-        output_bgr = to_mat(processed_output);
+            cv::Mat output_rgb = to_mat(processed_output);
+            // output_bgr = output_rgb;
+            cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
+            // cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
+
+
+        } else {
+
+            auto input_tensor = to_tensor(frame_bgr);
+
+            auto mps_tensor = input_tensor.to(device,true);
+
+            auto prepped_input = preprocess_input(mps_tensor);
+
+            // Forward pass
+            auto output = eval_model(module, prepped_input);
+            auto processed_output = output.to(torch::kCPU,true);
+            
+            output_bgr = to_mat(processed_output);
+        }
 
         cv::imshow("webcam", output_bgr);
 

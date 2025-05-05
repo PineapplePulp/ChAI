@@ -89,7 +89,8 @@ torch::indexing::Slice slice() {
 }
 
 torch::Tensor test_channel(torch::Tensor& input) {
-    std::cout << "Input sizes: " << input.sizes() << std::endl;
+    std::cout << "Input device: " << input.device() << std::endl;
+
     int channel_to_disable = 0;
     // auto img = input.select(1, channel_to_disable).zero();  
     auto output = input.clone();

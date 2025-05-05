@@ -74,6 +74,16 @@ torch::Tensor run_model(torch::jit::Module& module, const torch::Tensor& input) 
     return output;
 }
 
+torch::Tensor eval_model(torch::jit::Module& module, const torch::Tensor& input) {
+    std::vector<torch::jit::IValue> inputs;
+    inputs.push_back(input);
+
+    // Forward pass
+    auto output = module.forward(inputs).toTensor();
+
+    return output;
+}
+
 
 
 int main() {
@@ -97,9 +107,18 @@ int main() {
 
     // default_device = default_device_st;
 
-    std::string model_path = "style-transfer/models/mosaic_float32.pt";
+    // std::string model_path = "style-transfer/models/mosaic_float32.pt";
+    std::string model_path = "style-transfer/models/sobel_float32.pt" ;
     torch::jit::Module module = load_model(model_path);
+
+    // module.to(torch::kFloat16);
     torch::Tensor input = torch::randn({1, 3, 1428, 1904}, device);
+    std::cout << "Input tensor: " << input.sizes() << std::endl;
+    std::cout << "Input tensor dtype: " << input.dtype() << std::endl;
+    std::cout << "Input tensor device: " << input.device() << std::endl;
+    // std::cout << "Model device: " << module.device() << std::endl;
+    // std::cout << "Model dtype: " << module.dtype() << std::endl;
+
     torch::Tensor output = run_model(module, input);
 
     // Print the output tensor
@@ -179,7 +198,7 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
         auto prepped_input = preprocess_input(mps_tensor);
 
         // Forward pass
-        auto output = run_model(module, prepped_input);
+        auto output = eval_model(module, prepped_input);
         auto processed_output = output.to(torch::kCPU,true);
 
         output_bgr = to_mat(processed_output);

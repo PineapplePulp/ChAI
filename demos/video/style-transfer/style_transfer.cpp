@@ -84,6 +84,20 @@ torch::Tensor eval_model(torch::jit::Module& module, const torch::Tensor& input)
     return output;
 }
 
+torch::indexing::Slice slice() {
+    return torch::indexing::Slice();
+}
+
+torch::Tensor test_channel(torch::Tensor& input) {
+    std::cout << "Input sizes: " << input.sizes() << std::endl;
+    int channel_to_disable = 0;
+    // auto img = input.select(1, channel_to_disable).zero();  
+    auto output = input.clone();
+    output.select(1, channel_to_disable).zero_();
+    // auto output = img;
+    return output;
+}
+
 
 
 int main() {
@@ -215,7 +229,7 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
 
 
             // working?
-            auto processed_input = prepped_input;
+            auto processed_input = test_channel(prepped_input);
             auto out_processed_input = processed_input.to(torch::kCPU,true);
             output_bgr = to_mat(out_processed_input, cv::COLOR_RGB2BGR);
 

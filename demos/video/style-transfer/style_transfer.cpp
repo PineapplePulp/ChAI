@@ -123,7 +123,7 @@ int main() {
     // default_device = default_device_st;
 
     // std::string model_path = "style-transfer/models/mosaic_float32.pt";
-    std::string model_path = "style-transfer/models/sobel_float32.pt" ;
+    std::string model_path = "style-transfer/models/sobel_edge_float32.pt" ;
     torch::jit::Module module = load_model(model_path);
 /*
     // module.to(torch::kFloat16);

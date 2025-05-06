@@ -55,8 +55,8 @@ def sobel_edges(rgb: torch.Tensor) -> torch.Tensor:
     # --- 1. Build Sobel kernels ------------------------------------------------
     sobel_x = torch.tensor([[-1., 0., 1.],
                             [-2., 0., 2.],
-                            [-1., 0., 1.]])
-    sobel_y = sobel_x.T                                 # transpose for vertical
+                            [-1., 0., 1.]],requires_grad=False).to('mps')
+    sobel_y = sobel_x.T
 
     # Each colour channel must be convolved with *its own* kernel.
     # We therefore use depth‑wise (grouped) convolution with groups=3.
@@ -115,6 +115,46 @@ def tensor_to_bgr(frame_tensor, *, undo_normalise=False, mean=None, std=None):
     img = np.ascontiguousarray(img)                  # ensure OpenCV‑happy
     return img
 
+
+class Sobel(torch.nn.Module):
+    def __init__(self):
+        super(Sobel, self).__init__()
+
+        # self.sobel_kernel = torch.nn.Parameter(sobel_kernel, requires_grad=False)
+        # self.sobel_cnn = torch.nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1, bias=False).to(torch.float16)
+        # self.sobel_cnn.weight = torch.nn.Parameter(sobel_kernel, requires_grad=False)
+
+    def forward(self, rgb):
+        # return self.sobel_cnn(x)
+        sobel_x = torch.tensor([[-1., 0., 1.],
+                            [-2., 0., 2.],
+                            [-1., 0., 1.]],requires_grad=False)
+        sobel_y = sobel_x.T
+
+        # Each colour channel must be convolved with *its own* kernel.
+        # We therefore use depth‑wise (grouped) convolution with groups=3.
+        # Weight shape for conv2d: (out_channels, in_channels/groups, kH, kW)
+        # Here:  out_channels = in_channels = 3   and   groups = 3
+        weight_x = sobel_x.expand(3, 1, 3, 3).to(rgb)       # (3,1,3,3)
+        weight_y = sobel_y.expand(3, 1, 3, 3).to(rgb)
+
+        # --- 2. Apply the 2D convolutions -----------------------------------------
+        # Kernel size is 3 ⇒ one‑pixel border is enough to keep size unchanged.
+        grad_x = F.conv2d(rgb, weight_x, padding=1, groups=3)
+        grad_y = F.conv2d(rgb, weight_y, padding=1, groups=3)
+
+        # --- 3. Edge magnitude per channel ----------------------------------------
+        # A small epsilon avoids a zero‑gradient sqrt warning.
+        edges = torch.sqrt(grad_x**2 + grad_y**2 + 1e-6)
+        return edges
+
+
+sobel = Sobel().to('mps').to(torch.float32)
+sm = torch.jit.script(sobel)
+sm.save("models/sobel_edge_float32.pt")
+
+sm = torch.jit.load("models/sobel_edge_float32.pt")
+
 while True:
     ret, frame_bgr = cam.read()
 
@@ -135,8 +175,8 @@ while True:
     tensor = tensor.unsqueeze(0)             # 1 x C x H x W
     tensor = tensor.to("mps", non_blocking=True)
 
-    output_tensor = sobel_edges(tensor)
-    print('input:',tensor.shape)
+    output_tensor = sm(tensor)
+    print('input:',tensor.shape,tensor.dtype)
     print('output:',output_tensor.shape)
 
 

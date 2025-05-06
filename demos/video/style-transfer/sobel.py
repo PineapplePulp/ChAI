@@ -146,6 +146,7 @@ class Sobel(torch.nn.Module):
         # --- 3. Edge magnitude per channel ----------------------------------------
         # A small epsilon avoids a zero‑gradient sqrt warning.
         edges = torch.sqrt(grad_x**2 + grad_y**2 + 1e-6)
+        # edges = grad_x + grad_y
         return edges
 
 

@@ -50,12 +50,12 @@ torch::Tensor preprocess_input(const torch::Tensor& input) {
 torch::Tensor run_model(torch::jit::Module& module, const torch::Tensor& input) {
 
     auto input_dtype = input.dtype();
-    std::cout.flush();
-    std::cout << "Input dtype: " << input.dtype() << std::endl;
-    std::cout << "Input sizes: " << input.sizes() << std::endl;
-    std::cout << "Input device: " << input.device() << std::endl;
-    std::cout.flush();
-    std::system("pause");
+    // std::cout.flush();
+    // std::cout << "Input dtype: " << input.dtype() << std::endl;
+    // std::cout << "Input sizes: " << input.sizes() << std::endl;
+    // std::cout << "Input device: " << input.device() << std::endl;
+    // std::cout.flush();
+    // std::system("pause");
 
     // auto model_dtype = module.dtype();
     // std::cout << "Module: " << module << std::endl;
@@ -143,35 +143,6 @@ int main() {
 
 }
 
-cv::Mat first_mat;
-bool is_set = false;
-int after_idx = 0;
-
-torch::Tensor sobel_dx = torch::tensor({{-1, 0, 1},
-    {-2, 0, 2},
-    {-1, 0, 1}}).to(torch::kFloat32);
-torch::Tensor sobel_dy = torch::tensor({{-1, -2, -1},
-    {0, 0, 0},
-    {1, 2, 1}}).to(torch::kFloat32);
-
-torch::Tensor sobel_kernel = torch::cat({sobel_dx, sobel_dy}, 0).unsqueeze(0).unsqueeze(0);
-
-torch::Tensor sobel_conv(const torch::Tensor input) {
-// Convert input to float32
-// input = input.to(torch::kFloat32);
-
-// // Apply Sobel filter
-// auto sobel_x = at::conv2d(input, sobel_kernel, /*bias=*/{}, /*stride=*/1, /*padding=*/1);
-// auto sobel_y = at::conv2d(input, sobel_kernel.transpose(0, 1), /*bias=*/{}, /*stride=*/1, /*padding=*/1);
-
-// // Compute magnitude
-// auto sobel_magnitude = torch::sqrt(sobel_x.pow(2) + sobel_y.pow(2));
-
-
-auto output = torch::conv2d(input, sobel_kernel, {},1,1);
-
-return output;
-}
 
 int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, bool is_video_loop, std::string vid_path = "") {
 
@@ -252,29 +223,7 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
             auto output = output_tensor;
             auto processed_output = output.to(torch::kCPU,true);
 
-            // output_bgr = to_mat(processed_output);
 
-            // cv::Mat output_rgb = to_mat(processed_output);
-            // output_bgr = output_rgb;
-            // cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
-            // cv::cvtColor(output_rgb, output_bgr, cv::COLOR_RGB2BGR);
-
-
-            // working?
-
-            // if (after_idx < 100) {
-            //     // auto model_output = eval_model(module, prepped_input);
-            //     // auto model_output = sobel_edge_detection(prepped_input);
-            //     at::Tensor model_output = sobel_conv(prepped_input.clone());
-            //     at::Tensor processed_input = model_output.clone();
-            //     at::Tensor out_processed_input = processed_input.to(torch::kCPU,true);
-            //     output_bgr = to_mat(out_processed_input, cv::COLOR_RGB2BGR);
-            //     first_mat = output_bgr.clone();
-            //     after_idx++;
-            // } else {
-            //     output_bgr = first_mat.clone();
-            // }
-            
             // // // works
             auto processed_input = run_model(module,prepped_input);
             auto out_processed_input = processed_input.to(torch::kCPU,true);

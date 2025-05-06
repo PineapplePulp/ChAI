@@ -1,0 +1,155 @@
+import cv2
+import torch
+import numpy as np
+
+# Open the default camera
+cam = cv2.VideoCapture(0)
+
+# Get the default frame width and height
+frame_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+# Define the codec and create VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+# out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (frame_width, frame_height))
+
+
+import torch.nn.functional as F
+
+
+# sobel_dx = torch.tensor([[-1, 0, 1],
+#                          [-2, 0, 2],
+#                          [-1, 0, 1]], dtype=torch.float32)
+
+# sobel_dy = torch.tensor([[-1, -2, -1],
+#                          [ 0,  0,  0],
+#                          [ 1,  2,  1]], dtype=torch.float32)
+
+# kernel = torch.cat([sobel_dx.unsqueeze(0), sobel_dy.unsqueeze(0)],0)   # [2,3,3]
+# kernel = kernel.unsqueeze(1).to('mps')  # [2,3,3,3]
+
+# # kernel = kernel.unsqueeze(1).repeat(1, 3, 1, 1).to('mps')  # [2,3,3,3]
+
+# def sobel_filter(img: torch.Tensor) -> torch.Tensor:
+#     """
+#     img: Nx3xHxW float32 in [0,1] or [0,255]
+#     returns: Nx2xHxW  (channel 0 = ∂I/∂x, channel 1 = ∂I/∂y)
+#     """
+#     return F.conv2d(img, kernel, padding=1)
+
+# def sobel_magnitude(img: torch.Tensor) -> torch.Tensor:
+#     g = sobel_filter(img)
+#     return (g ** 2).sum(1, keepdim=True).sqrt()
+
+
+def sobel_edges(rgb: torch.Tensor) -> torch.Tensor:
+    """
+    rgb : (N, 3, H, W) float tensor in the range [0, 1] or [-1, 1]
+          (any range is fine as long as it's float)
+    
+    Returns
+    -------
+    edges : (N, 3, H, W) tensor – per‑channel Sobel edge magnitude,
+            same H and W as the input (no cropping or padding artifacts).
+    """
+    # --- 1. Build Sobel kernels ------------------------------------------------
+    sobel_x = torch.tensor([[-1., 0., 1.],
+                            [-2., 0., 2.],
+                            [-1., 0., 1.]])
+    sobel_y = sobel_x.T                                 # transpose for vertical
+
+    # Each colour channel must be convolved with *its own* kernel.
+    # We therefore use depth‑wise (grouped) convolution with groups=3.
+    # Weight shape for conv2d: (out_channels, in_channels/groups, kH, kW)
+    # Here:  out_channels = in_channels = 3   and   groups = 3
+    weight_x = sobel_x.expand(3, 1, 3, 3).to(rgb)       # (3,1,3,3)
+    weight_y = sobel_y.expand(3, 1, 3, 3).to(rgb)
+
+    # --- 2. Apply the 2D convolutions -----------------------------------------
+    # Kernel size is 3 ⇒ one‑pixel border is enough to keep size unchanged.
+    grad_x = F.conv2d(rgb, weight_x, padding=1, groups=3)
+    grad_y = F.conv2d(rgb, weight_y, padding=1, groups=3)
+
+    # --- 3. Edge magnitude per channel ----------------------------------------
+    # A small epsilon avoids a zero‑gradient sqrt warning.
+    edges = torch.sqrt(grad_x**2 + grad_y**2 + 1e-6)
+
+    return edges
+
+
+def tensor_to_bgr(frame_tensor, *, undo_normalise=False, mean=None, std=None):
+    """
+    Args
+    ----
+    frame_tensor : torch.Tensor
+        (C,H,W) or (1,C,H,W)   ―  float or half   ―  RGB
+    undo_normalise : bool
+        True if you previously applied (x - mean) / std
+    mean, std : list/tuple of 3 floats
+        Same numbers you used for normalising (e.g. ImageNet)
+    Returns
+    -------
+    frame_bgr : np.ndarray   (H,W,3) uint8   BGR  contiguous
+    """
+    # 1) squeeze batch dimension if present
+    if frame_tensor.ndim == 4:
+        frame_tensor = frame_tensor[0]
+
+    # 2) move to CPU & float32 for math
+    img = frame_tensor.detach().cpu().float()
+
+    # 3) (optional) reverse mean/std normalisation
+    if undo_normalise:
+        if mean is None or std is None:
+            raise ValueError("Supply mean and std to undo normalisation")
+        mean = torch.tensor(mean).view(3,1,1)
+        std  = torch.tensor(std).view(3,1,1)
+        img = img * std + mean
+
+    # 4) scale back to 0‑255, clamp, uint8
+    img = (img * 255.0).clamp(0,255).byte()
+
+    # 5) channel‑last & numpy
+    img = img.permute(1,2,0).numpy()                 # H,W,C  RGB
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)       # → BGR
+    img = np.ascontiguousarray(img)                  # ensure OpenCV‑happy
+    return img
+
+while True:
+    ret, frame_bgr = cam.read()
+
+    # Write the frame to the output file
+    # out.write(frame)
+
+    frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+
+    # 3) Ensure the array is contiguous (torch needs it) -------------------------
+    frame_rgb = np.ascontiguousarray(frame_rgb)
+
+    # 4) numpy -> torch, move channels, scale, add batch if wanted --------------
+    tensor = torch.from_numpy(frame_rgb)     # H x W x C, uint8 → int tensor
+    tensor = tensor.permute(2, 0, 1)         # C x H x W
+    tensor = tensor.float().div(255.0)       # float32, [0,1]
+
+    # 5) (Optional) add a batch dim and push to GPU ------------------------------
+    tensor = tensor.unsqueeze(0)             # 1 x C x H x W
+    tensor = tensor.to("mps", non_blocking=True)
+
+    output_tensor = sobel_edges(tensor)
+    print('input:',tensor.shape)
+    print('output:',output_tensor.shape)
+
+
+    frame_bgr_out = tensor_to_bgr(output_tensor)
+
+    # Display the captured frame
+    cv2.imshow('Camera', frame_bgr_out)
+
+    # Press 'q' to exit the loop
+    if cv2.waitKey(1) == ord('q'):
+        break
+
+# Release the capture and writer objects
+cam.release()
+# out.release()
+cv2.destroyAllWindows()

@@ -107,7 +107,8 @@ std::shared_ptr<at::Tensor> create_frame_buffer_tensor(int height,int width,torc
 at::Tensor to_tensor(cv::Mat &img) {
 
 
-    auto t = torch::from_blob(img.data, {1, img.rows, img.cols, 3}, torch::kUInt8).clone();
+    cv::Mat frame = img.clone();
+    auto t = torch::from_blob(frame.data, {1, frame.rows, frame.cols, 3}, torch::kUInt8).clone();
     t = t.to(default_device);
     t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
     return t;//.to(default_device,true);
@@ -189,7 +190,7 @@ cv::Mat to_mat(at::Tensor &tensor) {
                 // .to(cvtool::get_default_device(), /*non_blocking=*/true, /*copy=*/true)
                 .to(torch::kCPU);
     cv::Mat mat = cv::Mat(height, width, CV_8UC3, t.data_ptr());
-    return mat;
+    return mat.clone();
 
 
 
@@ -223,7 +224,7 @@ cv::Mat to_mat(at::Tensor &tensor, cv::ColorConversionCodes color_conversion) {
     cv::Mat mat = cv::Mat(height, width, CV_8UC3, t.data_ptr());
     cv::Mat mat2;
     cv::cvtColor(mat, mat2, color_conversion);
-    return mat2;
+    return mat2.clone();
 }
 
 torch::Device get_default_device() {
@@ -347,3 +348,37 @@ at::Tensor capture_webcam(int cam_index) {
     auto tensor = to_tensor(frame);
     return tensor;
 }
+
+
+torch::Tensor sobel_edge_detection(torch::Tensor& input,torch::Device device = cvtool::get_default_device()) {
+    // // // Sobel edge detection
+    // auto sobel_x = torch::tensor({{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}, input.dtype()).view({1, 1, 3, 3});
+    // auto sobel_y = torch::tensor({{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}}, input.dtype()).view({1, 1, 3, 3});
+    // sobel_x.to(input.device());
+    // sobel_y.to(input.device());
+
+    // auto edges_x = torch::nn::functional::conv2d(input.unsqueeze(0), sobel_x);
+    // auto edges_y = torch::nn::functional::conv2d(input.unsqueeze(0), sobel_y);
+
+    // return (edges_x + edges_y).squeeze(0);
+
+
+    torch::Tensor sobel_dx = torch::tensor({{-1, 0, 1},
+                                            {-2, 0, 2},
+                                            {-1, 0, 1}}).to(input.dtype());
+    torch::Tensor sobel_dy = torch::tensor({{-1, -2, -1},
+                                            {0, 0, 0},
+                                            {1, 2, 1}}).to(input.dtype());
+    sobel_dx.to(input.device());
+    sobel_dy.to(input.device());
+
+
+    torch::Tensor sobel_kernel = torch::cat({sobel_dx, sobel_dy}, 0).unsqueeze(0).unsqueeze(0);
+    sobel_kernel.to(input.device());
+
+    return torch::conv2d(input, sobel_kernel, {}, 1, 1);
+}
+
+
+
+

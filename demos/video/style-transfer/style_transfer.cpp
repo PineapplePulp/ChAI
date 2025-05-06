@@ -125,7 +125,7 @@ int main() {
     // std::string model_path = "style-transfer/models/mosaic_float32.pt";
     std::string model_path = "style-transfer/models/sobel_float32.pt" ;
     torch::jit::Module module = load_model(model_path);
-
+/*
     // module.to(torch::kFloat16);
     torch::Tensor input = torch::randn({1, 3, 1080, 1920}, device);
     std::cout << "Input tensor: " << input.sizes() << std::endl;
@@ -138,9 +138,39 @@ int main() {
 
     // Print the output tensor
     std::cout << "Output tensor: " << output.sizes() << std::endl;
-
+*/
     return run_webcam_model(module, 0, 60, false, "");
 
+}
+
+cv::Mat first_mat;
+bool is_set = false;
+int after_idx = 0;
+
+torch::Tensor sobel_dx = torch::tensor({{-1, 0, 1},
+    {-2, 0, 2},
+    {-1, 0, 1}}).to(torch::kFloat32);
+torch::Tensor sobel_dy = torch::tensor({{-1, -2, -1},
+    {0, 0, 0},
+    {1, 2, 1}}).to(torch::kFloat32);
+
+torch::Tensor sobel_kernel = torch::cat({sobel_dx, sobel_dy}, 0).unsqueeze(0).unsqueeze(0);
+
+torch::Tensor sobel_conv(const torch::Tensor input) {
+// Convert input to float32
+// input = input.to(torch::kFloat32);
+
+// // Apply Sobel filter
+// auto sobel_x = at::conv2d(input, sobel_kernel, /*bias=*/{}, /*stride=*/1, /*padding=*/1);
+// auto sobel_y = at::conv2d(input, sobel_kernel.transpose(0, 1), /*bias=*/{}, /*stride=*/1, /*padding=*/1);
+
+// // Compute magnitude
+// auto sobel_magnitude = torch::sqrt(sobel_x.pow(2) + sobel_y.pow(2));
+
+
+auto output = torch::conv2d(input, sobel_kernel, {},1,1);
+
+return output;
 }
 
 int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, bool is_video_loop, std::string vid_path = "") {
@@ -206,6 +236,7 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
         std::this_thread::sleep_for(std::chrono::duration<double>(sleep_time));
 
 
+
         bool skip = true;
         if (skip) {
             cv::Mat frame_rgb;
@@ -230,7 +261,22 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
 
 
             // working?
-            auto processed_input = test_channel(prepped_input);
+
+            // if (after_idx < 100) {
+            //     // auto model_output = eval_model(module, prepped_input);
+            //     // auto model_output = sobel_edge_detection(prepped_input);
+            //     at::Tensor model_output = sobel_conv(prepped_input.clone());
+            //     at::Tensor processed_input = model_output.clone();
+            //     at::Tensor out_processed_input = processed_input.to(torch::kCPU,true);
+            //     output_bgr = to_mat(out_processed_input, cv::COLOR_RGB2BGR);
+            //     first_mat = output_bgr.clone();
+            //     after_idx++;
+            // } else {
+            //     output_bgr = first_mat.clone();
+            // }
+            
+            // // // works
+            auto processed_input = run_model(module,prepped_input);
             auto out_processed_input = processed_input.to(torch::kCPU,true);
             output_bgr = to_mat(out_processed_input, cv::COLOR_RGB2BGR);
 

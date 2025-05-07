@@ -21,7 +21,7 @@ proc main(args: [] string) {
     }
 
 
-
+    Bridge.showWebcam();
 
     writeln("Done!");
 }

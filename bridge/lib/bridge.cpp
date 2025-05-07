@@ -16,6 +16,9 @@
 #include <chrono>
 #include <thread>
 
+#include <opencv2/opencv.hpp>
+
+
 #define def_bridge_simple(Name) \
     extern "C" bridge_tensor_t Name(bridge_tensor_t input) { \
         auto t_input = bridge_to_torch(input); \
@@ -397,4 +400,41 @@ extern "C" void split_loop_filler(int64_t n,int64_t* ret) {
         *ret = i;
         std::this_thread::sleep_for(std::chrono::seconds(0));
     }
+}
+
+
+
+cv::VideoCapture open_camera(int cam_index) {
+    cv::VideoCapture cap(cam_index, cv::CAP_AVFOUNDATION);
+    if (!cap.isOpened()) {
+        std::cerr << "Could not open camera index " << cam_index << std::endl;
+        return cv::VideoCapture();
+    }
+    cap.set(cv::CAP_PROP_BUFFERSIZE, 1); // minimal internal buffering
+    cap.set(cv::CAP_PROP_FPS, 60);       // request higher FPS if possible
+    return cap;
+}
+
+
+extern "C" void show_webcam(void) {
+    cv::VideoCapture cap;
+    cap = open_camera(0);
+
+    cv::Mat frame_bgr;
+
+    while (true) {
+        if (!cap.read(frame_bgr) || frame_bgr.empty()) {
+            std::cerr << "[WARN] Empty frame, exiting" << std::endl;
+            break;
+        }
+
+        cv::imshow("webcam", frame_bgr);
+
+        if (cv::waitKey(1) == 27) { // ESC key
+            break;
+        }
+    }
+
+    cap.release();
+    cv::destroyAllWindows();
 }

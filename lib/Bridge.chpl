@@ -91,6 +91,8 @@ module Bridge {
 
     extern "split_loop_filler" proc splitLoopFiller(n: int(64),ret: c_ptr(int(64))): void;
 
+    extern "show_webcam" proc showWebcam(): void;
+
     // extern "capture_webcam_bridge" proc captureWebcam(
     //     in cam_index: int(32)): bridge_tensor_t;
 

@@ -133,7 +133,7 @@ while True:
 
     # 4) numpy -> torch, move channels, scale, add batch if wanted --------------
     tensor = torch.from_numpy(frame_rgb)     # H x W x C, uint8 → int tensor
-    tensor = tensor.to("mps", non_blocking=True)
+    tensor = tensor.to(default_device, non_blocking=True)
     
     tensor = tensor.permute(2, 0, 1)         # C x H x W
     tensor = tensor.to(torch.float32).div(255.0)       # float32, [0,1]

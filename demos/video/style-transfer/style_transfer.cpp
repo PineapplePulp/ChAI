@@ -225,9 +225,9 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
 
 
             // // // works
-            auto processed_input = run_model(module,prepped_input.to(torch::kFloat16)) / 255.0;
-            auto out_processed_input = processed_input; // processed_input.to(torch::kCPU,true);
-            output_bgr = to_mat(out_processed_input, cv::COLOR_RGB2BGR);
+            auto input = input_tensor.to(device,true).to(torch::kFloat16) / 255.0;
+            auto model_output = run_model(module,input) / 255.0;
+            output_bgr = to_mat(model_output, cv::COLOR_RGB2BGR);
 
             // // works
             // auto processed_input = prepped_input;

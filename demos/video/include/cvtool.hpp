@@ -223,12 +223,14 @@ cv::Mat to_mat(at::Tensor &tensor, cv::ColorConversionCodes color_conversion) {
     int height = tensor.size(2);
     int width = tensor.size(3);
     auto t = tensor
-                .mul(255)
+                .to(torch::kFloat32)
+                .mul(255.0)
+                .clamp(0.0, 255.0)
+                .to(torch::kUInt8)
                 .squeeze()
                 .detach()
                 .permute({1, 2, 0})
                 .contiguous()
-                .to(torch::kUInt8)
                 // .clamp(0, 255)
                 .clone()
                 // .to(cvtool::get_default_device(), /*non_blocking=*/true, /*copy=*/true)

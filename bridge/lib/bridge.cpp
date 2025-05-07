@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <vector>
 #include <cstdint>
+#include <chrono>
+#include <thread>
 
 #define def_bridge_simple(Name) \
     extern "C" bridge_tensor_t Name(bridge_tensor_t input) { \
@@ -380,4 +382,19 @@ extern "C" float sumArray(float* arr, int* sizes, int dim) {
 
     // auto t = torch::from_blob(arr, shape, torch::kFloat);
     // return t.sum().item<float>();
+}
+
+
+extern "C" void split_loop(int64_t idx, int64_t n) {
+    for (int i = 0; i < n; ++i) {
+        std::cout << "idx(" << idx << "," << n << ") = " << i << std::endl;
+        std::cout.flush();
+    }
+}
+
+extern "C" void split_loop_filler(int64_t n,int64_t* ret) {
+    for (int i = 0; i < n; ++i) {
+        *ret = i;
+        std::this_thread::sleep_for(std::chrono::seconds(0));
+    }
 }

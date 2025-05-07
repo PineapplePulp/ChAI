@@ -60,7 +60,9 @@ parser.add_argument('--show-output', action='store_true',
 
 args = parser.parse_args()
 
-print('args:', args)
+arg_dict = vars(args)
+for arg in arg_dict:
+    print(f'args.{arg}: {arg_dict[arg]}')
 
 if args.use_webcam or args.input_video_file:
     if args.input_video_file and args.use_webcam:
@@ -161,7 +163,11 @@ while True:
 
     #     sys.exit(0)
 
-    output_tensor = model(tensor.to(torch.float16)) / 255.0
+
+    if args.model_file.name == 'sobel_edge_float32.pt':
+        output_tensor = model(tensor.to(torch.float16))
+    else:
+        output_tensor = model(tensor.to(torch.float16)) / 255.0
     # print('input:',tensor.shape,tensor.dtype)
     # print('output:',output_tensor.shape)
 

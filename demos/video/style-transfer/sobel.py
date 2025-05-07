@@ -7,18 +7,18 @@ import argparse
 
 
 
-default_device = torch.device('cpu')
-if torch.backends.mps.is_available():
-    default_device = torch.device('mps')
-    print('using mps')
+# default_device = torch.device('cpu')
+# if torch.backends.mps.is_available():
+#     default_device = torch.device('mps')
+#     print('using mps')
 
-if torch.backends.cuda.is_available():
-    default_device = torch.device('cuda')
-    print('using cuda')
+# if torch.backends.cuda.is_available():
+#     default_device = torch.device('cuda')
+#     print('using cuda')
 
-print('using default device:', default_device)
+# print('using default device:', default_device)
 
-torch.set_default_device(default_device)
+# torch.set_default_device(default_device)
 
 
 
@@ -240,7 +240,7 @@ while True:
 
     #     sys.exit(0)
 
-    output_tensor = mosaic(tensor.to(torch.float16)) / 255.0
+    output_tensor = sm(tensor.to(torch.float16))
     # print('input:',tensor.shape,tensor.dtype)
     # print('output:',output_tensor.shape)
 

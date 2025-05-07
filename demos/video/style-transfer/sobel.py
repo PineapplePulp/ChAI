@@ -110,11 +110,11 @@ def tensor_to_bgr(frame_tensor, *, undo_normalise=False, mean=None, std=None):
 
     # 4) scale back to 0‑255, clamp, uint8
     img = (img * 255.0)
-    img = img.cpu().to(torch.float32)
+    # img = img # .to(torch.float16)
     img = img.clamp(0,255).byte()
 
     # 5) channel‑last & numpy
-    img = img.permute(1,2,0).numpy()                 # H,W,C  RGB
+    img = img.permute(1,2,0).cpu().numpy()                 # H,W,C  RGB
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)       # → BGR
     img = np.ascontiguousarray(img)                  # ensure OpenCV‑happy
     return img
@@ -169,6 +169,10 @@ sm.save("models/sobel_edge_float32.pt")
 sm = torch.jit.load("models/sobel_edge_float32.pt")
 # sm = torch.jit.load("models/mosaic_float32.pt")
 # sm.to('mps')
+
+mosaic = torch.jit.load("models/mosaic_float16.pt")
+mosaic.to('mps')
+
 # print(sm)
 
 import sys
@@ -205,24 +209,26 @@ while True:
     # 5) (Optional) add a batch dim and push to GPU ------------------------------
     tensor = tensor.unsqueeze(0)             # 1 x C x H x W
 
-    if ticks == 3:
-        mosaic = torch.jit.load("models/mosaic_float32.pt")
-        mosaic.to('mps')
-        mosaic_output = mosaic(tensor) / 255.0
-        # mosaic_output = undo_normalize(mosaic_output)
-        print('input:',tensor.shape,tensor.dtype)
-        print('mosaic output:',mosaic_output.shape)
-        torchvision.utils.save_image(tensor[0], 'input_tensor.png')
-        torchvision.utils.save_image(mosaic_output[0], 'mosaic_output.png')
+    # if ticks == 3:
+    #     tensor = tensor.to(torch.float16)
+    #     mosaic = torch.jit.load("models/mosaic_float16.pt")
+    #     mosaic.to('mps')
+    #     mosaic_output = mosaic(tensor) / 255.0
+    #     # mosaic_output = undo_normalize(mosaic_output)
+    #     print('input:',tensor.shape,tensor.dtype)
+    #     print('mosaic output:',mosaic_output.shape,mosaic_output.dtype)
+    #     torchvision.utils.save_image(tensor[0], 'input_tensor.png')
+    #     torchvision.utils.save_image(mosaic_output[0], 'mosaic_output.png')
 
-        sys.exit(0)
+    #     sys.exit(0)
 
-    output_tensor = sm(tensor)
-    print('input:',tensor.shape,tensor.dtype)
-    print('output:',output_tensor.shape)
+    output_tensor = mosaic(tensor.to(torch.float16)) / 255.0
+    # print('input:',tensor.shape,tensor.dtype)
+    # print('output:',output_tensor.shape)
 
 
-    frame_bgr_out = tensor_to_bgr(output_tensor, undo_normalise=True,mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # frame_bgr_out = tensor_to_bgr(output_tensor, undo_normalise=True,mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    frame_bgr_out = tensor_to_bgr(output_tensor)
 
     # Display the captured frame
     cv2.imshow('Camera', frame_bgr_out)
@@ -230,7 +236,7 @@ while True:
     # time.sleep(1.0)
 
     # Press 'q' to exit the loop
-    # if ticks > 3:
+    # if ticks > 10:
     #     break
 
     if cv2.waitKey(1) == ord('q'):

@@ -213,19 +213,20 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
             cv::Mat frame_rgb;
             cv::cvtColor(frame_bgr, frame_rgb, cv::COLOR_BGR2RGB);
 
-            auto input_tensor = to_tensor(frame_rgb);
-            auto mps_tensor = input_tensor.to(device,true);
-            auto prepped_input = preprocess_input(mps_tensor);
-            std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
-            std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
+            auto input_tensor = to_tensor(frame_rgb,device);
+            // auto mps_tensor = input_tensor.to(device,true);
+            // auto prepped_input = preprocess_input(mps_tensor);
+            // std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
+            // std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
             
-            auto output_tensor = prepped_input;
-            auto output = output_tensor;
-            auto processed_output = output.to(torch::kCPU,true);
+            // auto output_tensor = prepped_input;
+            // auto output = output_tensor;
+            // auto processed_output = output.to(torch::kCPU,true);
 
 
             // // // works
-            auto input = input_tensor.to(device,true).to(torch::kFloat16) / 255.0;
+            auto input = input_tensor / 255.0;
+            // auto input = input_tensor.to(device,true).to(torch::kFloat16) / 255.0;
             auto model_output = run_model(module,input) / 255.0;
             output_bgr = to_mat(model_output, cv::COLOR_RGB2BGR);
 

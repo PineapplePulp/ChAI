@@ -104,14 +104,20 @@ std::shared_ptr<at::Tensor> create_frame_buffer_tensor(int height,int width,torc
     return create_buffer_tensor(sizes, torch::kFloat32);
 }
 
-at::Tensor to_tensor(cv::Mat &img) {
+at::Tensor to_tensor(cv::Mat &frame, torch::Device device = default_device) {
 
 
-    cv::Mat frame = img.clone();
-    auto t = torch::from_blob(frame.data, {1, frame.rows, frame.cols, 3}, torch::kUInt8).clone();
-    t = t.to(default_device);
-    t = t.to(torch::kFloat32).permute({0, 3, 1, 2}) / 255.0;
-    return t;//.to(default_device,true);
+    auto t = torch::from_blob(frame.data, {1, frame.rows, frame.cols, 3}, torch::kUInt8).permute({0, 3, 1, 2}).clone();
+    auto options = torch::TensorOptions()
+                    .dtype(torch::kFloat16)
+                    .device(device)
+                    .requires_grad(false);
+    return t.to(options,true).contiguous().div_(255.0);
+
+    // t = t.to(default_device,);
+    // t = t.to(torch::kFloat32).permute({0, 3, 1, 2}).contiguous() / 255.0;
+
+    // return t;//.to(default_device,true);
 }
 
 // at::Tensor to_tensor(cv::Mat &img, cv::ColorConversionCodes color_conversion = cv::COLOR_BGR2RGB) {
@@ -181,13 +187,14 @@ cv::Mat to_mat(at::Tensor &tensor) {
     auto t = tensor
                 .detach()
                 .squeeze()
+                .contiguous()
                 .mul(255.0)
                 .clamp(0, 255)
                 .permute({1, 2, 0})
                 .contiguous()
                 .to(torch::kUInt8)
                 .clone()
-                .to(torch::kCPU);
+                .to(torch::kCPU,true);
                 
 
     // auto t = tensor
@@ -223,7 +230,7 @@ cv::Mat to_mat(at::Tensor &tensor, cv::ColorConversionCodes color_conversion) {
     int height = tensor.size(2);
     int width = tensor.size(3);
     auto t = tensor
-                .to(torch::kFloat32)
+                // .to(torch::kFloat32)
                 .mul(255.0)
                 .clamp(0.0, 255.0)
                 .to(torch::kUInt8)
@@ -231,9 +238,7 @@ cv::Mat to_mat(at::Tensor &tensor, cv::ColorConversionCodes color_conversion) {
                 .detach()
                 .permute({1, 2, 0})
                 .contiguous()
-                // .clamp(0, 255)
                 .clone()
-                // .to(cvtool::get_default_device(), /*non_blocking=*/true, /*copy=*/true)
                 .to(torch::kCPU);
     cv::Mat mat = cv::Mat(height, width, CV_8UC3, t.data_ptr());
     cv::Mat mat2;

@@ -123,7 +123,7 @@ int main() {
     // default_device = default_device_st;
 
     // std::string model_path = "style-transfer/models/mosaic_float32.pt";
-    std::string model_path = "style-transfer/models/sobel_edge_float32.pt" ;
+    std::string model_path = "style-transfer/models/mosaic_float16.pt" ;
     torch::jit::Module module = load_model(model_path);
 /*
     // module.to(torch::kFloat16);
@@ -225,8 +225,8 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
 
 
             // // // works
-            auto processed_input = run_model(module,prepped_input);
-            auto out_processed_input = processed_input.to(torch::kCPU,true);
+            auto processed_input = run_model(module,prepped_input.to(torch::kFloat16)) / 255.0;
+            auto out_processed_input = processed_input; // processed_input.to(torch::kCPU,true);
             output_bgr = to_mat(out_processed_input, cv::COLOR_RGB2BGR);
 
             // // works

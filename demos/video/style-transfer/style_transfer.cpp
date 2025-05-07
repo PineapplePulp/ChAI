@@ -47,7 +47,7 @@ torch::Tensor preprocess_input(const torch::Tensor& input) {
     return input;
 }
 
-torch::Tensor run_model(torch::jit::Module& module, const torch::Tensor& input) {
+at::Tensor run_model(torch::jit::Module& module, const at::Tensor& input) {
 
     auto input_dtype = input.dtype();
     // std::cout.flush();
@@ -61,15 +61,17 @@ torch::Tensor run_model(torch::jit::Module& module, const torch::Tensor& input) 
     // std::cout << "Module: " << module << std::endl;
 
 
-    module.to(torch::kMPS);
-    module.eval();
+    // module.to(torch::kMPS);
+    // module.eval();
 
 
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(input);
 
     // std::cout << "Input tensor: " << input.sizes() << std::endl;
+    // auto output = module.forward(inputs).toTensor();
     auto output = module.forward(inputs).toTensor();
+
     // std::cout << "Model output: " << output.sizes() << std::endl;
     return output;
 }
@@ -210,25 +212,40 @@ int run_webcam_model(torch::jit::Module& module, int cam_index, int max_fps, boo
 
         bool skip = true;
         if (skip) {
+
+            auto start = std::chrono::high_resolution_clock::now();
+
             cv::Mat frame_rgb;
             cv::cvtColor(frame_bgr, frame_rgb, cv::COLOR_BGR2RGB);
 
             auto input_tensor = to_tensor(frame_rgb,device);
-            // auto mps_tensor = input_tensor.to(device,true);
-            // auto prepped_input = preprocess_input(mps_tensor);
-            // std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
-            // std::cout << "Prepped input sizes: " << prepped_input.sizes() << std::endl;
-            
-            // auto output_tensor = prepped_input;
-            // auto output = output_tensor;
-            // auto processed_output = output.to(torch::kCPU,true);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = end - start;
+            std::cout << "Elapsed time (1): " << elapsed.count() * 1000.0 << " ms\n";
 
 
             // // // works
-            auto input = input_tensor / 255.0;
+            start = std::chrono::high_resolution_clock::now();
+            auto input = input_tensor.div_(255.0);
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = end - start;
+            std::cout << "Elapsed time (2): " << elapsed.count() * 1000.0 << " ms\n";
+
             // auto input = input_tensor.to(device,true).to(torch::kFloat16) / 255.0;
-            auto model_output = run_model(module,input) / 255.0;
+
+            start = std::chrono::high_resolution_clock::now();
+            auto model_output = run_model(module,input).div_(255.0);
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = end - start;
+            std::cout << "Elapsed time (3): " << elapsed.count() * 1000.0 << " ms\n";
+
+
+            start = std::chrono::high_resolution_clock::now();
             output_bgr = to_mat(model_output, cv::COLOR_RGB2BGR);
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = end - start;
+            std::cout << "Elapsed time (4): " << elapsed.count() * 1000.0 << " ms\n";
 
             // // works
             // auto processed_input = prepped_input;

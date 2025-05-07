@@ -107,8 +107,8 @@ std::shared_ptr<at::Tensor> create_frame_buffer_tensor(int height,int width,torc
 at::Tensor to_tensor(cv::Mat &frame, torch::Device device = default_device) {
 
 
-    auto t = torch::from_blob(frame.data, {1, frame.rows, frame.cols, 3}, torch::kUInt8).permute({0, 3, 1, 2}).clone();
-    auto options = torch::TensorOptions()
+    auto t = at::from_blob(frame.data, {1, frame.rows, frame.cols, 3}, torch::kUInt8).permute({0, 3, 1, 2}).clone();
+    auto options = at::TensorOptions()
                     .dtype(torch::kFloat16)
                     .device(device)
                     .requires_grad(false);
@@ -194,7 +194,7 @@ cv::Mat to_mat(at::Tensor &tensor) {
                 .contiguous()
                 .to(torch::kUInt8)
                 .clone()
-                .to(torch::kCPU,true);
+                .to(at::kCPU,true);
                 
 
     // auto t = tensor

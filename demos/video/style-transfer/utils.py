@@ -98,3 +98,43 @@ def bgr_to_tensor(
 
     return tensor
 
+
+def tensor_to_bgr(frame_tensor, *, undo_normalise=False, mean=None, std=None):
+    """
+    Args
+    ----
+    frame_tensor : torch.Tensor
+        (C,H,W) or (1,C,H,W)   ―  float or half   ―  RGB
+    undo_normalise : bool
+        True if you previously applied (x - mean) / std
+    mean, std : list/tuple of 3 floats
+        Same numbers you used for normalising (e.g. ImageNet)
+    Returns
+    -------
+    frame_bgr : np.ndarray   (H,W,3) uint8   BGR  contiguous
+    """
+    # 1) squeeze batch dimension if present
+    if frame_tensor.ndim == 4:
+        frame_tensor = frame_tensor[0]
+
+    # 2) move to CPU & float32 for math
+    img = frame_tensor.detach()
+
+    # 3) (optional) reverse mean/std normalisation
+    if undo_normalise:
+        if mean is None or std is None:
+            raise ValueError("Supply mean and std to undo normalisation")
+        mean = torch.tensor(mean).to(img).view(3,1,1)
+        std  = torch.tensor(std).to(img).view(3,1,1)
+        img = img * std + mean
+
+    # 4) scale back to 0‑255, clamp, uint8
+    img = (img * 255.0)
+    # img = img # .to(torch.float16)
+    img = img.clamp(0,255).byte()
+
+    # 5) channel‑last & numpy
+    img = img.permute(1,2,0).cpu().numpy()                 # H,W,C  RGB
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)       # → BGR
+    img = np.ascontiguousarray(img)                  # ensure OpenCV‑happy
+    return img

@@ -3,6 +3,24 @@ import torch
 import numpy as np
 import utils
 import torchvision
+import argparse
+
+
+
+default_device = torch.device('cpu')
+if torch.backends.mps.is_available():
+    default_device = torch.device('mps')
+    print('using mps')
+
+if torch.backends.cuda.is_available():
+    default_device = torch.device('cuda')
+    print('using cuda')
+
+print('using default device:', default_device)
+
+torch.set_default_device(default_device)
+
+
 
 # Open the default camera
 cam = cv2.VideoCapture(0)

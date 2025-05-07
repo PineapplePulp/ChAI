@@ -1,6 +1,8 @@
 import cv2
 import torch
 import numpy as np
+import utils
+import torchvision
 
 # Open the default camera
 cam = cv2.VideoCapture(0)
@@ -96,24 +98,34 @@ def tensor_to_bgr(frame_tensor, *, undo_normalise=False, mean=None, std=None):
         frame_tensor = frame_tensor[0]
 
     # 2) move to CPU & float32 for math
-    img = frame_tensor.detach().cpu().float()
+    img = frame_tensor.detach()
 
     # 3) (optional) reverse mean/std normalisation
     if undo_normalise:
         if mean is None or std is None:
             raise ValueError("Supply mean and std to undo normalisation")
-        mean = torch.tensor(mean).view(3,1,1)
-        std  = torch.tensor(std).view(3,1,1)
+        mean = torch.tensor(mean).to(img).view(3,1,1)
+        std  = torch.tensor(std).to(img).view(3,1,1)
         img = img * std + mean
 
     # 4) scale back to 0‑255, clamp, uint8
-    img = (img * 255.0).clamp(0,255).byte()
+    img = (img * 255.0)
+    img = img.cpu().to(torch.float32)
+    img = img.clamp(0,255).byte()
 
     # 5) channel‑last & numpy
     img = img.permute(1,2,0).numpy()                 # H,W,C  RGB
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)       # → BGR
     img = np.ascontiguousarray(img)                  # ensure OpenCV‑happy
     return img
+
+
+def undo_normalize(tensor):
+    mean = (0.485, 0.456, 0.406)  # ImageNet defaults (RGB)
+    std  = (0.229, 0.224, 0.225)
+    mean = torch.tensor(mean, dtype=tensor.dtype, device=tensor.device)[:, None, None]
+    std  = torch.tensor(std,  dtype=tensor.dtype, device=tensor.device)[:, None, None]
+    return (tensor * std + mean).clamp(0, 1)
 
 
 class Sobel(torch.nn.Module):
@@ -155,6 +167,15 @@ sm = torch.jit.script(sobel)
 sm.save("models/sobel_edge_float32.pt")
 
 sm = torch.jit.load("models/sobel_edge_float32.pt")
+# sm = torch.jit.load("models/mosaic_float32.pt")
+# sm.to('mps')
+# print(sm)
+
+import sys
+# sys.exit(0)
+import time
+
+ticks = 1
 
 while True:
     ret, frame_bgr = cam.read()
@@ -169,26 +190,52 @@ while True:
 
     # 4) numpy -> torch, move channels, scale, add batch if wanted --------------
     tensor = torch.from_numpy(frame_rgb)     # H x W x C, uint8 → int tensor
+    tensor = tensor.to("mps", non_blocking=True)
+    
     tensor = tensor.permute(2, 0, 1)         # C x H x W
-    tensor = tensor.float().div(255.0)       # float32, [0,1]
+    tensor = tensor.to(torch.float32).div(255.0)       # float32, [0,1]
+
+    # normalize tensor to ImageNet mean and std
+    # mean = (0.485, 0.456, 0.406)  # ImageNet defaults (RGB)
+    # std  = (0.229, 0.224, 0.225)
+    # mean = torch.tensor(mean, dtype=tensor.dtype, device=tensor.device)[:, None, None]
+    # std  = torch.tensor(std,  dtype=tensor.dtype, device=tensor.device)[:, None, None]
+    # tensor.sub_(mean).div_(std)    
 
     # 5) (Optional) add a batch dim and push to GPU ------------------------------
     tensor = tensor.unsqueeze(0)             # 1 x C x H x W
-    tensor = tensor.to("mps", non_blocking=True)
+
+    if ticks == 3:
+        mosaic = torch.jit.load("models/mosaic_float32.pt")
+        mosaic.to('mps')
+        mosaic_output = mosaic(tensor) / 255.0
+        # mosaic_output = undo_normalize(mosaic_output)
+        print('input:',tensor.shape,tensor.dtype)
+        print('mosaic output:',mosaic_output.shape)
+        torchvision.utils.save_image(tensor[0], 'input_tensor.png')
+        torchvision.utils.save_image(mosaic_output[0], 'mosaic_output.png')
+
+        sys.exit(0)
 
     output_tensor = sm(tensor)
     print('input:',tensor.shape,tensor.dtype)
     print('output:',output_tensor.shape)
 
 
-    frame_bgr_out = tensor_to_bgr(output_tensor)
+    frame_bgr_out = tensor_to_bgr(output_tensor, undo_normalise=True,mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     # Display the captured frame
     cv2.imshow('Camera', frame_bgr_out)
 
+    # time.sleep(1.0)
+
     # Press 'q' to exit the loop
+    # if ticks > 3:
+    #     break
+
     if cv2.waitKey(1) == ord('q'):
         break
+    ticks += 1
 
 # Release the capture and writer objects
 cam.release()

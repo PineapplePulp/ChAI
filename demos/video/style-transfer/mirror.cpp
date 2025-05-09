@@ -1,11 +1,11 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include "mirror.h"
 
-int main() {
+extern "C" void run_mirror() {
     cv::VideoCapture cap(0); // Open the default camera (0)
     if (!cap.isOpened()) {
         std::cerr << "Error: Could not open camera." << std::endl;
-        return -1;
     }
 
     cv::Mat frame;
@@ -22,5 +22,5 @@ int main() {
 
     cap.release(); // Release the camera
     cv::destroyAllWindows(); // Close all OpenCV windows
-    return 0;
 }
+

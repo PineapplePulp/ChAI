@@ -118,6 +118,7 @@ model.eval()
 print('Loaded model:', args.model_file)
 
 
+done_writing_to_output = False
 
 while True:
     ret, frame_bgr = cam.read()
@@ -125,6 +126,7 @@ while True:
         if args.use_webcam:
             print("Error: Could not read frame from webcam.")
         if args.input_video_file and args.show_output:
+            done_writing_to_output = True
             cam = cv2.VideoCapture(str(args.input_video_file))
             ret, frame_bgr = cam.read()
             if not ret:
@@ -190,7 +192,7 @@ while True:
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
-    if args.output_video_file:
+    if args.output_video_file and done_writing_to_output:
         out.write(frame_bgr_out)
 
 

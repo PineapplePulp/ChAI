@@ -1,0 +1,51 @@
+ 5378  clang++ mirror.cpp
+ 5379  clang++ mirror.cpp -o mirror -I/usr/local/include/opencv4 -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_highgui
+ 5380  clang++ mirror.cpp -o mirror $(pkg-config --cflags --libs opencv)
+ 5381  clang++ mirror.cpp -o mirror $(pkg-config --cflags --libs opencv4)
+ 5382  ls
+ 5383  ./mirror
+ 5384  clang++ mirror.cpp -o mirror -I $(pkg-config --cflags --libs opencv4)
+ 5385  ls
+ 5386  clang++ mirror.cpp -o mirror $(pkg-config --cflags --libs opencv4)
+ 5387  pwd
+ 5388  clang++ mirror.cpp -o mirror $(pkg-config --cflags --libs opencv4)
+ 5389  ls ../../
+ 5390  ls ../../../
+ 5391  clang++ mirror.cpp -o mirror $(pkg-config --cflags --libs opencv4) -I ../../../libtorch/include -I ../../../include/torch/csrc/api/include
+ 5392  clang++ style_transfer.cpp -o styletransfer $(pkg-config --cflags --libs opencv4) -I ../../../libtorch/include -I ../../../include/torch/csrc/api/include
+ 5393  clang++ style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4)
+ 5394  pwd
+ 5395  ls ../../
+ 5396  ls ../../..
+ 5397  ls ../../../libtorch
+ 5398  ls ../../../libtorch/include
+ 5399  clang++ style_transfer.cpp -o styletransfer -I../../../libtorch/include -I../../../include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4)
+ 5400  clang style_transfer.cpp -o styletransfer -I../../../libtorch/include -I../../../include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4)
+ 5401  clang style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4)
+ 5402  clang style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4)
+ 5403  /usr/bin/clang style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4)
+ 5404  clang style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4)
+ 5405  g++ style_transfer.cpp -o styletransfer  -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4)
+ 5406  clang -std=c++20 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4)
+ 5407  clang -std=c++17 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4)
+ 5408  /usr/bin/clang -std=c++17 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4)
+ 5409  /usr/bin/clang -std=c++17 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5410  /usr/bin/clang -std=c++20 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5411  /usr/bin/clang++ -std=c++20 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5412  pwd
+ 5413  git add --all
+ 5414  git commit -m "Futile compilation attempt working. see new file. "
+ 5415  git push
+ 5416  /usr/bin/clang++ -std=c++20 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5417  ls
+ 5418  otool -L styletransfer
+ 5419  /usr/bin/clang++ -std=c++20 mirror.cpp -o mirror -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5420  /usr/bin/clang++ -std=c++20 -c -fPIC mirror.cpp -o mirror -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5421  /usr/bin/clang++ -std=c++20 -c -fPIC mirror.cpp -o mirror.o -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5422  ls
+ 5423  otool -L mirror.o
+ 5424  /usr/bin/clang++ -std=c++20 -c -fPIC mirror.cpp -o mirror.o -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5425  /usr/bin/clang++ -shared -o libmirror.dylib mirror.o
+ 5426  /usr/bin/clang++ -shared -o libmirror.dylib mirror.o -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps
+ 5427  ls
+ 5428  otool

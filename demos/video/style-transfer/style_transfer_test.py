@@ -124,7 +124,16 @@ while True:
     if not ret:
         if args.use_webcam:
             print("Error: Could not read frame from webcam.")
-        break
+        if args.input_video_file and args.show_output:
+            cam = cv2.VideoCapture(str(args.input_video_file))
+            ret, frame_bgr = cam.read()
+            if not ret:
+                print("Error: Could not read frame from input video file.")
+                break
+            else:
+                continue
+        else:
+            break
 
 
 

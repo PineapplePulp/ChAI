@@ -53,9 +53,15 @@ def check_paths(args):
         print(e)
         sys.exit(1)
 
+import math
+def to_sci_not(x):
+    exp = math.floor(math.log10(abs(x)))
+    multiplier = 10 ** exp
+    return (x / multiplier), exp
+
 def get_file_name(args):
-    style_name = os.path.splitext(os.path.basename(args.style_image))[0]
-    return f'{args.style_image}_ep{args.epochs}_bt{args.batch_size}_sw{args.style_weight}_cw_{args.content_weight}'
+    base_name,_ = os.path.splitext(os.path.basename(args.style_image))
+    return f'{base_name}_ep{args.epochs}_bt{args.batch_size}_sw{to_sci_not(args.style_weight)}_cw_{to_sci_not(args.content_weight)}'
 
 def train(args):
     if args.accel:

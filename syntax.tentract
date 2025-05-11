@@ -1,0 +1,40 @@
+
+
+// Builtin constructs
+operators + * - / ;
+
+// Kronecker delta
+d[i,...,j] = if i = ... = j then 1 else 0;
+
+// 
+
+
+(A _ B)[i] = A[i] _ B[i];
+
+(A + B)[i,j] = A[i,j] + B[i,j];
+
+(A + B)[j,k] = A[i,j,k] * B[i,j,k];
+
+(A + B)[:i] = A[:i] + B[:i];
+
+
+(A @ B)[i,j]   = A[i,k] * B[k,j];
+(A @ B)[:,i,j] = A[:,i,k] * B[:,k,j];
+
+(A ** B)[i,j,k,l] = A[i,m,k] * B[j,l,m];
+
+(transpose A)[i,j] = A[j,i];
+
+
+
+
+kernel mat_mul(A: float<2>, B: float<2>) -> float<2>;
+mat_mul A B = A @ B;
+
+kernel mat_mul(in A: float<2>, in B: float<2>, out C: float<2>) {
+    C = A @ B;
+}
+
+kernel mat_mul_delta(in A: float<2>, in B: float<2>, out C: float<2>) -> float<2>;
+mat_mul_delta A B = ∂(A @ B) / ∂A;
+

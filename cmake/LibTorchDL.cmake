@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -13,7 +13,6 @@ set(TORCH_URL_PREFIX "https://download.pytorch.org/libtorch/nightly/cpu")
 
 
 
-
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 elseif(WIN32)
@@ -23,7 +22,7 @@ endif()
 if(APPLE)
     set(TORCH_DISTRIBUTION "${TORCH_URL_PREFIX}/libtorch-macos-arm64-latest.zip")
 elseif(LINUX)
-    set(TORCH_DISTRIBUTION "$${TORCH_URL_PREFIX}/libtorch-shared-with-deps-latest.zip")
+    set(TORCH_DISTRIBUTION "${TORCH_URL_PREFIX}/libtorch-cxx11-abi-shared-with-deps-latest.zip")
 endif()
 
 function(download_libtorch)

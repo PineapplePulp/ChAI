@@ -1,0 +1,1 @@
+/usr/bin/clang++ -std=c++20 style_transfer.cpp -o styletransfer -I ../../../libtorch/include -I ../../../libtorch/include/torch/csrc/api/include -I ../include $(pkg-config --cflags --libs opencv4) -L ../../../libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps

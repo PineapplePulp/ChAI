@@ -1,5 +1,6 @@
 module Bridge {
     // require "bridge.h";
+    // require "-ltorch";
     require "-ltorch", "-ltorch_cpu", "-lc10", "-ltorch_global_deps";
 
     import Utilities as util;
@@ -73,7 +74,27 @@ module Bridge {
         in stride: int(32),
         in padding: int(32),
         in dilation: int(32)): bridge_tensor_t;
-    
+
+    extern proc resize(
+        in input: bridge_tensor_t, 
+        in height: int(32), 
+        in width: int(32)): bridge_tensor_t;
+
+    extern "imagenet_normalize" proc imageNetNormalize(
+        in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern "add_two_arrays" proc addTwoArrays(
+        in a: bridge_tensor_t, 
+        in b: bridge_tensor_t): bridge_tensor_t;
+
+    extern "split_loop" proc splitLoop(idx: int(64), n: int(64)): void;
+
+    extern "split_loop_filler" proc splitLoopFiller(n: int(64),ret: c_ptr(int(64))): void;
+
+    extern "show_webcam" proc showWebcam(): void;
+
+    // extern "capture_webcam_bridge" proc captureWebcam(
+    //     in cam_index: int(32)): bridge_tensor_t;
 
 
     proc getSizeArray(const ref arr: [] ?eltType): [] int(32) {
@@ -96,10 +117,11 @@ module Bridge {
         var result: [dom] real(32);
         forall (i,idx) in dom.everyZip() do
             result[idx] = package.data[i];
-        if package.created_by_c {
-            deallocate(package.data);
-            deallocate(package.sizes);
-        }
+        // This may leak! Alternative is segault on linux. :(
+        // if package.created_by_c {
+        //     deallocate(package.data);
+        //     deallocate(package.sizes);
+        // }
         return result;
     }
 
@@ -121,6 +143,7 @@ module Bridge {
         var result: bridge_tensor_t;
         result.data = c_ptrToConst(data) : c_ptr(real(32));
         result.sizes = allocate(int(32),data.rank);
+        result.created_by_c = false;
         const sizeArr = getSizeArray(data);
         for i in 0..<data.rank do
             result.sizes[i] = sizeArr[i];

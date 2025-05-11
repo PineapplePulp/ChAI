@@ -13,7 +13,18 @@
 #include <cstdlib>
 #include <vector>
 #include <cstdint>
+#include <chrono>
+#include <thread>
 
+#include <opencv2/opencv.hpp>
+
+
+#define def_bridge_simple(Name) \
+    extern "C" bridge_tensor_t Name(bridge_tensor_t input) { \
+        auto t_input = bridge_to_torch(input); \
+        auto t_output = torch::Name(t_input); \
+        return torch_to_bridge(t_output); \
+    }
 
 
 
@@ -32,14 +43,15 @@ size_t bridge_tensor_size(bridge_tensor_t &bt) {
 void store_tensor(torch::Tensor &input, float32_t* dest) {
     float32_t * data = input.data_ptr<float32_t>();
     size_t bytes_size = sizeof(float32_t) * input.numel();
-    std::memmove(dest,data,bytes_size);
+    // std::memmove(dest,data,bytes_size);
+    std::memcpy(dest,data,bytes_size);
 }
 
 bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
     bridge_tensor_t result;
     result.created_by_c = true;
     result.dim = tensor.dim();
-    result.sizes = new int[result.dim];
+    result.sizes = new int32_t[result.dim];
     for (int i = 0; i < result.dim; ++i) {
         result.sizes[i] = tensor.size(i);
     }
@@ -50,21 +62,9 @@ bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
 
 torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
-    auto shape = at::IntArrayRef(sizes_vec);
+    auto shape = torch::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 extern "C" float32_t* unsafe(const float32_t* arr) {
     return const_cast<float32_t*>(arr);
@@ -119,7 +119,7 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
     catch (const c10::Error& e)
     {
         std::cerr << "error loading the model\n" << e.msg();
-        std::system("pause");
+        // std::system("pause");
     }
 
     std::vector<torch::jit::IValue> inputs;
@@ -130,15 +130,6 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
     std::cout << "Model output: " << output.sizes() << std::endl;
     return torch_to_bridge(output);
 }
-
-
-
-
-
-
-
-
-
 
 extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
     auto t = bridge_to_torch(arr);
@@ -179,6 +170,11 @@ extern "C" bridge_tensor_t conv2d(
 extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     auto t_a = bridge_to_torch(a);
     auto t_b = bridge_to_torch(b);
+
+    // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
+    // std::cout << "Input B shape: " << t_b.sizes() << std::endl;
+    // std::cout.flush();
+
     auto output = torch::matmul(t_a, t_b);
 
     // std::cout << "Input A shape: " << t_a.sizes() << std::endl;
@@ -190,8 +186,19 @@ extern "C" bridge_tensor_t matmul(bridge_tensor_t a, bridge_tensor_t b) {
     // std::cout << "Output sum: " << output.sum() << std::endl;
     // std::cout.flush();
     // printf("Hello from matmul!\n");
-
     return torch_to_bridge(output);
+
+    // auto output_copy = output.clone();
+    // std::cout << "Output copy shape: " << output_copy.sizes() << std::endl;
+    // std::cout.flush();
+
+    // auto bt = torch_to_bridge(output_copy);
+    // std::cout << "Bridge tensor sizes: " << bt.sizes << std::endl;
+    // std::cout << "Bridge tensor dim: " << bt.dim << std::endl;
+
+    // std::cout.flush();
+
+    // return bt;
 }
 
 extern "C" bridge_tensor_t max_pool2d(
@@ -205,6 +212,78 @@ extern "C" bridge_tensor_t max_pool2d(
     auto output = torch::max_pool2d(t_input, kernel_size, stride, padding);
     return torch_to_bridge(output);
 }
+
+extern "C" bridge_tensor_t resize(
+    bridge_tensor_t input,
+    int height,
+    int width
+) {
+    auto image = bridge_to_torch(input);
+
+    // auto output = resize_tensor_last2(image, height, width);
+    
+    // at::Tensor output = at::upsample_bilinear2d(t_input.unsqueeze(0), {height, width}, false);
+    if (image.dim() == 3) {
+        auto output = torch::nn::functional::interpolate(
+            image.unsqueeze(0),
+            torch::nn::functional::InterpolateFuncOptions()
+            .size(std::vector<int64_t>({ height, width }))
+            .mode(torch::kBilinear)
+            .align_corners(false)
+        ).squeeze(0);
+        return torch_to_bridge(output);
+    } else if (image.dim() == 4) {
+        auto output = torch::nn::functional::interpolate(
+            image,
+            torch::nn::functional::InterpolateFuncOptions()
+            .size(std::vector<int64_t>({ height, width }))
+            .mode(torch::kBilinear)
+            .align_corners(false)
+        );
+        return torch_to_bridge(output);
+    } else {
+        std::cerr << "Unsupported tensor dimension: " << image.dim() << std::endl;
+        std::cerr.flush();
+        std::cout << "Unsupported tensor dimension: " << image.dim() << std::endl;
+        std::cout.flush();
+        return input; // Return the original tensor if the dimension is unsupported
+    }
+}
+
+extern "C" bridge_tensor_t imagenet_normalize(bridge_tensor_t input) {
+    auto t_input = bridge_to_torch(input);
+    torch::Tensor image = t_input; //.to(torch::kFloat32);// / 255.0;
+
+    static const std::vector<float> kMean{0.485, 0.456, 0.406};
+    static const std::vector<float> kStd {0.229, 0.224, 0.225};
+    auto opts = image.options();
+    auto mean = torch::tensor(kMean).reshape({3, 1, 1});  // (3,1,1)
+    auto std  = torch::tensor(kStd).reshape({3, 1, 1});
+
+    if (image.dim() == 4) {
+        mean = mean.unsqueeze(0); // (1,3,1,1)
+        std = std.unsqueeze(0);
+    }
+
+    auto output = (image - mean) / std;
+    return torch_to_bridge(output);
+}
+
+
+extern "C" bridge_tensor_t add_two_arrays(bridge_tensor_t a, bridge_tensor_t b) {
+    torch::Tensor t_a = bridge_to_torch(a);
+    torch::Tensor t_b = bridge_to_torch(b);
+
+    torch::Tensor output = t_a + t_b;
+
+    return torch_to_bridge(output);
+}
+
+// extern "C" bridge_tensor_t capture_webcam_bridge(int cam_index) {
+//     torch::Tensor image = capture_webcam(cam_index);
+//     return torch_to_bridge(image);
+// }
+
 
 
 // extern "C"
@@ -306,4 +385,56 @@ extern "C" float sumArray(float* arr, int* sizes, int dim) {
 
     // auto t = torch::from_blob(arr, shape, torch::kFloat);
     // return t.sum().item<float>();
+}
+
+
+extern "C" void split_loop(int64_t idx, int64_t n) {
+    for (int i = 0; i < n; ++i) {
+        std::cout << "idx(" << idx << "," << n << ") = " << i << std::endl;
+        std::cout.flush();
+    }
+}
+
+extern "C" void split_loop_filler(int64_t n,int64_t* ret) {
+    for (int i = 0; i < n; ++i) {
+        *ret = i;
+        std::this_thread::sleep_for(std::chrono::seconds(0));
+    }
+}
+
+
+
+cv::VideoCapture open_camera(int cam_index) {
+    cv::VideoCapture cap(cam_index, cv::CAP_AVFOUNDATION);
+    if (!cap.isOpened()) {
+        std::cerr << "Could not open camera index " << cam_index << std::endl;
+        return cv::VideoCapture();
+    }
+    cap.set(cv::CAP_PROP_BUFFERSIZE, 1); // minimal internal buffering
+    cap.set(cv::CAP_PROP_FPS, 60);       // request higher FPS if possible
+    return cap;
+}
+
+
+extern "C" void show_webcam(void) {
+    cv::VideoCapture cap;
+    cap = open_camera(0);
+
+    cv::Mat frame_bgr;
+
+    while (true) {
+        if (!cap.read(frame_bgr) || frame_bgr.empty()) {
+            std::cerr << "[WARN] Empty frame, exiting" << std::endl;
+            break;
+        }
+
+        cv::imshow("webcam", frame_bgr);
+
+        if (cv::waitKey(1) == 27) { // ESC key
+            break;
+        }
+    }
+
+    cap.release();
+    cv::destroyAllWindows();
 }

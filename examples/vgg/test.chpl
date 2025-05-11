@@ -56,11 +56,14 @@ proc run(model: shared VGG16(real(32)), file: string) {
     // const img = Tensor.load(file):real(32);
     // const imageData: ndarray(3,real(32)) = ndarray.loadImage(imagePath=file,eltType=real(32));
     const imageData = ndarray.loadFrom(file,3,real(32));
-    const img = new dynamicTensor(imageData);
-
     writeln("imageData shape: ", imageData.shape);
-    writeln("img shape: ", img.shape());
-    const output = model(img);
+    
+    const normalizedImageData = imageData.imageNetNormalize();
+    writeln("normalizedImageData shape: ", normalizedImageData.shape);
+
+    const inputImage = new dynamicTensor(normalizedImageData);
+    writeln("inputImage shape: ", inputImage.shape());
+    const output = model(inputImage);
 
 
     // const predictions: ndarray(1,real(32)) = output.forceRank(rank=1).array;

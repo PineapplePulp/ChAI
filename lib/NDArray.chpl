@@ -2670,10 +2670,13 @@ proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b
 
 /* Computes the softmax operation over an :record:`ndarray`.
 
+   :arg dim: A dimension along which the softmax will be computed.
+   :type dim: int(64)
+
    :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
    :rtype: ndarray(rank, eltType)
 */
-proc ndarray.softmax(param dim : int(64)) {
+proc ndarray.softmax(param dim : int(64)) where 0 <= dim && dim < rank {
     return Bridge.softmax(
         this : Bridge.tensorHandle(eltType),
         dim
@@ -2683,10 +2686,13 @@ proc ndarray.softmax(param dim : int(64)) {
 
 /* Computes the softmin operation over an :record:`ndarray`.
 
+   :arg dim: A dimension along which the softmin will be computed.
+   :type dim: int(64)
+
    :returns: For a tensor ``t``, :math:`\mathsc{Softmax}(-t)`.
    :rtype: ndarray(rank, eltType)
  */
-proc ndarray.softmin(param dim : int(64)) {
+proc ndarray.softmin(param dim : int(64)) where 0 <= dim && dim < rank {
     return Bridge.softmin(
         this : Bridge.tensorHandle(eltType),
         dim
@@ -2695,6 +2701,12 @@ proc ndarray.softmin(param dim : int(64)) {
 
 
 /* Randomly zeroes elements in the :record:`ndarray` with probability 50%.
+
+   :arg p: The probability of zeroing an element. Default: `0.5`
+   :type p: real
+
+   :arg training: Apply dropout if `true`. Default: `false`
+   :type training: bool
 
    :returns: The :record:`ndarray` that was zeroed out.
    :rtype: ndarray(rank, eltType)
@@ -2713,6 +2725,12 @@ proc ndarray.dropout(p : real = 0.5, training : bool = false) {
    zero mean and unit standard deviation, the output of alpha dropout
    will maintain this mean and standard deviation. It combines well with
    SELU, which ensures that its output has zero mean and unit standard deviation.
+
+   :arg p: Probability of an element to be dropped. Default: `0.5`
+   :type p: real
+
+   :arg training: Apply alpha dropout of `true`. Default: `false`
+   :type training: bool
 
    :returns: The :record:`ndarray` that has had alpha dropout applied.
    :rtype: ndarray(rank, eltType)
@@ -2735,10 +2753,67 @@ proc ndarray.alphaDropout(p : real = 0.5, training : bool = false) {
    Each element will be masked independently on every forward call with probability `p` using
    samples from a Bernoulli distribution. The elements to be masked are randomized on every
    forward call, and scaled and shifted to maintain zero mean and unit variance.
+
+   :arg p: The probability of masking out a channel. Default: `0.5`
+   :type p: real
+
+   :arg training: Apply feature alpha dropout if `true`. Default: `false`
+   :type training: bool
+
+   :returns: A new :record:`ndarray` where feature alpha dropout has been applied.
+   :rtype: ndarray(rank, eltType)
  */
 
 proc ndarray.featureAlphaDropout(p : real = 0.5, training : bool = false) {
     return Bridge.featureAlphaDropout(
+        this : Bridge.tensorHandle(eltType),
+        p, training
+    ) : ndarray(rank, eltType);
+}
+
+
+/* Randomly zero out entire channels (a channel is a 2D feature map).
+
+   For example, the :math:`j`-th channel of the :math:`i`-th sample in the batched
+   input is a 2D tensor :math:`\mathrm{input}[i,j]` of the input tensor.
+   Each channel will be zeroed out independently on every forward call with probability `p`
+   using samples from a Bernoulli distribution.
+
+   :arg p: Probability of a channel to be zeroed. Default: `0.5`
+   :type p: real
+
+   :arg training: Apply dropout if `true`. Default: `false`
+   :type training: bool
+
+   :returns: A new :record:`ndarray` where dropout has been applied.
+   :rtype: ndarray(rank, eltType)
+ */
+proc ndarray.dropout2d(p : real = 0.5, training : bool = false) {
+    return Bridge.dropout2d(
+        this : Bridge.tensorHandle(eltType),
+        p, training
+    ) : ndarray(rank, eltType);
+}
+
+
+/* Randomly zero out entire channels (a channel is a 3D feature map).
+
+   For example, the :math:`j`-th channel of the :math:`i`-th sample in the batched
+   input is a 3D tensor :math:`\mathrm{input}[i,j]` of the input tensor.
+   Each channel will be zeroed out independently on every forward call with probability `p`
+   using samples from a Bernoulli distribution.
+
+   :arg p: Probability of a channel to be zeroed. Default: `0.5`
+   :type p: real
+
+   :arg training: Apply dropout if `true`. Default: `false`
+   :type training: bool
+
+   :returns: A new :record:`ndarray` where dropout has been applied.
+   :rtype: ndarray(rank, eltType)
+ */
+proc ndarray.dropout3d(p : real = 0.5, training : bool = false) {
+    return Bridge.dropout3d(
         this : Bridge.tensorHandle(eltType),
         p, training
     ) : ndarray(rank, eltType);

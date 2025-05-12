@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -82,33 +86,10 @@ bridge_tensor_t max_pool2d(
     int dilation
 );
 
-proto_bridge_simple(relu);
-
-proto_bridge_simple(relu6);
-
-proto_bridge_simple(gelu);
-
-proto_bridge_simple(logsigmoid);
-
-proto_bridge_simple(mish);
-
-proto_bridge_simple(selu);
-
-proto_bridge_simple(silu);
-
-proto_bridge_simple(softmax);
-
-proto_bridge_simple(softmin);
-
-proto_bridge_simple(softsign);
-
-proto_bridge_simple(tanhshrink);
-
 void split_loop(int64_t idx, int64_t n);
 void split_loop_filler(int64_t n,int64_t* ret);
 
 void show_webcam(void);
-
 
 // bridge_tensor_t conv2d(
 //     bridge_tensor_t input,
@@ -118,6 +99,42 @@ void show_webcam(void);
 //     nil_scalar_tensor_t padding
 // );
 
+proto_bridge_simple(gelu);
+
+proto_bridge_simple(logsigmoid);
+
+proto_bridge_simple(mish);
+
+proto_bridge_simple(relu);
+
+proto_bridge_simple(relu6);
+
+proto_bridge_simple(selu);
+
+proto_bridge_simple(silu);
+
+proto_bridge_simple(softsign);
+
+proto_bridge_simple(tanhshrink);
+
+
+bridge_tensor_t rrelu(bridge_tensor_t input, float lower, float upper, bool training);
+
+bridge_tensor_t hardshrink(bridge_tensor_t input, float lambda);
+
+bridge_tensor_t hardtanh(bridge_tensor_t input, float min_val, float max_val);
+
+bridge_tensor_t elu(bridge_tensor_t input, float alpha);
+
+bridge_tensor_t softplus(bridge_tensor_t input, float beta, float threhsold);
+
+bridge_tensor_t threshold(bridge_tensor_t input, float threshold, float value);
+
+bridge_tensor_t celu(bridge_tensor_t input, float alpha);
+
+bridge_tensor_t leaky_relu(bridge_tensor_t input, float negative_slope);
+
+bridge_tensor_t softshrink(bridge_tensor_t input, float lambda);
 
 
 #ifdef __cplusplus

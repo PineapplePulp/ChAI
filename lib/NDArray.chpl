@@ -269,12 +269,14 @@ proc ndarray.this(args: int...rank) {
     return data.this((...args));
 }
 
+
 proc ref ndarray.setData(const arr: [] eltType)
         where arr.rank == rank do
     if arr.domain == this.domain then
         data = arr;
     else
         this = arr;
+
 
 proc ref ndarray.reshapeDomain(const dom: domain(rank,int))
     where isRegularDomain(dom) {
@@ -517,6 +519,7 @@ proc ndarray.sum(axes: int...?axesCount): ndarray(rank,eltType) {
     return acc;
 }
 
+
 /* Yields the indices of all of the axes of the :record:`ndarray`, as a tuple.
 
    :returns: A tuple representing the indices of the axes of the :record:`ndarray`
@@ -528,6 +531,7 @@ proc ndarray.nDimTuple(): rank * int {
         tpl(i) = i;
     return tpl;
 }
+
 
 proc ndarray.mean(): ndarray(rank,eltType) do
     return this.mean((...this.nDimTuple()));
@@ -541,6 +545,8 @@ proc ndarray.mean(axes: int...?axesCount): ndarray(rank,eltType) {
     }
     return this.sum((...axes)) / denom;
 }
+
+
 proc ndarray.shrink(narg: 2*int ... rank,param exactBounds = false): ndarray(rank,eltType) {
     var newShape: rank * int;
     var sliceRanges: rank * range;
@@ -563,6 +569,7 @@ proc ndarray.shrink(narg: 2*int ... rank,param exactBounds = false): ndarray(ran
     shrunk.data = data[sliceDom];
     return shrunk;
 }
+
 
 proc ndarray.pad(narg: 2*int ... rank,value: eltType = 0): ndarray(rank,eltType) {
     var newShape: rank * int;
@@ -672,9 +679,7 @@ proc ndarray.squeeze(param newRank: int): ndarray(newRank,eltType) where newRank
 }
 
 
-/* Yields the minimum value from an :record:`ndarray`, as an :record:`ndarray`.
-
-   :returns: The minimum value from the :record:`ndarray`.
+/* :returns: The minimum value from the :record:`ndarray`.
    :rtype: ndarray(1, eltType)
  */
 proc ndarray.min(): ndarray(1,eltType) {
@@ -685,9 +690,7 @@ proc ndarray.min(): ndarray(1,eltType) {
 }
 
 
-/* Yields the maximum value from an :record:`ndarray`, as an :record:`ndarray`.
-
-   :returns: The maximum value from the :record:`ndarray`.
+/* :returns: The maximum value from the :record:`ndarray`.
    :rtype: ndarray(1, eltType)
  */
 proc ndarray.max(): ndarray(1,eltType) {
@@ -802,9 +805,7 @@ proc ndarray.topk(k: int): ndarray(1, int) where rank == 1 {
 }
 
 
-/* Retrieve the index of the largest element in a one-dimensional :record:`ndarray`.
-
-   :returns: The index of the largest element in a one-dimensional :record:`ndarray`.
+/* :returns: The index of the largest element in a one-dimensional :record:`ndarray`.
    If there are multiple indices in the array that hold the maximal element, this
    method will return the smallest such index.
    :rtype: int
@@ -842,34 +843,9 @@ proc ndarray.argmax() where rank == 1 {
    :returns: A new :record:`ndarray` with every element run through the recitifed linear unit function.
  */
 inline proc ndarray.relu() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom,eltType);
-    ref rlD = rl.data;
-    // @assertOnGpu
-    forall i in dom.every() {
-        const x = thisData[i];
-        rlD[i] = Math.max(0,x);
-    }
-    return rl;
+    return Bridge.relu(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
-/* Square every element of an :record:`ndarray`.
-
-   :returns: The a new :record:`ndarray` with the same data as the input,
-   squared elementwise.
- */
-inline proc ndarray.square() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom,eltType);
-    ref rlD = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rlD[i] = x * x;
-    }
-    return rl;
-}
 
 /* Computes the Gaussian error linear units function for each element.
 
@@ -880,18 +856,7 @@ inline proc ndarray.square() {
    :returns: A new :record:`ndarray` where every element has been passed through ``GELU`` as defined above.
  */
 inline proc ndarray.gelu() {
-    // Here because `Math.recipSqrt2` is unstable.
-    param recipSqrt2 = 0.70710678118654752440;
-
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom,eltType);
-    ref rlD = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rlD[i] = x * (0.5 * (1.0 + Math.erf(x * recipSqrt2)));
-    }
-    return rl;
+    return Bridge.gelu(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
 
@@ -906,15 +871,7 @@ inline proc ndarray.gelu() {
   :returns: A new :record:`ndarray` where the ``silu`` has been computed for each element, as defined above.
 */
 inline proc ndarray.silu() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = x / (1 + Math.exp(-x));
-    }
-    return rl;
+    return Bridge.silu(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
 
@@ -927,15 +884,7 @@ inline proc ndarray.silu() {
   :returns: A new :record:`ndarray` where ``mish`` has been computed for each element, as defined above.
  */
 inline proc ndarray.mish() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = x * Math.tanh(Math.log(1 + Math.exp(x)));
-    }
-    return rl;
+    return Bridge.mish(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
 
@@ -989,108 +938,101 @@ inline proc ndarray.tanh() {
 
     Clamps every element in the range :math:`[0, 6]`.
 
-    :returns: A new :record:`ndarray` where every element has been clamped to the range :math:`[0, 6]`.
+   :returns: A new :record:`ndarray` where every element has been clamped to the range :math:`[0, 6]`.
  */
 inline proc ndarray.relu6() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = Math.min(Math.max(0, x), 6);
-    }
-    return rl;
+    return Bridge.relu6(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
 
+/* Computes the SELU function for each element.
+
+   .. math::
+
+        \mathrm{SELU}(x) = s \cdot (\max(0, x) + \min(0, \alpha \cdot (e^x - 1)))
+    
+    where :math:`\alpha = 1.6732632423543772848170429916717` and :math:`s = 1.0507009873554804934193349852946`.
+
+   :returns: A new :record:`ndarray` where every element has been run through SELU as defined above.
+ */
 inline proc ndarray.selu() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    const alpha: eltType = 1.6732632423543772848170429916717;
-    const scale: eltType = 1.0507009873554804934193349852946;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = scale * (Math.max(0, x) + Math.min(0, alpha * (Math.exp(x) - 1)));
-    }
-    return rl;
+    return Bridge.selu(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
 
+/* Computes LogSigmoid for each element.
+
+   .. math::
+   
+       \mathrm{LogSigmoid}(x_i) = \log(\frac{1}{1 + e^{-x_i}})
+       
+    
+   :returns: A new :record:`ndarray` where every element has had LogSigmoid computed for it.
+ */
 inline proc ndarray.logsigmoid() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    // branching is ok here b/c still in CPU
-
-    use CTypes only c_sizeof, c_ptrTo;
-    use OS.POSIX only memcpy;
-
-    type intType = int(numBits(eltType)); // integer w/ same #ofbits as real
-    forall i in dom.every() {
-        const x = thisData[i]; // negative x
-        const threshold: eltType = 20.0;
-            
-        var func: eltType = -Math.log1p(Math.exp(-x)); // result after applying logsigmoid(x) = -softplus(-x) activation function
-        var lin: eltType = x;                          // linear function: - (-x) = x
-
-        var func_bits: intType;
-        var lin_bits: intType;
-        memcpy(c_ptrTo(func_bits), c_ptrTo(func), c_sizeof(eltType));
-        memcpy(c_ptrTo(lin_bits), c_ptrTo(lin), c_sizeof(eltType));
-
-        const condition: intType = (-x > threshold);
-        const mask: intType = 0 - condition;
-
-        var result_bits: intType = (mask & lin_bits) | (~mask & func_bits);
-
-        // rld[i] = output;
-        memcpy(c_ptrTo(rld[i]), c_ptrTo(result_bits), c_sizeof(eltType));
-    }
-    return rl;
+    return Bridge.logsigmoid(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
+
+/* Computes Tanhshrink for each element.
+
+   .. math::
+   
+       \mathrm{Tanhshrink}(x) = x - \mathrm{Tanh}(x)
+
+   :returns: A new :record:`ndarray` where every element has had Tanhshrink applied to it.
+ */
 inline proc ndarray.tanhshrink() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = x - Math.tanh(x);
-    }
-    return rl;
+    return Bridge.tanhshrink(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
+
+/* Computes Softsign for each element.
+
+   .. math::
+
+       \mathrm{Softsign}(x) = \frac{x}{1 + \left|x\right|}
+
+   :returns: A new :record:`ndarray` where every element has had Softsign applied to it.
+ */
 inline proc ndarray.softsign() {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = x / (1 + Math.abs(x));
-    }
-    return rl;
+    return Bridge.softsign(this : Bridge.tensorHandle(eltType)) : ndarray(rank, eltType);
 }
 
+
+/* Computes the Randomized Leaky ReLU function for each element.
+
+   .. math::
+
+       \mathrm{RReLU}(x) = \begin{cases}
+           x & \text{ if } x \geq 0 \\
+           \alpha{x} & \text{ otherwise }
+       \end{cases} 
+
+   where :math:`\alpha` is randomly sampled from uniform distribution
+   :math:`\mathcal{U}(\mathrm{lower}, \mathrm{upper})` during training
+   while during evaluation :math:`\alpha` is fixed with
+   :math:`\alpha = \frac{\mathrm{lower} + \mathrm{upper}}{2}`.
+
+   :arg lower: The lower bound of the uniform distribution :math:`\mathcal{U}`. Default: :math:`\frac{1}{8}`
+   :type lower: eltType
+
+   :arg upper: The upper bound of the uniform distribution :math:`\mathcal{U}`. Default: :math:`\frac{1}{3}`
+   :type upper: eltType
+
+   :arg training: Whether or not in training mode. Default: `false`
+   :type training: bool
+
+   :returns: A new :record:`ndarray` where RReLU has been computed for each element.
+   :rtype: ndarray(rank, eltType)
+ */
 inline proc ndarray.rrelu(lower: eltType=1.0/8.0, upper: eltType=1.0/3.0, training: bool=false) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    var a: [dom] eltType = (lower + upper) / 2.0;
-    if training then
-        Random.fillRandom(a,min=lower,max=upper);
-    forall i in dom.every() {
-        const x = thisData[i];
-        const alpha = a[i];
-        rld[i] = Math.max(0, x) + alpha * Math.min(0,x);
-    }
-    return rl;
+    return Bridge.rrelu(
+        this : Bridge.tensorHandle(eltType),
+        lower : real(32),
+        upper : real(32),
+        training
+    ) : ndarray(rank, eltType);
 }
 
 inline proc ndarray.hardswish() {
@@ -1120,160 +1062,201 @@ inline proc ndarray.hardsigmoid() {
     return rl;
 }
 
-inline proc ndarray.hardShrink(alpha: eltType=0.5) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        const floatMax = Types.max(eltType);
-        const xmap0 = Math.ceil(1.0 / floatMax * (x - alpha) * (x + alpha)); // 0 if x in [-l, l], 1 otherwise 
-        rld[i] = x * xmap0;
-    }
-    return rl;
+
+/* Computes the HardShrink function for each element.
+
+   .. math::
+
+       \mathrm{HardShrink}(x) = \begin{cases}
+           x & \text{ if } x > \alpha \\
+           x & \text{ if } x < -\alpha \\
+           0 \text{ otherwise }
+       \end{cases}
+
+   :arg alpha: :math:`\alpha` in the definition of HardShrink. Default: :math:`\frac{1}{2}`
+   :type alpha: eltType
+
+   :returns: A new :record:`ndarray` where HardShrink has been computed for each element.
+   :rtype: ndarray(rank, eltType)
+ */
+inline proc ndarray.hardshrink(alpha: eltType=0.5) {
+    return Bridge.hardshrink(
+        this : Bridge.tensorHandle(eltType),
+        alpha : real(32)
+    ) : ndarray(rank, eltType);
 }
 
-inline proc ndarray.hardTanh(minVal: eltType=-1.0, maxVal: eltType=1.0) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        const floatMax: eltType = Types.max(eltType);
-        const xgmaxval: eltType = Math.ceil(1.0 / floatMax * (x - maxVal)); // x greater than maxVal: 1 if true, 0 otherwise
-        const xlminval: eltType = Math.ceil(1.0 / floatMax * (x - minVal)); // x less than minVal: 1 if true, o otherwise
-        rld[i] = Math.max(x, minVal) * (1 - xlminval) + Math.min(x, maxVal) * xgmaxval + x * xlminval * (1 - xgmaxval);
-    }
-    return rl;
+
+/* Computes the HardTanh function for each element.
+
+   .. math::
+
+       \mathrm{HardTanh}(x) = \begin{cases}
+           \mathrm{maxVal} & \text{ if } x > \mathrm{maxVal} \\
+           \mathrm{minVal} & \text{ if } x < \mathrm{minVal} \\
+           x & \text{ otherwise }
+       \end{cases}
+
+   :arg minVal: The minimum value. Default: `-1`
+   :type minVal: eltType
+
+   :arg maxVal: The maximum value. Default: `1`
+   :type maxVal: eltType
+
+   :returns: A new :record:`ndarray` where HardTanh has been applied to each element.
+   :rtype: ndarray(rank, eltType)
+ */
+inline proc ndarray.hardtanh(minVal: eltType=-1.0, maxVal: eltType=1.0) {
+    return Bridge.hardtanh(
+        this : Bridge.tensorHandle(eltType),
+        minVal : real(32),
+        maxVal : real(32)
+    ) : ndarray(rank, eltType);
 }
 
+
+/* Computes ELU for each element.
+
+   .. math::
+
+       \mathrm{ELU}(x) = \begin{cases}
+           x & \text{ if } x > 0 \\
+           \alpha \cdot (e^x - 1) & \text{ otherwise }
+       \end{cases}
+
+   :arg alpha: The :math:`\alpha` value for ELU. Default: `1`
+   :type alpha: eltType
+
+   :returns: A new :record:`ndarray` where ELU has been computed for each element.
+   :rtype: ndarray(rank, eltType)
+ */
 inline proc ndarray.elu(alpha: eltType=1.0) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        const floatMax: eltType = Types.max(eltType);
-        const xgz: eltType = Math.ceil(x / floatMax); // x greater than zero: 1 if true, 0 otherwise
-        rld[i] = x * xgz + alpha * (Math.exp(x) - 1) * (1 - xgz);
-    }
-    return rl;
+    return Bridge.elu(
+        this : Bridge.tensorHandle(eltType),
+        alpha : real(32)
+    ) : ndarray(rank, eltType);
 }
 
 
+/* Computes Softplus for each element.
+
+   .. math::
+
+       \mathrm{Softplus}(x) = \frac{1 + e^(\beta \cdot x)}{\beta}
+
+   Reverts to the linear function when :math:`\beta{\mathrm{input}} > \mathrm{threshold}`.
+
+   :arg beta: :math:`\beta` value for Softplus. Default: `1`
+   :type beta: eltType
+
+   :arg threshold: The threshold over which to revert to the linear function.
+   :type threshold: eltType
+
+   :returns: A new :record:`ndarray` where Softplus has been computed for each element.
+   :rtype: ndarray(rank, eltType)
+ */
 inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
-        const ref thisData = data;
-        const dom = this.domain;
-        var rl = new ndarray(dom, eltType);
-        ref rld = rl.data;
-
-        // branching is ok here since we are still in the CPU
-
-        // beta = 0 should return inf according to PyTorch, but there is no real32 inf
-        if beta == 0 {
-            rld = Math.inf;
-        }
-
-        // beta non-zero here
-        else {
-            use CTypes only c_sizeof, c_ptrTo;
-            use OS.POSIX only memcpy;
-
-            type intType = int(numBits(eltType)); // integer w/ same #ofbits as real
-            forall i in dom.every() {
-                const x = thisData[i];
-                
-                var func: eltType = Math.log1p(Math.exp(beta * x)) / beta; // result after applying softplus activation function
-                var lin: eltType = x;                                      // linear function
-
-                var func_bits: intType;
-                var lin_bits: intType;
-                memcpy(c_ptrTo(func_bits), c_ptrTo(func), c_sizeof(eltType));
-                memcpy(c_ptrTo(lin_bits), c_ptrTo(lin), c_sizeof(eltType));
-
-                const condition: intType = (x * beta > threshold);
-                const mask: intType = 0 - condition;
-
-                var result_bits: intType = (mask & lin_bits) | (~mask & func_bits);
-
-                // rld[i] = output;
-                memcpy(c_ptrTo(rld[i]), c_ptrTo(result_bits), c_sizeof(eltType));
-            }
-        }
-        return rl;
+    return Bridge.softplus(
+        this : Bridge.tensorHandle(eltType),
+        beta : real(32),
+        threshold : real(32)
+    ) : ndarray(rank, eltType);
 }
 
+
+/* Thresholds each element of the input tensor.
+
+   .. math::
+
+       \mathrm{Threshold}(x) = \begin{cases}
+           x & \text{ if } x > \mathrm{threshold} \\
+           \mathrm{value} & \text{ otherwise }
+       \end{cases}
+
+   :arg threshold: The value to threshold at
+   :type threshold: eltType
+
+   :arg value: The value to replace with
+   :type value: eltType
+
+   :returns: A new :record:`ndarray` where every element has been thresholded.
+   :rtype: ndarray(rank, eltType)
+ */
 inline proc ndarray.threshold(threshold: eltType, value: eltType) { // PyTorch has no defaults for threshold
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        const floatMax: eltType = Types.max(eltType); // maximum value a float_64 can take
-        const xgeqt: eltType = Math.ceil((x - threshold) / floatMax); // 1 if x >= threshold, 0 otherwise
-        rld[i] = x * xgeqt + value * (1 - xgeqt);
-    }
-    return rl;
+    return Bridge.threshold(
+        this : Bridge.tensorHandle(eltType),
+        threshold : real(32),
+        value : real(32)
+    ) : ndarray(rank, eltType);
 }
 
-// inline proc ndarray.softplus(beta: eltType=1.0, threshold: eltType=20.0) {
-//     const ref thisData = data;
-//     const dom = this.domain;
-//     var rl = new ndarray(dom, eltType);
-//     ref rld = rl.data;
-//     forall i in dom.every() {
-//         const x = thisData[i];
-//         const floatMax: eltType = Types.max(eltType);
-//         const xgbt: eltType = Math.ceil((x - threshold / beta) / floatMax); // x greater than beta * threshold: 1 if true, 0 otherwise
-//         rld[i] = x * xgbt + 1.0 / beta * Math.log(1 + Math.exp(beta * x)) * (1 - xgbt);
-//     }
-//     return rl;
-// }
 
+/* Compute CELU for each element.
+
+   .. math::
+
+       \mathrm{CELU}(x) = \max(0, x) + \min(0, \alpha \cdot (e^\frac{x}{\alpha} - 1))
+
+   :arg alpha: The :math:`\alpha` value for CELU. Default: `1`
+   :type alpha: eltType
+
+   :returns: A new :record:`ndarray` where CELU has been computed for each element.
+   :rtype: ndarray(rank, eltType)
+ */
 inline proc ndarray.celu(alpha: eltType=1.0) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = Math.max(0.0, x) + Math.min(0.0, alpha * (Math.exp(x / alpha) - 1.0));
-    }
-    return rl;
+    return Bridge.celu(
+        this : Bridge.tensorHandle(eltType),
+        alpha : real(32)
+    ) : ndarray(rank, eltType);
 }
 
-inline proc ndarray.leakyrelu(negativeSlope: eltType=Math.exp(-2)) {
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    forall i in dom.every() {
-        const x = thisData[i];
-        rld[i] = Math.max(0, x) + negativeSlope * Math.min(0, x);
-    }
-    return rl;
+
+/* Compute LeakyReLU for each element.
+
+   .. math::
+
+       \mathrm{LeakyReLU}(x) = \max(0, x) + \mathrm{negativeSlope} \cdot \min(0, x)
+
+   :arg negativeSlope: Controls the angle of the negative slope which is used for negative input values. Default: :math:`\frac{1}{100}`
+   :type negativeSlope: eltType
+
+   :returns: A new :record:`ndarray` where LeakyReLU has been applied to each element.
+   :rtype: ndarray(rank, eltType)
+ */
+inline proc ndarray.leakyRelu(negativeSlope: eltType=0.01) {
+    return Bridge.leakyRelu(
+        this : Bridge.tensorHandle(eltType),
+        negativeSlope : real(32)
+    ) : ndarray(rank, eltType);
 }
 
+
+/* Applies the soft shrinkage function to each element.
+
+   .. math::
+
+       \mathrm{SoftShrinkage}(x) = \begin{cases}
+           x - \alpha & \text{ if } x > \alpha \\
+           x + \alpha & \text{ if } x < -\alpha \\
+           0 & \text{ otherwise }
+       \end{cases}
+
+   :arg alpha: The :math:`alpha` value for the SoftShrinkage formulation.
+   :type alpha: eltType
+
+   :returns: A new :record:`ndarray` where SoftShrinkage has been applied to each element.
+   :rtype: ndarray(rank, eltType)
+ */
 inline proc ndarray.softshrink(alpha: eltType=0.5) {  // l must be non-negative
-    if alpha < 0 then util.err("Argument to softshrink function must be non-negative");
-    const ref thisData = data;
-    const dom = this.domain;
-    var rl = new ndarray(dom, eltType);
-    ref rld = rl.data;
-    const floatMax: eltType = Types.max(eltType);
-    forall i in dom.every() {
-        const x = thisData[i];
-        const xgl = Math.ceil(1.0 / floatMax * (x - alpha)); // x greater than lambda: 1 if true, otherwise
-        const xlnl = 1 - Math.ceil(1.0 / floatMax * (x + alpha)); // x less than negative lambda, 1 if true, 0 otherwise
-        rld[i] = xgl * (x - alpha) + xlnl * (x + alpha);
-    }
-    return rl;
+    return Bridge.softshrink(
+        this : Bridge.tensorHandle(eltType),
+        alpha : real(32)
+    ) : ndarray(rank, eltType);
 }
 
+/* :returns: A one-dimensional array consisting of all the elements of `this`.
+   :rtype: [] eltType
+ */
 proc ndarray.degenerateFlatten(): [] eltType {
     const myDom = this.domain;
     const mySize = myDom.size;

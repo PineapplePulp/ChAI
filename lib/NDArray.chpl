@@ -1338,54 +1338,6 @@ operator :(it: _iteratorRecord, type t: ndarray(?rank,?eltType)) do
     return new ndarray(it);
 
 
-// Need help implementtion these. 
-// operator =(ref lhs: ndarray(?rank,?eltType), rhs: _iteratorRecord) {
-//     var arr = rhs;
-//     lhs._domain = arr.domain;
-//     lhs.data = arr;
-// }
-// operator :(val: _iteratorRecord, type t: ndarray(?rank,?eltType)) {
-//     return new ndarray(val);
-// }
-
-
-// // This bunch is problematic.
-// proc remote.init(other: ndarray(?rank,?eltType)) {
-//     this.init(ndarray(rank,eltType));
-//     other.populateRemote(this);
-// }
-
-// proc remote.init=(ref other: ndarray(?rank,?eltType)) {
-//     this.init(ndarray(rank,eltType));
-//     other.populateRemote(this);
-// }
-
-
-
-// operator =(ref lhs: remote(ndarray(?rank,?eltType)), rhs: ndarray(rank,eltType)) {
-//     rhs.populateRemote(lhs);
-// }
-
-// operator :(val: ndarray(?rank,?eltType), type t: remote(ndarray(rank,eltType))) {
-//     return val.toRemote();
-// }
-
-// proc remote.init(ref other: remote(ndarray(?rank,?eltType))) {
-//     this.eltType = ndarray(rank,eltType);
-//     this.remoteResource = other.remoteResource;
-// }
-
-// proc remote.init=(ref other: remote(ndarray(?rank,?eltType))) {
-//     this.eltType = ndarray(rank,eltType);
-//     this.remoteResource = other.remoteResource;
-// }
-
-// operator =(ref lhs: remote(ndarray(?rank,?eltType)), rhs:remote( ndarray(rank,eltType))) {
-//     lhs.remoteResource = rhs.remoteResource;
-// }
-
-// End problemetic bunch.
-
 proc zipArr(a: ndarray(?rank,?eltType),b: ndarray(rank,eltType),f): ndarray(rank,eltType) {
     const dom = a.domain;
     var c: ndarray(rank,eltType) = new ndarray(a.domain,eltType);
@@ -2443,14 +2395,6 @@ proc type ndarray.multiReader(path: string) throws {
 }
 
 proc type ndarray.loadFrom(filePath: string, param rank: int, type eltType = defaultEltType): ndarray(rank,eltType) throws {
-    // var arr = new ndarray(rank,eltType);
-    // var file = IO.open(filePath, IO.ioMode.r);
-    // var fr = file.reader();
-    // arr.read(fr);
-    // return arr;
-
-    // return ndarray.readInPlace(multiReader(filePath),rank,eltType);
-
     var arr = new ndarray(rank,eltType);
     var fr = ndarray.multiReader(filePath);
     arr.read(fr);
@@ -2473,82 +2417,6 @@ class _tensor_resource {
 
 
 }
-
-// Some examples. 
-// const dom = util.emptyDomain(2);
-// writeln(dom);
-
-// printType(ndarray(1));
-// var A: ndarray(1);
-// A._domain = {0..#3};
-// // A.data = [1.0,2.0,3.0];
-// A = [1.0,2.0,3.0];
-// writeln(A);
-
-// use GpuDiagnostics;
-
-// startGpuDiagnostics();
-// startVerboseGpu();
-
-// var device = here.gpus[0];
-
-// on device {
-//     var arr = [1.0,2.0,3.0];
-
-//     var A: ndarray(1) = arr;
-//     writeln("A -> ",A);
-
-//     var B: ndarray(1) = new ndarray(arr);
-//     // B = [1.0,2.0,3.0];
-
-//     writeln("B -> ",B.domain);
-
-//     var dom = {0..#3,0..#5};
-
-//     var C: ndarray(2) = new ndarray(dom);
-//     writeln("C -> ",C);
-// }
-
-// var A: ndarray(1) = [1.0,2.0,3.0];
-// writeln(A);
-
-// var B: ndarray(1) = new ndarray([1.0,2.0,3.0]);
-// // B = [1.0,2.0,3.0];
-
-// writeln(B.domain);
-
-// var C: ndarray(2) = new ndarray({0..#3,0..#5});
-// var c = 0;
-// for i in C.domain {
-//     C.data[i] = c;
-//     c += 1;
-// }
-// writeln(C);
-
-// C = C.reshape({0..#5,0..#3});
-// writeln(C);
-
-// writeln(C[0,0]);
-
-// C[0,0] = 70.0;
-
-// var D = C[{0..1,0..1}];
-
-// C[{0..1,0..1}]=2.0;
-
-
-// writeln(D,D.type:string);
-// writeln(C,C.type:string);
-
-// var E = C.slice(1,..);
-// writeln(E);
-
-
-// type T = (int,real);
-// writeln(T:string,isTupleType(T));
-
-// end examples. 
-
 
 
 proc type ndarray.fullOuter(a: ndarray(?rankA,?eltType), b: ndarray(?rankB, eltType)): ndarray(rankA + rankB, eltType) {
@@ -2638,19 +2506,13 @@ proc drop(param count: int, param s: string) param do
 
 
 proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b: ndarray(?rankB, eltType)) {
-
     for param i in 0..<subscripts.size {
         param c = subscripts[i];
-        // writeln(c);
     }
     param fst = subscripts.takeUntil(",");
     param subscripts_1 = subscripts.drop(fst.size + 1);
     param snd = splitAt(subscripts_1,"-");
     param subscripts_2 = subscripts_1.drop(snd.size + 2);
-    // param thd 
-    // param fth
-    // param vth
-    // Cool three letter names for 3,4,5
 
     for param i in 0..<fst.size {
         param ci = fst[i];
@@ -2663,7 +2525,7 @@ proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b
             }
         }
     }
-    // compilerError("Must sum across one axis!");
+
     return a;
 }
 

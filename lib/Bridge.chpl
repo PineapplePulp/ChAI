@@ -219,4 +219,44 @@ module Bridge {
         in input : bridge_tensor_t,
         in alpha : real(32)
     ) : bridge_tensor_t;
+
+    extern proc softmax(
+        in input : bridge tensor_t,
+        param dim : int(64)
+    ) : bridge_tensor_t;
+
+    extern proc softmin(
+        in input : bridge_tensor_t,
+        param dim : int(64)
+    ) : bridge_tensor_t;
+
+    extern proc dropout(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern "alpha_dropout" proc alphaDropout(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern "feature_alpha_dropout" proc featureAlphaDropout(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern proc dropout2d(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern proc dropout3d(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
 }

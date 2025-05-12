@@ -30,7 +30,6 @@ namespace tnf = torch::nn::functional;
     }
 
 
-
 int bridge_tensor_elements(bridge_tensor_t &bt) {
     int size = 1;
     for (int i = 0; i < bt.dim; ++i) {
@@ -586,8 +585,106 @@ extern "C" bridge_tensor_t softshrink(
 ) {
     auto t_input = bridge_to_torch(input);
     auto t_output = tnf::softshrink(t_input,
-        tnf::SoftshrinkFuncOptions()
-            .lambda(lambda));
+        tnf::SoftshrinkFuncOptions(lambda));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t softmax(
+    bridge_tensor_t input,
+    std::int64_t dim
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::softmax(t_input,
+        tnf::SoftmaxFuncOptions(dim));
+    
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t softmin(
+    bridge_tensor_t input,
+    std::int64_t dim
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::softmin(t_input,
+        tnf::SoftminFuncOptions(dim));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t dropout(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::dropout(
+        tnf::DropoutFuncOptions()
+            .p(p)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t alpha_dropout(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::alpha_dropout(
+        tnf::AlphaDropoutFuncOptions()
+            .p(p)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t feature_alpha_dropout(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::feature_alpha_dropout(
+        tnf::FeatureAlphaDropoutFuncOptions()
+            .p(p)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t dropout2d(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::dropout2d(
+        tnf::Dropout2dFuncOptions()
+            .p(p)
+            .training(training));
+    
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t dropout3d(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::dropout3d(
+        tnf::Dropout3dFuncOptions()
+            .p(p)
+            .training(training));
 
     return torch_to_bridge(t_output);
 }

@@ -8,6 +8,12 @@
 #endif
 
 #ifdef __cplusplus
+#include <cstdint>
+#else
+#include <stdint.h>
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -135,6 +141,28 @@ bridge_tensor_t celu(bridge_tensor_t input, float alpha);
 bridge_tensor_t leaky_relu(bridge_tensor_t input, float negative_slope);
 
 bridge_tensor_t softshrink(bridge_tensor_t input, float lambda);
+
+#ifdef __cplusplus
+bridge_tensor_t softmax(bridge_tensor_t input, std::int64_t dim);
+#else
+bridge_tensor_t softmax(bridge_tensor_t input, int64_t dim);
+#endif
+
+#ifdef __cplusplus
+bridge_tensor_t softmin(bridge_tensor_t input, std::int64_t dim);
+#else
+bridge_tensor_t softmin(bridge_tensor_t input, int64_t dim);
+#endif
+
+bridge_tensor_t dropout(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t alpha_dropout(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t feature_alpha_dropout(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t dropout2d(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t dropout3d(bridge_tensor_t input, double p, bool training);
 
 
 #ifdef __cplusplus

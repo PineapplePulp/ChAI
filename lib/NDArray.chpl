@@ -1254,6 +1254,7 @@ inline proc ndarray.softshrink(alpha: eltType=0.5) {  // l must be non-negative
     ) : ndarray(rank, eltType);
 }
 
+
 /* :returns: A one-dimensional array consisting of all the elements of `this`.
    :rtype: [] eltType
  */
@@ -1268,6 +1269,7 @@ proc ndarray.degenerateFlatten(): [] eltType {
     }
     return flat;
 }
+
 
 proc ndarray.toBridgeTensor(): Bridge.tensorHandle(eltType) do
     return Bridge.createBridgeTensor(this.data);
@@ -2671,22 +2673,11 @@ proc type ndarray.einsum(param subscripts: string,a: ndarray(?rankA,?eltType), b
    :returns: For a tensor ``t``, :math:`\frac{\exp{t}}{\Sigma \exp{t}}`.
    :rtype: ndarray(rank, eltType)
 */
-proc ndarray.softmax(): ndarray(this.rank, this.eltType) {
-    const dom = this.domain;
-    const ref thisData = this.data;
-
-    var denom: this.eltType = 0.0;
-    forall i in dom.every() with (+ reduce denom) {
-        denom += Math.exp(thisData[i]);
-    }
-
-    var softmaxxed = new ndarray(this.eltType, dom);
-    ref softmaxData = softmaxxed.data;
-    forall i in dom.every() {
-        softmaxData[i] = Math.exp(thisData[i]) / denom;
-    }
-
-    return softmaxxed;
+proc ndarray.softmax(param dim : int(64)) {
+    return Bridge.softmax(
+        this : Bridge.tensorHandle(eltType),
+        dim
+    ) : ndarray(rank, eltType);
 }
 
 
@@ -2695,10 +2686,11 @@ proc ndarray.softmax(): ndarray(this.rank, this.eltType) {
    :returns: For a tensor ``t``, :math:`\mathsc{Softmax}(-t)`.
    :rtype: ndarray(rank, eltType)
  */
-proc ndarray.softmin(): ndarray(this.rank, this.eltType)
-    where isSubtype(this.eltType, real)
-{
-    return (-this).softmax();
+proc ndarray.softmin(param dim : int(64)) {
+    return Bridge.softmin(
+        this : Bridge.tensorHandle(eltType),
+        dim
+    ) : ndarray(rank, eltType);
 }
 
 
@@ -2707,72 +2699,50 @@ proc ndarray.softmin(): ndarray(this.rank, this.eltType)
    :returns: The :record:`ndarray` that was zeroed out.
    :rtype: ndarray(rank, eltType)
  */
-proc ndarray.dropout(param inplace: bool = false): ndarray(this.rank, this.eltType) {
-    const randomData: int[this.domain];
-    Random.fillRandom(randomData, 0, 1);
-
-    ref thisData = this.data;
-    if inplace {
-        forall i in this.domain.every() {
-            thisData[i] *= randomData[i];
-        }
-
-        return this;
-    } else {
-        var dropped = new ndarray(this.eltType, this.domain);
-        ref droppedData = dropped.data;
-        forall i in this.domain.every() {
-            droppedData[i] = thisData[i] * randomData[i];
-        }
-
-        return dropped;
-    }
+proc ndarray.dropout(p : real = 0.5, training : bool = false) {
+    return Bridge.dropout(
+        this : Bridge.tensorHandle(eltType),
+        p, training
+    ) : ndarray(rank, eltType);
 }
 
-/*
-proc main() {
-    // More examples. 
-    writeln("Hello!");
-    // {
-    //     var A = ndarray.fromRanges(real, 0..<5);
-    //     var B = ndarray.fromRanges(real, 0..<3);
 
-    //     A.data += 1;
-    //     B.data += 1;
+/* Apply alpha dropout to the input.
 
-    //     writeln(A);
-    //     writeln(B);
-        
-    //     var C = ndarray.fullOuter(A,B);
-    //     writeln(C);
+   Alpha dropout maintains the self-normalizing property. For an input with
+   zero mean and unit standard deviation, the output of alpha dropout
+   will maintain this mean and standard deviation. It combines well with
+   SELU, which ensures that its output has zero mean and unit standard deviation.
 
-    //     var t = (1,2,3,4,5,6);
-    //     writeln(t);
-    //     writeln(t.removeIdx(3));
-    // }
-
-    // var A = ndarray.fromRanges(real, 0..<5,0..<3);
-    // var B = ndarray.fromRanges(real, 0..<3,0..<7);
-
-    // A.data += 1;
-    // B.data += 1;
-
-    // var D = ndarray.contract(A,B,1,0);
-    // writeln(D);
-
-    // var E = ndarray.einsum("ij,kh->ih",A,B);
-    // writeln(E);
-    // E[1,1] = 2;
+   :returns: The :record:`ndarray` that has had alpha dropout applied.
+   :rtype: ndarray(rank, eltType)
+ */
+proc ndarray.alphaDropout(p : real = 0.5, training : bool = false) {
+    return Bridge.alphaDroput(
+        this : Bridge.tensorHandle(eltType),
+        p, training
+    ) : ndarray(rank, eltType);
+}
 
 
-    var A = ndarray.fromRanges(real, 0..<5,0..<3);
-    var B = ndarray.fromRanges(real, 0..<5,0..<3);
+/* Randomly masks out entire channels.
 
-    writeln(A + B);
+   For example, the :math:`j`-th channel of the :math:`i`-th sample of the input
+   is a tensor :math:`\mathrm{input}[i,j]` of the input tensor. Instead of setting
+   activations to zero, as in regular Dropout, the activations are set to the negative
+   saturation value of the SELU activation function.
 
+   Each element will be masked independently on every forward call with probability `p` using
+   samples from a Bernoulli distribution. The elements to be masked are randomized on every
+   forward call, and scaled and shifted to maintain zero mean and unit variance.
+ */
 
-    // param r = 0..<3;
-    // writeln(r);
-}*/
+proc ndarray.featureAlphaDropout(p : real = 0.5, training : bool = false) {
+    return Bridge.featureAlphaDropout(
+        this : Bridge.tensorHandle(eltType),
+        p, training
+    ) : ndarray(rank, eltType);
+}
+
 
 }

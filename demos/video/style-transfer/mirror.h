@@ -1,15 +1,15 @@
 
-#ifndef MIRROR_H
-#define MIRROR_H
+// #ifndef MIRROR_H
+// #define MIRROR_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void run_mirror();
+int run_mirror(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // MIRROR_H
+// #endif // MIRROR_H

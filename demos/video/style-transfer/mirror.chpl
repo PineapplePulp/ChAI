@@ -12,6 +12,9 @@ use CTypes;
 
 extern proc run_mirror(): int;
 
+extern record cvVideoCapture {}
+
+extern proc get_video_capture(): cvVideoCapture;
 
 proc main(args: [] string) {
     writeln("Hello, world!");

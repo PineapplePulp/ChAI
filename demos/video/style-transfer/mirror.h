@@ -6,7 +6,12 @@
 extern "C" {
 #endif
 
+struct cvVideoCapture;
+typedef struct cvVideoCapture cvVideoCapture;
+
 int run_mirror(void);
+
+cvVideoCapture get_video_capture(void);
 
 #ifdef __cplusplus
 }

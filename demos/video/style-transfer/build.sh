@@ -3,5 +3,7 @@
 
 # /usr/bin/clang++ -std=c++20 -c -fPIC mirror.cpp -o mirror.o $(pkg-config --cflags --libs opencv4)
 
-g++ -std=c++20 -c -fPIC mirror.cpp -o mirror.o $(pkg-config --cflags opencv4)
-chpl mirror.h mirror.o mirror.chpl --fast --print-commands --ldflags $(pkg-config --cflags --libs opencv4) -lstdc++
+SDL2LIBS="-I/opt/homebrew/include -I/opt/homebrew/include/SDL2 -L/opt/homebrew/lib -lSDL2"
+
+g++ -std=c++20 -c -fPIC mirror.cpp -o mirror.o $(pkg-config --cflags opencv4) $(pkg-config --cflags sdl2)
+chpl mirror.h mirror.o mirror.chpl --print-commands --ldflags $(pkg-config --cflags --libs opencv4) -lstdc++

@@ -1,11 +1,13 @@
 
-include lib/Makefile.smol
+-include lib/Makefile.smol
 
-all: libsmol cppmain
+
+all: main 
 
 # chpl --library --library-makefile --library-cmakelists smol.chpl
 
-libsmol: smol.chpl
+
+LIB_GEN_CMD = \
 	chpl \
 	--library \
 	--dynamic \
@@ -15,6 +17,31 @@ libsmol: smol.chpl
 	--library-cmakelists \
 	--no-munge-with-ids \
 	smol.chpl
+
+
+pre-build:
+	if [ -d lib ]; then \
+		echo "lib directory already exists" \
+	else \
+		$(LIB_GEN_CMD) \
+	fi
+	
+
+
+libsmol: smol.chpl
+	$(LIB_GEN_CMD)
+
+
+main: main.cpp smol_wrapper.h lib/libsmol.so
+	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o main $(CHPL_LDFLAGS)
+
+clean:
+	rm -f maincpp maincpp.o main.o main
+
+cleanall: clean
+	rm -rf lib
+
+
 
 cmain: main.c
 	$(CHPL_COMPILER) $(CHPL_CFLAGS) -o main main.c $(CHPL_LDFLAGS)
@@ -59,9 +86,3 @@ maincpp.o: main.cpp smol_wrapper.h
 # 	$(CHPL_LINKER) -o maincpp maincpp.o
 # #$(CHPL_LINKER) $(CHPL_CFLAGS) -o main main.o $(CHPL_LDFLAGS)
 
-maincpp: main.cpp smol_wrapper.h
-	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o main $(CHPL_LDFLAGS)
-
-clean:
-	rm -f maincpp maincpp.o main.o main
-# rm -f main lib/libsmol.a

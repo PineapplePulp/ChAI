@@ -26,15 +26,7 @@ cv::Mat new_frame(cv::Mat &frame) {
     cv::Mat new_rgb_frame(height, width, CV_8UC3,new_frame_array.elts);
     cv::cvtColor(new_rgb_frame, new_rgb_frame, cv::COLOR_RGB2BGR);
 
-    // chpl_free_external_array(new_frame_array);
-
     return new_rgb_frame;
-
-    // std::cout << "Width: " << width << ", Height: " << height << ", Channels: " << channels << ", Size: " << size << std::endl;
-
-
-
-    // chpl_external_array frame_data_ptr = chpl_make_external_array_ptr(rgb_frame.data, );
 }
 
 

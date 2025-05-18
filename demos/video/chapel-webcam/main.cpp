@@ -7,6 +7,45 @@
 
 
 cv::Mat new_frame(cv::Mat &frame) {
+    cv::Mat rgb_uchar_frame;
+    cv::cvtColor(frame, rgb_uchar_frame, cv::COLOR_BGR2RGB);
+
+    cv::Mat rgb_float_frame;
+    rgb_uchar_frame.convertTo(rgb_float_frame, CV_32FC3, 1.0f/255.0f);
+
+    // cv::MatSize size = rgb_frame.size;
+    // std::cout << "x " << size[0] << " y " << size[1] << " channels " << rgb_frame.dims << std::endl;
+    int64_t width = rgb_float_frame.cols;
+    int64_t height = rgb_float_frame.rows;
+    int64_t channels = rgb_float_frame.channels();
+    int64_t pixels = rgb_float_frame.total();
+    int64_t size = pixels * channels;
+
+    chpl_external_array 
+        rgb_float_frame_data_ptr = chpl_make_external_array_ptr(rgb_float_frame.data,size);
+    
+    chpl_external_array 
+        rgb_float_output_frame_array = getNewFrame(&rgb_float_frame_data_ptr, width, height, channels);
+    
+    chpl_free_external_array(rgb_float_frame_data_ptr);
+
+    // cv::Mat new_rgb_frame(height, width, CV_8UC3,new_frame_array.elts);
+    // cv::cvtColor(new_rgb_frame, new_rgb_frame, cv::COLOR_RGB2BGR);
+
+
+    cv::Mat rgb_float_output_frame(height,width,CV_32FC3,rgb_float_output_frame_array.elts); // frame to write to
+
+    cv::Mat rgb_uchar_output_frame;
+    rgb_float_output_frame.convertTo(rgb_uchar_output_frame, CV_8UC3, 255.0f); 
+    
+    cv::Mat bgr_uchar_output_frame;
+    cv::cvtColor(rgb_uchar_output_frame, bgr_uchar_output_frame, cv::COLOR_RGB2BGR);
+
+    return bgr_uchar_output_frame;
+}
+
+/*
+cv::Mat new_frame(cv::Mat &frame) {
     cv::Mat rgb_frame;
     cv::cvtColor(frame, rgb_frame, cv::COLOR_BGR2RGB);
     std::cout << "Frame size: " << rgb_frame.size() << std::endl;
@@ -28,7 +67,7 @@ cv::Mat new_frame(cv::Mat &frame) {
 
     return new_rgb_frame;
 }
-
+*/
 
 /*
 void new_frame(cv::Mat &frame) {

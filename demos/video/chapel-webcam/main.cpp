@@ -1,5 +1,47 @@
 #include "smol_wrapper.h"
 
+
+// #include <opencv2/opencv.hpp>
+// #include <iostream>
+
+
+// int mirror() {
+//     cv::VideoCapture cap(0);
+//     if (!cap.isOpened()) {
+//         std::cerr << "Error: Cannot open the webcam.\n";
+//         return -1;
+//     }
+
+//     cv::Mat frame;
+//     const std::string windowName = "Webcam Feed";
+//     cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+
+//     while (true) {
+//         // Capture a new frame from webcam
+//         cap >> frame;
+//         if (frame.empty()) {
+//             std::cerr << "Error: Empty frame captured.\n";
+//             break;
+//         }
+
+//         // Display the captured frame
+//         cv::imshow(windowName, frame);
+
+//         // Wait for 30ms or until 'q' key is pressed
+//         char key = static_cast<char>(cv::waitKey(30));
+//         if (key == 'q' || key == 27) { // 'q' or ESC to quit
+//             break;
+//         }
+//     }
+
+//     // Release the camera and destroy all windows
+//     cap.release();
+//     cv::destroyAllWindows();
+//     return 0;
+// }
+
+int mirror() { return 0; }
+
 int main(int argc, char* argv[]) {
     chpl_library_init(argc, argv);
 
@@ -17,9 +59,11 @@ int main(int argc, char* argv[]) {
     printArray(&matrix_ptr);
     chpl_free_external_array(matrix_ptr);
 
+    int code = mirror();
+
 
     chpl_library_finalize();
-    return 0;
+    return code;
 }
 
 

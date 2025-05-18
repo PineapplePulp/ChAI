@@ -1,4 +1,4 @@
-
+# make clean && make libsmol && make main && ./main
 -include lib/Makefile.smol
 
 

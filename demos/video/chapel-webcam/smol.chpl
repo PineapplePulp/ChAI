@@ -29,7 +29,7 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     // return [x in frame] m;
 
     const shape = (height,width,channels);
-    forall (i,color) in zip(0..<frame.size,frame) {
+    forall i in 0..<frame.size {
         const idx = utils.indexAt(i,(...shape));
         const (h,w,c) = idx;
         // const color = frame[i];

@@ -7,11 +7,16 @@
 
 
 cv::Mat new_frame(cv::Mat &frame) {
-    cv::Mat rgb_uchar_frame;
-    cv::cvtColor(frame, rgb_uchar_frame, cv::COLOR_BGR2RGB);
+    // cv::Mat rgb_uchar_frame;
+    // cv::cvtColor(frame, rgb_uchar_frame, cv::COLOR_BGR2RGB);
+
+    // cv::Mat rgb_float_frame;
+    // rgb_uchar_frame.convertTo(rgb_float_frame, CV_32FC3, 1.0f/255.0f);
+
 
     cv::Mat rgb_float_frame;
-    rgb_uchar_frame.convertTo(rgb_float_frame, CV_32FC3, 1.0f/255.0f);
+    cv::cvtColor(frame, rgb_float_frame, cv::COLOR_BGR2RGB);
+    rgb_float_frame.convertTo(rgb_float_frame, CV_32FC3, 1.0f/255.0f);
 
     // cv::MatSize size = rgb_frame.size;
     // std::cout << "x " << size[0] << " y " << size[1] << " channels " << rgb_frame.dims << std::endl;

@@ -1,13 +1,64 @@
 
 include lib/Makefile.smol
 
-all: libsmol.a main
+all: libsmol cppmain
 
-libsmol.a: smol.chpl
-	chpl --library --library-makefile --library-cmakelists smol.chpl
+# chpl --library --library-makefile --library-cmakelists smol.chpl
 
-main: main.c libsmol.a
+libsmol: smol.chpl
+	chpl \
+	--library \
+	--dynamic \
+	--library-dir lib \
+	--savec lib/savec \
+	--library-makefile \
+	--library-cmakelists \
+	--no-munge-with-ids \
+	smol.chpl
+
+cmain: main.c
 	$(CHPL_COMPILER) $(CHPL_CFLAGS) -o main main.c $(CHPL_LDFLAGS)
 
+
+
+CPP_CFLAGS = \
+	-Ilib \
+	-Wno-unused \
+	-Wno-uninitialized \
+	-Wno-pointer-sign \
+	-Wno-incompatible-pointer-types \
+	-Wno-tautological-compare \
+	-I/opt/homebrew/Cellar/chapel/2.4.0_1/libexec/modules/internal \
+	-I$(CHPL_RUNTIME_INCL)/localeModels/flat \
+	-I$(CHPL_RUNTIME_INCL)/localeModels \
+	-I$(CHPL_RUNTIME_INCL)/comm/none \
+	-I$(CHPL_RUNTIME_INCL)/comm \
+	-I$(CHPL_RUNTIME_INCL)/tasks/qthreads \
+	-I$(CHPL_RUNTIME_INCL)/. \
+	-I$(CHPL_RUNTIME_INCL)/./qio \
+	-I$(CHPL_RUNTIME_INCL)/./atomics/cstdlib \
+	-I$(CHPL_RUNTIME_INCL)/./mem/jemalloc \
+	-I$(CHPL_THIRD_PARTY)/utf8-decoder \
+	-I$(CHPL_THIRD_PARTY)/qthread/install/darwin-arm64-native-llvm-none-flat-jemalloc-system/include \
+	-Wno-error=unused-variable \
+	-I$(CHPL_THIRD_PARTY)/re2/install/darwin-arm64-native-llvm-none/include \
+	-I. -I/opt/homebrew/Cellar/gmp/6.3.0/include \
+	-I/opt/homebrew/Cellar/hwloc/2.12.0/include \
+	-I/opt/homebrew/Cellar/jemalloc/5.3.0/include \
+	-I/opt/homebrew/include
+
+CPP_LDFLAGS = -Llib -lsmol -L$(CHPL_RUNTIME_LIB)/darwin/llvm/arm64/cpu-native/loc-flat/comm-none/tasks-qthreads/tmr-generic/unwind-none/mem-jemalloc/atomics-cstdlib/hwloc-system/re2-bundled/fs-none/lib_pic-none/san-none -lchpl -L$(CHPL_THIRD_PARTY)/qthread/install/darwin-arm64-native-llvm-none-flat-jemalloc-system/lib -Wl,-rpath,$(CHPL_THIRD_PARTY)/qthread/install/darwin-arm64-native-llvm-none-flat-jemalloc-system/lib -lqthread -L/opt/homebrew/Cellar/hwloc/2.12.0/lib -L$(CHPL_THIRD_PARTY)/re2/install/darwin-arm64-native-llvm-none/lib -lre2 -Wl,-rpath,$(CHPL_THIRD_PARTY)/re2/install/darwin-arm64-native-llvm-none/lib -lm -lpthread -L/opt/homebrew/Cellar/gmp/6.3.0/lib -lgmp -L/opt/homebrew/Cellar/hwloc/2.12.0/lib -Wl,-rpath,/opt/homebrew/Cellar/hwloc/2.12.0/lib -lhwloc -L/opt/homebrew/Cellar/jemalloc/5.3.0/lib -Wl,-rpath,/opt/homebrew/Cellar/jemalloc/5.3.0/lib -ljemalloc -L/opt/homebrew/lib
+
+# $(CHPL_LINKER) $(CHPL_CFLAGS) -o main main.cpp $(CHPL_LDFLAGS)
+
+maincpp.o: main.cpp
+	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o maincpp.o $(CHPL_LDFLAGS)
+	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o maincpp $(CHPL_LDFLAGS)
+
+maincpp: maincpp.o
+	$(CHPL_LINKER) -o maincpp maincpp.o
+#$(CHPL_LINKER) $(CHPL_CFLAGS) -o main main.o $(CHPL_LDFLAGS)
+
 clean:
-	rm -f main lib/libsmol.a
+	rm -f maincpp maincpp.o main.o
+# rm -f main lib/libsmol.a

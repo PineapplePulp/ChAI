@@ -55,10 +55,13 @@ maincpp.o: main.cpp smol_wrapper.h
 	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o maincpp.o $(CHPL_LDFLAGS)
 	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o maincpp $(CHPL_LDFLAGS)
 
-maincpp: maincpp.o
-	$(CHPL_LINKER) -o maincpp maincpp.o
-#$(CHPL_LINKER) $(CHPL_CFLAGS) -o main main.o $(CHPL_LDFLAGS)
+# maincpp: maincpp.o
+# 	$(CHPL_LINKER) -o maincpp maincpp.o
+# #$(CHPL_LINKER) $(CHPL_CFLAGS) -o main main.o $(CHPL_LDFLAGS)
+
+maincpp: main.cpp smol_wrapper.h
+	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o main $(CHPL_LDFLAGS)
 
 clean:
-	rm -f maincpp maincpp.o main.o
+	rm -f maincpp maincpp.o main.o main
 # rm -f main lib/libsmol.a

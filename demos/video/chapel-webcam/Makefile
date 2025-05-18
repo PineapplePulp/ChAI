@@ -37,7 +37,7 @@ OPENCV_LDFLAGS = `pkg-config --cflags --libs opencv4`
 
 main: main.cpp smol_wrapper.h lib/libsmol.so
 	@echo $(OPENCV_CFLAGS)
-	$(CHPL_COMPILER) $(CHPL_CFLAGS) $(OPENCV_CFLAGS) -std=c++20 -fPIC main.cpp -o main $(CHPL_LDFLAGS) $(OPENCV_LDFLAGS)
+	$(CHPL_LINKER) $(CHPL_CFLAGS) $(OPENCV_CFLAGS) -std=c++20 -fPIC main.cpp -o main $(CHPL_LDFLAGS) $(OPENCV_LDFLAGS)
 
 clean:
 	rm -f maincpp maincpp.o main.o main

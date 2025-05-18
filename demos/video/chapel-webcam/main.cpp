@@ -1,4 +1,4 @@
-#include "lib/smol.h"
+#include "smol_wrapper.h"
 
 int main(int argc, char* argv[]) {
     chpl_library_init(argc, argv);

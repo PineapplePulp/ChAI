@@ -51,7 +51,7 @@ CPP_LDFLAGS = -Llib -lsmol -L$(CHPL_RUNTIME_LIB)/darwin/llvm/arm64/cpu-native/lo
 
 # $(CHPL_LINKER) $(CHPL_CFLAGS) -o main main.cpp $(CHPL_LDFLAGS)
 
-maincpp.o: main.cpp
+maincpp.o: main.cpp smol_wrapper.h
 	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o maincpp.o $(CHPL_LDFLAGS)
 	$(CHPL_COMPILER) $(CHPL_CFLAGS) -fPIC main.cpp -o maincpp $(CHPL_LDFLAGS)
 

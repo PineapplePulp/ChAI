@@ -12,11 +12,12 @@ LIB_GEN_CMD = \
 	--library \
 	--dynamic \
 	--library-dir lib \
-	--savec lib/savec \
 	--library-makefile \
-	--library-cmakelists \
 	--no-munge-with-ids \
+	-M ../../../lib \
 	smol.chpl
+# --savec lib/savec \
+# --library-cmakelists \
 
 
 pre-build:

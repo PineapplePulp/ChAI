@@ -1,6 +1,7 @@
 #include "stdchpl.h"
 #include "wctype.h"
 #include "ctype.h"
+#include "ImageHelper/stb_image_helper.h"
 void chpl__init_smol(int64_t _ln,
                      int32_t _fn);
 int64_t square(int64_t x);

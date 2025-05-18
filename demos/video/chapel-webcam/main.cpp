@@ -32,16 +32,23 @@ cv::Mat new_frame(cv::Mat &frame) {
     // cv::Mat new_rgb_frame(height, width, CV_8UC3,new_frame_array.elts);
     // cv::cvtColor(new_rgb_frame, new_rgb_frame, cv::COLOR_RGB2BGR);
 
+    cv::Mat output_frame(height,width,CV_32FC3,rgb_float_output_frame_array.elts); // frame to write to
+    output_frame.convertTo(output_frame, CV_8UC3, 255.0f); 
+    cv::cvtColor(output_frame, output_frame, cv::COLOR_RGB2BGR);
 
-    cv::Mat rgb_float_output_frame(height,width,CV_32FC3,rgb_float_output_frame_array.elts); // frame to write to
+    chpl_free_external_array(rgb_float_output_frame_array);
 
-    cv::Mat rgb_uchar_output_frame;
-    rgb_float_output_frame.convertTo(rgb_uchar_output_frame, CV_8UC3, 255.0f); 
+    return output_frame;
+
+    // cv::Mat rgb_float_output_frame(height,width,CV_32FC3,rgb_float_output_frame_array.elts); // frame to write to
+
+    // cv::Mat rgb_uchar_output_frame;
+    // rgb_float_output_frame.convertTo(rgb_uchar_output_frame, CV_8UC3, 255.0f); 
     
-    cv::Mat bgr_uchar_output_frame;
-    cv::cvtColor(rgb_uchar_output_frame, bgr_uchar_output_frame, cv::COLOR_RGB2BGR);
+    // cv::Mat bgr_uchar_output_frame;
+    // cv::cvtColor(rgb_uchar_output_frame, bgr_uchar_output_frame, cv::COLOR_RGB2BGR);
 
-    return bgr_uchar_output_frame;
+    // return bgr_uchar_output_frame;
 }
 
 /*

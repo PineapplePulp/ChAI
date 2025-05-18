@@ -15,3 +15,8 @@ export proc printArray(a: [] int): void {
     writeln(a);
 }
 
+
+export proc getNewFrame(frame: [] uint(8),height: int, width: int,channels: int): [] uint(8) {
+    const ret = frame;
+    return ret;
+}

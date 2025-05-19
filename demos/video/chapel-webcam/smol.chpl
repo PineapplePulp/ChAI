@@ -1,5 +1,6 @@
 import Utilities as utils;
 
+
 export proc square(x: int): int {
     writeln(x, " * ", x, " = ", x * x);
     return x * x;
@@ -15,29 +16,35 @@ export proc sumArray(a: [] int): int {
 export proc printArray(a: [] int): void {
     writeln(a);
 }
+
+use Time;
+use Math;
+
+
+proc getTime() {
+    const tm = timeSinceEpoch();
+    const sec = tm.chpl_seconds : real(64);
+    const us = tm.chpl_microseconds : real(64);
+    const t = sec + (us/1000000.0);
+    return t;
+}
+
+const startTime = getTime();
+
 export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels: int): [] real(32) {
-    // const dom = {0..<height,0..<width,0..<channels};
-    // const rgb: [dom] real(32) = reshape(frame,dom);
-    // const ret = reshape(rgb,{0..<dom.size});
-    // return ret;
-    // return [x in frame] x * 1.2;
 
-    // const dom = {0..<height,0..<width,0..<channels};
-    // const rgb: [dom] real(32) = reshape(frame,dom);
-
-    // const m = max reduce frame;
-    // return [x in frame] m;
-
+    const t = getTime() - startTime;
     const shape = (height,width,channels);
     forall i in 0..<frame.size {
         const idx = utils.indexAt(i,(...shape));
         const (h,w,c) = idx;
-        // const color = frame[i];
+        const (u,v) = (h:real(64)/height,w:real(64)/width);
+        const color = frame[i];
         // if h < width {
         //     frame[utils.linearIdx(shape,(h,w,c))] = frame[utils.linearIdx(shape,(h,w,c-1))];
         // }
         if h < width {
-            frame[utils.linearIdx(shape,(h,w,0))] = 1.0;
+            frame[utils.linearIdx(shape,(h,w,0))] *= Math.sin(2.0*t + 5.0 * u) : real(32);
         }
     }
     return frame;

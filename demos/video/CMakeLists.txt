@@ -2,6 +2,12 @@
 
 # export OpenCV_DIR="$(brew --prefix opencv)/share/opencv4"
 # /opt/homebrew/opt/opencv/share/opencv4
+
+add_subdirectory("chapel-webcam")
+
+
+
+# This is messy
 find_package(OpenCV 4 REQUIRED)
 
 find_library(ACCELERATE Accelerate REQUIRED)

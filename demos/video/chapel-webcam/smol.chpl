@@ -35,17 +35,19 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
 
     const t = getTime() - startTime;
     const shape = (height,width,channels);
+    writeln(shape);
     forall i in 0..<frame.size {
         const idx = utils.indexAt(i,(...shape));
         const (h,w,c) = idx;
         const (u,v) = (h:real(64)/height,w:real(64)/width);
-        const color = frame[i];
+        ref color = frame[i];
         // if h < width {
         //     frame[utils.linearIdx(shape,(h,w,c))] = frame[utils.linearIdx(shape,(h,w,c-1))];
         // }
-        if h < width {
-            frame[utils.linearIdx(shape,(h,w,0))] *= Math.sin(2.0*t + 5.0 * u) : real(32);
-        }
+        // if h < width {
+        //     frame[utils.linearIdx(shape,(h,w,0))] *= Math.sin(2.0*t + 5.0 * u) : real(32);
+        // }
+        color *= (Math.abs(Math.sin(2.0*t + 5.0 * v)) * Math.abs(Math.sin(2.0*t + 5.0 * u))) : real(32);
     }
     return frame;
 }

@@ -30,7 +30,7 @@ cv::Mat new_frame(cv::Mat &frame) {
         rgb_float_frame_data_ptr = chpl_make_external_array_ptr(rgb_float_frame.data,size);
     
     chpl_external_array 
-        rgb_float_output_frame_array = getNewFrame(&rgb_float_frame_data_ptr, width, height, channels);
+        rgb_float_output_frame_array = getNewFrame(&rgb_float_frame_data_ptr, height, width, channels);
     
     chpl_free_external_array(rgb_float_frame_data_ptr);
 

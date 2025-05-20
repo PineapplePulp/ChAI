@@ -37,6 +37,11 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     const t = getTime() - startTime;
     const shape = (height,width,channels);
     writeln(shape);
+
+    var ndframe = new ndarray(real(32),shape);
+    ndframe.data = reshape(frame,ndframe.domain);
+
+    writeln(ndframe.max());
     forall i in 0..<frame.size {
         const idx = utils.indexAt(i,(...shape));
         const (h,w,c) = idx;

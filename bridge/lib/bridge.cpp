@@ -132,6 +132,8 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
 
 
 extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
+    std::cout << "Begin loading model from path: " << model_path << std::endl;
+    std::cout.flush();
     std::string mp(reinterpret_cast<const char*>(model_path));
     std::cout << "Loading model from path: " << mp << std::endl;
     std::cout.flush();
@@ -141,10 +143,17 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
     try {
         *pt_module = torch::jit::load(mp);
         std::cout << "Model loaded successfully!" << std::endl;
-        model_wrapper.pt_module = (uint64_t) pt_module;
+        std::cout.flush();
+        model_wrapper.pt_module = pt_module;
     } catch (const c10::Error& e) {
         std::cerr << "error loading the model\n" << e.msg();
+        std::cout << "error loading the model\n" << e.msg();
+        std::cout.flush();
+        std::cerr.flush();
     }
+
+    std::cout << pt_module->dump_to_str(false,false,false) << std::endl;
+    std::cout.flush();
 
     return model_wrapper;
 }
@@ -153,8 +162,9 @@ extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_
     auto t_input = bridge_to_torch(input);
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(t_input);
-    torch::jit::Module* pt_module = (torch::jit::Module*) model.pt_module;
-    auto output = pt_module->forward(inputs).toTensor();
+    // torch::jit::Module* pt_module = (torch::jit::Module*) model.pt_module;
+    // auto output = pt_module->forward(inputs).toTensor();
+    auto output = t_input;
     return torch_to_bridge(output);
 }
 

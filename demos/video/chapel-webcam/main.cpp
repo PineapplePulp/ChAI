@@ -138,6 +138,9 @@ int mirror() {
 
 int main(int argc, char* argv[]) {
     chpl_library_init(argc, argv);
+    
+    chpl__init_Bridge(0, 0);
+    chpl__init_smol(0, 0);
 
     square(3);
 
@@ -152,6 +155,8 @@ int main(int argc, char* argv[]) {
     chpl_external_array matrix_ptr = chpl_make_external_array_ptr(matrix, 3 * 2);
     printArray(&matrix_ptr);
     chpl_free_external_array(matrix_ptr);
+
+    globalLoadModel();
 
     int code = mirror();
 

@@ -33,11 +33,15 @@ proc getTime() {
 
 const startTime = getTime();
 
-config const modelPath: string;
+const modelPath: string = "../style-transfer/models/exports/cpu/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
+var model : Bridge.bridge_pt_model_t;
 
 use CTypes;
-const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
-const model = Bridge.load_model(fpPtr);
+
+export proc globalLoadModel() {
+    const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
+    model = Bridge.load_model(fpPtr);
+}
 
 
 
@@ -51,7 +55,16 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     var ndframe = new ndarray(real(32),shape);
     ndframe.data = reshape(frame,ndframe.domain);
 
-    writeln(ndframe.max());
+    var bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
+    ndframe.loadFromBridgeTensor(bt);
+
+    forall i in 0..<frame.size {
+        const idx = utils.indexAt(i,(...shape));
+        ref color = frame[i];
+        color = ndframe.data[idx];
+    }
+    return frame;
+
     forall i in 0..<frame.size {
         const idx = utils.indexAt(i,(...shape));
         const (h,w,c) = idx;

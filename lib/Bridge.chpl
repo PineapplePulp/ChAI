@@ -19,7 +19,7 @@ module Bridge {
     }
 
     extern record bridge_pt_model_t {
-        var pt_module: uint(64);
+        var pt_module: c_ptr(void);
     }
     extern record test_struct_t {
         var field: c_ptr(int(32));

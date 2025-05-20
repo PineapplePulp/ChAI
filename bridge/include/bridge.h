@@ -26,7 +26,7 @@ typedef struct bridge_tensor_t {
 
 
 typedef struct bridge_pt_model_t {
-    uint64_t pt_module;
+    void* pt_module;
 } bridge_pt_model_t;
 
 typedef struct test_struct_t {

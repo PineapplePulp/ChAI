@@ -7,19 +7,28 @@ all: main
 # chpl --library --library-makefile --library-cmakelists smol.chpl
 
 
-CHAI_DIR = `cd ../../.. && pwd`
+CHAI_DIR := $(shell cd ../../.. && pwd)
+
+# BRIDGE_CFLAGS = \
+# 	-I$(CHAI_DIR)/bridge/include \
+# 	$(CHAI_DIR)/build/libbridge_objs.a
+
 
 BRIDGE_CFLAGS = \
-	-I $(CHAI_DIR)/bridge/include \
-	$(CHAI_DIR)/build/libbridge_objs.a
+	-I $(CHAI_DIR)/bridge/include
 
 BRIDGE_LDFLAGS = \
 	-L $(CHAI_DIR)/build \
 	-L $(CHAI_DIR)/libtorch/lib \
 	-Wl,-rpath,$(CHAI_DIR)/libtorch/lib
 
+TORCH_LDFLAGS = \
+	-L $(CHAI_DIR)/libtorch/lib \
+	-Wl,-rpath,$(CHAI_DIR)/libtorch/lib
+
 LIB_GEN_CMD = \
 	chpl \
+	smol.chpl \
 	--library \
 	--dynamic \
 	--library-dir lib \
@@ -27,9 +36,12 @@ LIB_GEN_CMD = \
 	--library-cmakelists \
 	--no-munge-with-ids \
 	-M ../../../lib \
-	smol.chpl \
 	--ccflags "$(BRIDGE_CFLAGS)" \
 	--ldflags "$(BRIDGE_LDFLAGS)" 
+
+
+# --ccflags "$(BRIDGE_CFLAGS)" \
+# --ldflags "$(BRIDGE_LDFLAGS)" 
 # --savec lib/savec \
 
 
@@ -47,12 +59,12 @@ libsmol: smol.chpl
 	$(LIB_GEN_CMD)
 
 
-OPENCV_CFLAGS = `pkg-config --cflags opencv4`
-OPENCV_LDFLAGS = `pkg-config --cflags --libs opencv4`
+OPENCV_CFLAGS := $(shell pkg-config --cflags opencv4)
+OPENCV_LDFLAGS := $(shell pkg-config --cflags --libs opencv4)
 
 main: main.cpp smol_wrapper.h lib/libsmol.so
 	@echo $(OPENCV_CFLAGS)
-	$(CHPL_LINKER) $(CHPL_CFLAGS) $(OPENCV_CFLAGS) -std=c++20 -fPIC main.cpp -o main $(CHPL_LDFLAGS) $(OPENCV_LDFLAGS) $(BRIDGE_LDFLAGS)
+	$(CHPL_LINKER) $(CHPL_CFLAGS) $(OPENCV_CFLAGS) $(BRIDGE_CFLAGS) -std=c++20 -fPIC main.cpp -o main $(CHPL_LDFLAGS) $(OPENCV_LDFLAGS) $(BRIDGE_LDFLAGS)
 
 clean:
 	rm -f maincpp maincpp.o main.o main

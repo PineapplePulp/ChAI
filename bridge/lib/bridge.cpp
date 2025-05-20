@@ -130,6 +130,40 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
     return torch_to_bridge(output);
 }
 
+
+extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
+    std::string mp(reinterpret_cast<const char*>(model_path));
+    std::cout << "Loading model from path: " << mp << std::endl;
+    std::cout.flush();
+
+    bridge_pt_model_t model_wrapper;
+    torch::jit::Module* pt_module = new torch::jit::Module(); // = (torch::jit::Module*) model_wrapper.pt_module;
+    try {
+        *pt_module = torch::jit::load(mp);
+        std::cout << "Model loaded successfully!" << std::endl;
+        model_wrapper.pt_module = (uint64_t) pt_module;
+    } catch (const c10::Error& e) {
+        std::cerr << "error loading the model\n" << e.msg();
+    }
+
+    return model_wrapper;
+}
+
+extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
+    auto t_input = bridge_to_torch(input);
+    std::vector<torch::jit::IValue> inputs;
+    inputs.push_back(t_input);
+    torch::jit::Module* pt_module = (torch::jit::Module*) model.pt_module;
+    auto output = pt_module->forward(inputs).toTensor();
+    return torch_to_bridge(output);
+}
+
+
+extern "C" void hello_world(void) {
+    std::cout << "Hello from C++!" << std::endl;
+    std::cout.flush();
+}
+
 extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
     auto t = bridge_to_torch(arr);
     // Increment the tensor

@@ -2,6 +2,9 @@
 #include "wctype.h"
 #include "ctype.h"
 #include "ImageHelper/stb_image_helper.h"
+#include "bridge.h"
+void chpl__init_Bridge(int64_t _ln,
+                       int32_t _fn);
 void chpl__init_NDArray(int64_t _ln,
                         int32_t _fn);
 void chpl__init_Standard(int64_t _ln,
@@ -15,7 +18,6 @@ void chpl__init_ndarrayRandom(int64_t _ln,
 void chpl__init_smol(int64_t _ln,
                      int32_t _fn);
 int64_t square(int64_t x);
-int64_t sumArray(chpl_external_array * a);
 void printArray(chpl_external_array * a);
 chpl_external_array getNewFrame(chpl_external_array * frame,
                                 int64_t height,

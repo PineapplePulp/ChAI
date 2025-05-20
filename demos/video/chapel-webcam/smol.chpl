@@ -1,18 +1,19 @@
 import Utilities as utils;
 
 use NDArray;
+import Bridge;
 
 export proc square(x: int): int {
     writeln(x, " * ", x, " = ", x * x);
     return x * x;
 }
 
-export proc sumArray(a: [] int): int {
-    var sum: int = 0;
-    for x in a do
-        sum += x;
-    return sum;
-}
+// export proc sumArray(a: [] int): int {
+//     var sum: int = 0;
+//     for x in a do
+//         sum += x;
+//     return sum;
+// }
 
 export proc printArray(a: [] int): void {
     writeln(a);
@@ -32,7 +33,16 @@ proc getTime() {
 
 const startTime = getTime();
 
+config const modelPath: string;
+
+use CTypes;
+const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
+const model = Bridge.load_model(fpPtr);
+
+
+
 export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels: int): [] real(32) {
+    Bridge.hello_world();
 
     const t = getTime() - startTime;
     const shape = (height,width,channels);

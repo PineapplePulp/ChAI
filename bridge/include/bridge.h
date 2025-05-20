@@ -15,6 +15,7 @@ typedef double float64_t;
 typedef char bool_t;
 typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
 
 typedef struct bridge_tensor_t {
     float* data;
@@ -23,6 +24,17 @@ typedef struct bridge_tensor_t {
     bool_t created_by_c;
 } bridge_tensor_t;
 
+
+typedef struct bridge_pt_model_t {
+    uint64_t pt_module;
+} bridge_pt_model_t;
+
+typedef struct test_struct_t {
+    int* field;
+} test_struct_t;
+
+
+void hello_world(void);
 
 typedef struct nil_scalar_tensor_t {
     float scalar;
@@ -36,6 +48,10 @@ float* unsafe(const float* arr);
 bridge_tensor_t load_tensor_from_file(const uint8_t* file_path);
 bridge_tensor_t load_tensor_dict_from_file(const uint8_t* file_path,const uint8_t* tensor_key);
 bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tensor_t input);
+
+bridge_pt_model_t load_model(const uint8_t* model_path);
+bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input);
+
 bridge_tensor_t resize(bridge_tensor_t input,int height,int width);
 bridge_tensor_t imagenet_normalize(bridge_tensor_t input);
 

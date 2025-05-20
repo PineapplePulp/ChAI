@@ -2,6 +2,7 @@ module Bridge {
     // require "bridge.h";
     // require "-ltorch";
     require "-ltorch", "-ltorch_cpu", "-lc10", "-ltorch_global_deps";
+    require "bridge.h", "-lbridge_objs";
 
     import Utilities as util;
     use Utilities.Standard;
@@ -16,6 +17,15 @@ module Bridge {
         var dim: int(32);
         var created_by_c: bool;
     }
+
+    extern record bridge_pt_model_t {
+        var pt_module: uint(64);
+    }
+    extern record test_struct_t {
+        var field: c_ptr(int(32));
+    }
+
+    extern proc hello_world(): void;
 
     extern record nil_scalar_tensor_t {
         var scalar: real(32);
@@ -49,6 +59,12 @@ module Bridge {
 
     extern proc load_run_model(
         model_path: string_t,
+        in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc load_model(model_path: string_t): bridge_pt_model_t;
+
+    extern proc model_forward(
+        in model: bridge_pt_model_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 
 

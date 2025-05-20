@@ -58,7 +58,8 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     // writeln("Copying data 1");
     // ndframe = bt : ndframe.type;
 
-    var bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
+    // var bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
+    var bt = Bridge.model_forward_style_transfer(model,ndframe : Bridge.tensorHandle(real(32)));
     writeln("Copying data 1");
     ndframe.loadFromBridgeTensor(bt);
 

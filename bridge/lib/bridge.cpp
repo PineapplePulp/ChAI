@@ -140,13 +140,19 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
     std::cout.flush();
 
     try {
-        torch::jit::Module tmp = torch::jit::load(path);
+
+        auto* module = new torch::jit::Module(torch::jit::load(path));
         std::cout << "Model loaded successfully!" << std::endl;
         std::cout.flush();
-        auto* module = new torch::jit::Module(std::move(tmp));
-        std::cout << "Model moved successfully!" << std::endl;
-        std::cout.flush();
         return { static_cast<void*>(module) };
+
+        // torch::jit::Module tmp = torch::jit::load(path);
+        // std::cout << "Model loaded successfully!" << std::endl;
+        // std::cout.flush();
+        // auto* module = new torch::jit::Module(std::move(tmp));
+        // std::cout << "Model moved successfully!" << std::endl;
+        // std::cout.flush();
+        // return { static_cast<void*>(module) };
     } catch (const c10::Error& e) {
         std::cerr << "error loading the model\n" << e.msg();
         std::cout << "error loading the model\n" << e.msg();
@@ -190,36 +196,60 @@ extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_
     inputs.push_back(t_input);
     // torch::jit::Module* pt_module = (torch::jit::Module*) model.pt_module;
     // auto output = pt_module->forward(inputs).toTensor();
-    auto output = t_input;
+    auto* module = static_cast<torch::jit::Module*>(model.pt_module);
+    auto output = module->forward(inputs).toTensor();
+    std::cout << "Output tensor: " << output.sizes() << std::endl;
+    std::cout.flush();
+    // auto output = t_input;
     return torch_to_bridge(output);
 }
 
 extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input) {
     auto input_tensor = bridge_to_torch(input);
-    auto t_input = input_tensor.clone();
+    auto input_tensor_copy = input_tensor.clone().contiguous();
+    auto t_input = input_tensor_copy;
+    auto* module = static_cast<torch::jit::Module*>(model.pt_module);
+
+    std::cout << "Model: " << module->dump_to_str(false, false, false) << std::endl;
+    std::cout.flush();
 
     std::cout << "Input tensor: " << t_input.sizes() << std::endl;
     std::cout.flush();
 
-    t_input = t_input.permute({2, 0, 1}).unsqueeze(0);
+    auto model_input = input_tensor_copy.permute({2, 0, 1}).unsqueeze(0);
     
-    std::cout << "Input tensor reshaped: " << t_input.sizes() << std::endl;
-    std::cout.flush();
+    // std::cout << "Input tensor reshaped: " << model_input.sizes() << std::endl;
+    // std::cout.flush();
+
+    // std::vector<torch::jit::IValue> inputs;
+    // inputs.push_back(model_input);
+
+    // std::cout << "Constructed inputs: " << inputs.size() << std::endl;
+    // std::cout.flush();
+
+    // return torch_to_bridge(input_tensor_copy);
 
     std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(t_input);
+    inputs.push_back(model_input);
 
-    std::cout << "Constructed inputs: " << inputs.size() << std::endl;
+    std::cout << "Model input: " << model_input.sizes() << std::endl;
     std::cout.flush();
     
+    auto model_output = module->forward(inputs).toTensor();
+    std::cout << "Output tensor: " << model_output.sizes() << std::endl;
+    std::cout.flush();
+
+    auto output = model_output.div(255.0).squeeze(0).permute({1, 2, 0}).clamp(0, 1);
+    return torch_to_bridge(output);
+
     // torch::jit::script::Module & pt_module = model.pt_module;
 
-    auto* pt_module = static_cast<torch::jit::Module*>(model.pt_module);
+    // auto* pt_module = static_cast<torch::jit::Module*>(model.pt_module);
 
-    // torch::jit::script::Module* pt_module = (torch::jit::script::Module*)model.pt_module;
-    // std::cout << pt_module->dump_to_str(false,false,false) << std::endl;
-    // // std::cout.flush();
-    auto output = pt_module->forward(inputs).toTensor();
+    // // torch::jit::script::Module* pt_module = (torch::jit::script::Module*)model.pt_module;
+    // // std::cout << pt_module->dump_to_str(false,false,false) << std::endl;
+    // // // std::cout.flush();
+    // auto output = pt_module->forward(inputs).toTensor();
     std::cout << "Output tensor: " << output.sizes() << std::endl;
     std::cout.flush();
     // output = output.squeeze(0).permute({1, 2, 0}).clamp(0, 1).mul(255.0);
@@ -227,7 +257,7 @@ extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model,
     // std::cout << "Processed utput tensor: " << output.sizes() << std::endl;
     // std::cout.flush();
 
-    return torch_to_bridge(input_tensor);
+    return torch_to_bridge(input_tensor_copy);
 }
 
 

@@ -67,6 +67,10 @@ module Bridge {
         in model: bridge_pt_model_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 
+    extern proc model_forward_style_transfer(
+        in model: bridge_pt_model_t,
+        in input: bridge_tensor_t): bridge_tensor_t;
+
 
     extern proc convolve2d(
         in input: bridge_tensor_t, 

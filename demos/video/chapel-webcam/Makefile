@@ -35,6 +35,7 @@ LIB_GEN_CMD = \
 	--library-makefile \
 	--library-cmakelists \
 	--no-munge-with-ids \
+	--fast \
 	-M ../../../lib \
 	--ccflags "$(BRIDGE_CFLAGS)" \
 	--ldflags "$(BRIDGE_LDFLAGS)" 

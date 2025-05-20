@@ -46,7 +46,6 @@ export proc globalLoadModel() {
 
 
 export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels: int): [] real(32) {
-    Bridge.hello_world();
 
     const t = getTime() - startTime;
     const shape = (height,width,channels);
@@ -55,8 +54,15 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     var ndframe = new ndarray(real(32),shape);
     ndframe.data = reshape(frame,ndframe.domain);
 
+    // var bt = Bridge.model_forward_style_transfer(model,ndframe : Bridge.tensorHandle(real(32)));
+    // writeln("Copying data 1");
+    // ndframe = bt : ndframe.type;
+
     var bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
+    writeln("Copying data 1");
     ndframe.loadFromBridgeTensor(bt);
+
+    writeln("Copying data 2");
 
     forall i in 0..<frame.size {
         const idx = utils.indexAt(i,(...shape));

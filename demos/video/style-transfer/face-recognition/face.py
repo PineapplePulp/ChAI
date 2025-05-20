@@ -71,7 +71,7 @@ def tensor_to_bgr(frame_tensor, *, undo_normalise=False, mean=None, std=None):
 def load_model(model_path):
     model = torch.jit.load(model_path)
     model.to(torch.device('mps'))
-    model.eval()
+    # model.eval()
     return model
 
 def frame_to_tensor(frame):
@@ -92,6 +92,7 @@ def frame_to_tensor(frame):
     return tensor.to(torch.float16)
 
 def model_inference(model, tensor):
+    print(tensor.shape)
     return model(tensor) / 255.0
 
 

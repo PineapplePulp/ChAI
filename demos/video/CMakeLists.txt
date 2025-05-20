@@ -3,7 +3,6 @@
 # export OpenCV_DIR="$(brew --prefix opencv)/share/opencv4"
 # /opt/homebrew/opt/opencv/share/opencv4
 
-add_subdirectory("chapel-webcam")
 
 
 

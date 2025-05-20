@@ -1,5 +1,6 @@
 import Utilities as utils;
 
+use NDArray;
 
 export proc square(x: int): int {
     writeln(x, " * ", x, " = ", x * x);

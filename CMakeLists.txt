@@ -131,8 +131,22 @@ target_include_directories(
 )
 
 
+add_library(bridge_objs STATIC $<TARGET_OBJECTS:bridge>)
+set_target_properties(bridge_objs
+    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+
+
 set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
+# add_custom_command(
+#     TARGET bridge
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#             "${CMAKE_CURRENT_SOURCE_DIR}/style-transfer/models"
+#             "$<TARGET_FILE_DIR:StyleTransfer>/style-transfer/models"
+#     COMMENT "NOT! Copying ${PROJECT_ROOT_DIR}/examples/vgg/images to $<TARGET_FILE_DIR:vgg>/images"
+# )
 
 
 

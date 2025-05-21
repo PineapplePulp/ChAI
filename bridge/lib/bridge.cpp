@@ -201,66 +201,36 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
     // return model_wrapper;
 }
 
-extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
+
+
+bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bool is_vgg_based_model) {
 
     auto tn_mps = bridge_to_torch(input,torch::kMPS,true,torch::kFloat16);
     // auto tn_mps = tn.to(torch::kMPS,false,true);
-    auto tn_ = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
+    auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
 
     std::vector<torch::jit::IValue> ins;
-    ins.push_back(tn_);
+    ins.push_back(tn);
 
     auto* module = static_cast<torch::jit::Module*>(model.pt_module);
     auto o = module->forward(ins).toTensor();
     auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
+
+    if (is_vgg_based_model) {
+        tn_out = tn_out / 255.0;
+    }
+
     auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
     return torch_to_bridge(tn_out_cpu);
 
-/*
+}
 
-    auto t = bridge_to_torch(input).clone();
-    auto t_input = t.permute({2, 0, 1}).unsqueeze(0); // Add batch dimension
-
-    std::cout << "Input tensor: " << t_input.sizes() << std::endl;
-    std::cout.flush();
-
-    std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(t_input);
-    // torch::jit::Module* pt_module = (torch::jit::Module*) model.pt_module;
-    // auto output = pt_module->forward(inputs).toTensor();
-    auto* module = static_cast<torch::jit::Module*>(model.pt_module);
-    auto output = module->forward(inputs).toTensor();
-    std::cout << "Output tensor: " << output.sizes() << std::endl;
-    std::cout.flush();
-
-    auto output_reshaped = output.squeeze(0).permute({1, 2, 0}); // Remove batch dimension and permute back to HWC
-    std::cout << "Output reshaped tensor: " << output_reshaped.sizes() << std::endl;
-    std::cout.flush();
-    // auto output = t_input;
-    return torch_to_bridge(output_reshaped);
-    */
+extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
+    return model_forward(model, input, false);
 }
 
 extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input) {
-    auto bt = bridge_to_torch(input).clone();
-    auto t_input = bt.permute({2, 0, 1}).unsqueeze(0); // Convert from CHW to HWC
-
-    std::cout << "Input tensor: " << t_input.sizes() << std::endl;
-    std::cout.flush();
-
-    std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(t_input);
-    // torch::jit::Module* pt_module = (torch::jit::Module*) model.pt_module;
-    // auto output = pt_module->forward(inputs).toTensor();
-    // auto* module = static_cast<torch::jit::Module*>(model.pt_module);
-    auto module = *static_cast<torch::jit::Module*>(model.pt_module);
-    std::cout << "Module: " << module.dump_to_str(false, false, false) << std::endl;
-    std::cout.flush();
-    auto output = module.forward(inputs).toTensor();
-    std::cout << "Output tensor: " << output.sizes() << std::endl;
-    std::cout.flush();
-    // auto output = t_input;
-    return torch_to_bridge(output);
+    return model_forward(model, input, true);
 }
 
 

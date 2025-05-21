@@ -33,7 +33,7 @@ proc getTime() {
 
 const startTime = getTime();
 
-config const modelPath: string = "sobel.pt"; // "../style-transfer/models/exports/cpu/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
+config const modelPath: string = "../style-transfer/models/exports/mps/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
 var model : Bridge.bridge_pt_model_t;
 
 use CTypes;
@@ -41,55 +41,53 @@ use CTypes;
 export proc globalLoadModel() {
     const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
     model = Bridge.load_model(fpPtr);
+
+    // const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
+    // var model = Bridge.load_model(fpPtr);
 }
 
 
+var lastFrame = startTime;
 
 export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels: int): [] real(32) {
 
     const t = getTime() - startTime;
+    const dt = getTime() - lastFrame;
+    writeln("FPS: ", 1.0 / dt);
     const shape = (height,width,channels);
-    writeln(shape);
-    writeln("frame size: ",frame.size);
-
     const frameDom = utils.domainFromShape((...shape));
-
     const shapedFrame = [idx in frameDom] frame[utils.linearIdx(shape,idx)];
 
     var ndframe = new ndarray(shapedFrame);
-    writeln("ndframe shape: ", ndframe.shape);
 
     // const nf = ndframe.flatten().data;
     // return nf;
-    
     // var ndframe = new ndarray(real(32),shape);
     // ndframe.data = reshape(frame,ndframe.domain);
-
     // var bt = Bridge.model_forward_style_transfer(model,ndframe : Bridge.tensorHandle(real(32)));
     // writeln("Copying data 1");
     // ndframe = bt : ndframe.type;
 
     // var bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
-    const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
-    var model = Bridge.load_model(fpPtr);
-    var bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
 
-    // var bt = Bridge.model_forward_style_transfer(model,ndframe : Bridge.tensorHandle(real(32)));
-    writeln("Copying data 1");
+    var bt: Bridge.bridge_tensor_t;
+    if modelPath == "sobel.pt" then
+        bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
+    else
+        bt = Bridge.model_forward_style_transfer(model,ndframe : Bridge.tensorHandle(real(32)));
+    
     // ndframe.loadFromBridgeTensor(bt);
     const nextNDFrame = bt : ndarray(3, real(32));
 
-    writeln("nextFrame shape: ", nextNDFrame.shape);
+    forall i in 0..<frame.size {
+        const idx = utils.indexAt(i,(...shape));
+        ref color = frame[i];
+        color = nextNDFrame.data[idx];
+    }
 
-    writeln("Copying data 2");
+    lastFrame = getTime();
 
-    // forall i in 0..<frame.size {
-    //     const idx = utils.indexAt(i,(...shape));
-    //     ref color = frame[i];
-    //     color = nextNDFrame.data[idx];
-    // }
-
-    // return frame;
+    return frame;
 
     const flattenedNextFrame = nextNDFrame.flatten().data;
     return flattenedNextFrame;

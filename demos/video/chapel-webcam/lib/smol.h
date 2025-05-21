@@ -2,7 +2,6 @@
 #include "wctype.h"
 #include "ctype.h"
 #include "ImageHelper/stb_image_helper.h"
-#include "bridge.h"
 void chpl__init_Bridge(int64_t _ln,
                        int32_t _fn);
 void chpl__init_NDArray(int64_t _ln,

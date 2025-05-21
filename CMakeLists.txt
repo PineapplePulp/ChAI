@@ -251,7 +251,8 @@ set(CHAI_LINKER_ARGS
     ${BRIDGE_OBJECT_FILES}
     -L ${LIBTORCH_DIR}/lib
     ${LIBTORCH_LIBS_LINKER_ARGS}
-    --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
+    --ccflags "-I${BRIDGE_DIR}/include -L${PROJECT_ROOT_DIR}/build"
+    --ldflags "-L${PROJECT_ROOT_DIR}/build -Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
 
 

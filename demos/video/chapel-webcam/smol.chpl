@@ -33,6 +33,8 @@ proc getTime() {
 
 const startTime = getTime();
 
+// ../style-transfer/models/exports/mps/nature_oil_painting_ep4_bt4_sw1e10_cw_1e5_float32.pt
+// ../style-transfer/models/exports/mps/udnie_float32.pt
 config const modelPath: string = "../style-transfer/models/exports/mps/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
 var model : Bridge.bridge_pt_model_t;
 

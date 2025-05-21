@@ -26,7 +26,7 @@ cv::Mat new_frame(cv::Mat &frame) {
     int64_t pixels = rgb_float_frame.total();
     int64_t size = pixels * channels;
 
-    std::cout << "Width: " << width << ", Height: " << height << ", Channels: " << channels << ", Size: " << size << std::endl;
+    // std::cout << "Width: " << width << ", Height: " << height << ", Channels: " << channels << ", Size: " << size << std::endl;
 
     chpl_external_array 
         rgb_float_frame_data_ptr = chpl_make_external_array_ptr(rgb_float_frame.data,size);

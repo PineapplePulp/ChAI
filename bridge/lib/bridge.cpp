@@ -65,6 +65,19 @@ torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
 
+torch::Tensor bridge_to_torch(bridge_tensor_t &bt,torch::Device device, bool copy,torch::ScalarType dtype = torch::kFloat32) {
+    std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
+    auto shape = torch::IntArrayRef(sizes_vec);
+    auto t = torch::from_blob(bt.data, shape, torch::kFloat);
+    if (device != torch::kCPU)
+        copy = true;
+    if (copy)
+        return t.to(device, dtype, /*non_blocking=*/false, /*copy=*/true);
+    else
+        return t.to(device, dtype, /*non_blocking=*/false, /*copy=*/false);
+    
+}
+
 extern "C" float32_t* unsafe(const float32_t* arr) {
     return const_cast<float32_t*>(arr);
 }
@@ -142,7 +155,7 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
     try {
 
         auto* module = new torch::jit::Module(torch::jit::load(path));
-        module->to(torch::kCPU);
+        module->to(torch::kMPS,torch::kFloat16,false);
         module->eval();
         std::cout << "Model loaded successfully!" << std::endl;
         std::cout.flush();
@@ -190,8 +203,9 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
 
 extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
 
-    auto tn = bridge_to_torch(input).clone();
-    auto tn_ = tn.permute({2, 0, 1}).unsqueeze(0).contiguous();
+    auto tn_mps = bridge_to_torch(input,torch::kMPS,true,torch::kFloat16);
+    // auto tn_mps = tn.to(torch::kMPS,false,true);
+    auto tn_ = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
 
     std::vector<torch::jit::IValue> ins;
     ins.push_back(tn_);
@@ -199,11 +213,9 @@ extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_
     auto* module = static_cast<torch::jit::Module*>(model.pt_module);
     auto o = module->forward(ins).toTensor();
     auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
+    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
+    return torch_to_bridge(tn_out_cpu);
 
-    return torch_to_bridge(tn_out);
-
-
-    //
 /*
 
     auto t = bridge_to_torch(input).clone();

@@ -33,7 +33,7 @@ proc getTime() {
 
 const startTime = getTime();
 
-config const modelPath: string = "../style-transfer/models/exports/cpu/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
+config const modelPath: string = "sobel.pt"; // "../style-transfer/models/exports/cpu/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
 var model : Bridge.bridge_pt_model_t;
 
 use CTypes;

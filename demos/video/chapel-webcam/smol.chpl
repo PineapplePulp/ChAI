@@ -56,56 +56,35 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     writeln("FPS: ", 1.0 / dt);
     const shape = (height,width,channels);
     const frameDom = utils.domainFromShape((...shape));
-    const shapedFrame = [idx in frameDom] frame[utils.linearIdx(shape,idx)];
 
-    var ndframe = new ndarray(shapedFrame);
-
-    // const nf = ndframe.flatten().data;
-    // return nf;
-    // var ndframe = new ndarray(real(32),shape);
-    // ndframe.data = reshape(frame,ndframe.domain);
-    // var bt = Bridge.model_forward_style_transfer(model,ndframe : Bridge.tensorHandle(real(32)));
-    // writeln("Copying data 1");
-    // ndframe = bt : ndframe.type;
-
-    // var bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
-
+    var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
     var bt: Bridge.bridge_tensor_t;
     if modelPath == "sobel.pt" then
-        bt = Bridge.model_forward(model,ndframe : Bridge.tensorHandle(real(32)));
+        bt = Bridge.model_forward(model,btFrame);
     else
-        bt = Bridge.model_forward_style_transfer(model,ndframe : Bridge.tensorHandle(real(32)));
+        bt = Bridge.model_forward_style_transfer(model,btFrame);
     
-    // ndframe.loadFromBridgeTensor(bt);
+
+
     const nextNDFrame = bt : ndarray(3, real(32));
-
-    forall i in 0..<frame.size {
-        const idx = utils.indexAt(i,(...shape));
-        ref color = frame[i];
-        color = nextNDFrame.data[idx];
-    }
-
-    lastFrame = getTime();
-
-    return frame;
-
     const flattenedNextFrame = nextNDFrame.flatten().data;
+    lastFrame = getTime();
     return flattenedNextFrame;
 
-    forall i in 0..<frame.size {
-        const idx = utils.indexAt(i,(...shape));
-        const (h,w,c) = idx;
-        const (u,v) = (h:real(64)/height,w:real(64)/width);
-        ref color = frame[i];
-        // if h < width {
-        //     frame[utils.linearIdx(shape,(h,w,c))] = frame[utils.linearIdx(shape,(h,w,c-1))];
-        // }
-        // if h < width {
-        //     frame[utils.linearIdx(shape,(h,w,0))] *= Math.sin(2.0*t + 5.0 * u) : real(32);
-        // }
-        color *= (Math.abs(Math.sin(2.0*t + 5.0 * v)) * Math.abs(Math.sin(2.0*t + 5.0 * u))) : real(32);
-    }
-    return frame;
+    // forall i in 0..<frame.size {
+    //     const idx = utils.indexAt(i,(...shape));
+    //     const (h,w,c) = idx;
+    //     const (u,v) = (h:real(64)/height,w:real(64)/width);
+    //     ref color = frame[i];
+    //     // if h < width {
+    //     //     frame[utils.linearIdx(shape,(h,w,c))] = frame[utils.linearIdx(shape,(h,w,c-1))];
+    //     // }
+    //     // if h < width {
+    //     //     frame[utils.linearIdx(shape,(h,w,0))] *= Math.sin(2.0*t + 5.0 * u) : real(32);
+    //     // }
+    //     color *= (Math.abs(Math.sin(2.0*t + 5.0 * v)) * Math.abs(Math.sin(2.0*t + 5.0 * u))) : real(32);
+    // }
+    // return frame;
 }
 
 

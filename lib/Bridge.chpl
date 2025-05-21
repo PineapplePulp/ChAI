@@ -172,5 +172,16 @@ module Bridge {
         return result;
     }
 
+    proc createBridgeTensorWithShape(const ref data: [] real(32),shape: ?rank*int): bridge_tensor_t {
+        var result: bridge_tensor_t;
+        result.data = c_ptrToConst(data) : c_ptr(real(32));
+        result.sizes = allocate(int(32),rank);
+        result.created_by_c = false;
+        for i in 0..<rank do
+            result.sizes[i] = shape(i) : int(32);
+        result.dim = rank;
+        return result;
+    }
+
 
 }

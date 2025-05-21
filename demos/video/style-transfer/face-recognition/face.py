@@ -166,6 +166,7 @@ def main():
             face_roi = frame[y:y+h, x:x+w]
             # Apply style transfer to the face region
             input_tensor = frame_to_tensor(face_roi)
+            print(input_tensor.shape)
             output_tensor = model_inference(model, input_tensor)[:,:,0:h, 0:w]
             # print(output_tensor.shape)
             output_face = tensor_to_bgr(output_tensor)

@@ -20,11 +20,13 @@ cv::Mat new_frame(cv::Mat &frame) {
 
     // cv::MatSize size = rgb_frame.size;
     // std::cout << "x " << size[0] << " y " << size[1] << " channels " << rgb_frame.dims << std::endl;
-    int64_t width = rgb_float_frame.cols;
     int64_t height = rgb_float_frame.rows;
+    int64_t width = rgb_float_frame.cols;
     int64_t channels = rgb_float_frame.channels();
     int64_t pixels = rgb_float_frame.total();
     int64_t size = pixels * channels;
+
+    std::cout << "Width: " << width << ", Height: " << height << ", Channels: " << channels << ", Size: " << size << std::endl;
 
     chpl_external_array 
         rgb_float_frame_data_ptr = chpl_make_external_array_ptr(rgb_float_frame.data,size);

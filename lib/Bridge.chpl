@@ -2,6 +2,7 @@ module Bridge {
     // require "bridge.h";
     // require "-ltorch";
     require "-ltorch", "-ltorch_cpu", "-lc10", "-ltorch_global_deps";
+    require "bridge.h", "-lbridge_objs";
 
     import Utilities as util;
     use Utilities.Standard;
@@ -16,6 +17,15 @@ module Bridge {
         var dim: int(32);
         var created_by_c: bool;
     }
+
+    extern record bridge_pt_model_t {
+        var pt_module: c_ptr(void);
+    }
+    extern record test_struct_t {
+        var field: c_ptr(int(32));
+    }
+
+    extern proc hello_world(): void;
 
     extern record nil_scalar_tensor_t {
         var scalar: real(32);
@@ -49,6 +59,16 @@ module Bridge {
 
     extern proc load_run_model(
         model_path: string_t,
+        in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc load_model(model_path: string_t): bridge_pt_model_t;
+
+    extern proc model_forward(
+        in model: bridge_pt_model_t,
+        in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc model_forward_style_transfer(
+        in model: bridge_pt_model_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 
 
@@ -149,6 +169,17 @@ module Bridge {
             result.sizes[i] = sizeArr[i];
 
         result.dim = data.rank;
+        return result;
+    }
+
+    proc createBridgeTensorWithShape(const ref data: [] real(32),shape: ?rank*int): bridge_tensor_t {
+        var result: bridge_tensor_t;
+        result.data = c_ptrToConst(data) : c_ptr(real(32));
+        result.sizes = allocate(int(32),rank);
+        result.created_by_c = false;
+        for i in 0..<rank do
+            result.sizes[i] = shape(i) : int(32);
+        result.dim = rank;
         return result;
     }
 

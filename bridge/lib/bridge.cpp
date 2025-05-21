@@ -16,7 +16,6 @@
 #include <chrono>
 #include <thread>
 
-#include <opencv2/opencv.hpp>
 
 
 #define def_bridge_simple(Name) \
@@ -64,6 +63,19 @@ torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = torch::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
+}
+
+torch::Tensor bridge_to_torch(bridge_tensor_t &bt,torch::Device device, bool copy,torch::ScalarType dtype = torch::kFloat32) {
+    std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
+    auto shape = torch::IntArrayRef(sizes_vec);
+    auto t = torch::from_blob(bt.data, shape, torch::kFloat);
+    if (device != torch::kCPU)
+        copy = true;
+    if (copy)
+        return t.to(device, dtype, /*non_blocking=*/false, /*copy=*/true);
+    else
+        return t.to(device, dtype, /*non_blocking=*/false, /*copy=*/false);
+    
 }
 
 extern "C" float32_t* unsafe(const float32_t* arr) {
@@ -129,6 +141,102 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
 
     std::cout << "Model output: " << output.sizes() << std::endl;
     return torch_to_bridge(output);
+}
+
+
+extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
+
+    std::cout << "Begin loading model from path: " << model_path << std::endl;
+    std::cout.flush();
+    std::string path(reinterpret_cast<const char*>(model_path));
+    std::cout << "Loading model from path: " << path << std::endl;
+    std::cout.flush();
+
+    try {
+
+        auto* module = new torch::jit::Module(torch::jit::load(path));
+        module->to(torch::kMPS,torch::kFloat16,false);
+        module->eval();
+        std::cout << "Model loaded successfully!" << std::endl;
+        std::cout.flush();
+        return { static_cast<void*>(module) };
+
+        // torch::jit::Module tmp = torch::jit::load(path);
+        // std::cout << "Model loaded successfully!" << std::endl;
+        // std::cout.flush();
+        // auto* module = new torch::jit::Module(std::move(tmp));
+        // std::cout << "Model moved successfully!" << std::endl;
+        // std::cout.flush();
+        // return { static_cast<void*>(module) };
+    } catch (const c10::Error& e) {
+        std::cerr << "error loading the model\n" << e.msg();
+        std::cout << "error loading the model\n" << e.msg();
+        std::cout.flush();
+        std::cerr.flush();
+    }
+    std::cout << "Model loading failed!" << std::endl;
+    std::cout.flush();
+
+    return { nullptr };
+
+
+
+    // bridge_pt_model_t model_wrapper;
+    // torch::jit::Module* pt_module = new torch::jit::Module(); // = (torch::jit::Module*) model_wrapper.pt_module;
+    // try {
+    //     *pt_module = torch::jit::load(mp);
+    //     std::cout << "Model loaded successfully!" << std::endl;
+    //     std::cout.flush();
+    //     model_wrapper.pt_module = pt_module;
+    // } catch (const c10::Error& e) {
+    //     std::cerr << "error loading the model\n" << e.msg();
+    //     std::cout << "error loading the model\n" << e.msg();
+    //     std::cout.flush();
+    //     std::cerr.flush();
+    // }
+
+    // std::cout << pt_module->dump_to_str(false,false,false) << std::endl;
+    // std::cout.flush();
+
+    // return model_wrapper;
+}
+
+
+
+bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bool is_vgg_based_model) {
+
+    auto tn_mps = bridge_to_torch(input,torch::kMPS,true,torch::kFloat16);
+    // auto tn_mps = tn.to(torch::kMPS,false,true);
+    auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
+
+    std::vector<torch::jit::IValue> ins;
+    ins.push_back(tn);
+
+    auto* module = static_cast<torch::jit::Module*>(model.pt_module);
+    auto o = module->forward(ins).toTensor();
+    auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
+
+    if (is_vgg_based_model) {
+        tn_out = tn_out / 255.0;
+    }
+
+    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
+    return torch_to_bridge(tn_out_cpu);
+
+}
+
+extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
+    return model_forward(model, input, false);
+}
+
+extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input) {
+    return model_forward(model, input, true);
+}
+
+
+extern "C" void hello_world(void) {
+    std::cout << "Hello from C++!" << std::endl;
+    std::cout.flush();
 }
 
 extern "C" bridge_tensor_t increment3(bridge_tensor_t arr) {
@@ -404,37 +512,37 @@ extern "C" void split_loop_filler(int64_t n,int64_t* ret) {
 
 
 
-cv::VideoCapture open_camera(int cam_index) {
-    cv::VideoCapture cap(cam_index, cv::CAP_AVFOUNDATION);
-    if (!cap.isOpened()) {
-        std::cerr << "Could not open camera index " << cam_index << std::endl;
-        return cv::VideoCapture();
-    }
-    cap.set(cv::CAP_PROP_BUFFERSIZE, 1); // minimal internal buffering
-    cap.set(cv::CAP_PROP_FPS, 60);       // request higher FPS if possible
-    return cap;
-}
+// cv::VideoCapture open_camera(int cam_index) {
+//     cv::VideoCapture cap(cam_index, cv::CAP_AVFOUNDATION);
+//     if (!cap.isOpened()) {
+//         std::cerr << "Could not open camera index " << cam_index << std::endl;
+//         return cv::VideoCapture();
+//     }
+//     cap.set(cv::CAP_PROP_BUFFERSIZE, 1); // minimal internal buffering
+//     cap.set(cv::CAP_PROP_FPS, 60);       // request higher FPS if possible
+//     return cap;
+// }
 
 
-extern "C" void show_webcam(void) {
-    cv::VideoCapture cap;
-    cap = open_camera(0);
+// extern "C" void show_webcam(void) {
+//     cv::VideoCapture cap;
+//     cap = open_camera(0);
 
-    cv::Mat frame_bgr;
+//     cv::Mat frame_bgr;
 
-    while (true) {
-        if (!cap.read(frame_bgr) || frame_bgr.empty()) {
-            std::cerr << "[WARN] Empty frame, exiting" << std::endl;
-            break;
-        }
+//     while (true) {
+//         if (!cap.read(frame_bgr) || frame_bgr.empty()) {
+//             std::cerr << "[WARN] Empty frame, exiting" << std::endl;
+//             break;
+//         }
 
-        cv::imshow("webcam", frame_bgr);
+//         cv::imshow("webcam", frame_bgr);
 
-        if (cv::waitKey(1) == 27) { // ESC key
-            break;
-        }
-    }
+//         if (cv::waitKey(1) == 27) { // ESC key
+//             break;
+//         }
+//     }
 
-    cap.release();
-    cv::destroyAllWindows();
-}
+//     cap.release();
+//     cv::destroyAllWindows();
+// }

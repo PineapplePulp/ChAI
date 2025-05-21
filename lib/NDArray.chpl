@@ -693,7 +693,7 @@ proc ndarray.min(): ndarray(1,eltType) {
 proc ndarray.max(): ndarray(1,eltType) {
     var me = new ndarray({0..<1},eltType);
     const myData = this.data;
-    me.data[0] = Math.max reduce myData;
+    me.data[0] = max reduce myData;
     return me;
 }
 

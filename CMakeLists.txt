@@ -228,12 +228,8 @@ add_dependencies(TinyLayerTest ChAI)
 target_link_options(TinyLayerTest
     PRIVATE
         --main-module layer_test.chpl
-        -M ${PROJECT_ROOT_DIR}/lib
-        ${BRIDGE_DIR}/include/bridge.h
-        ${BRIDGE_OBJECT_FILES}
-        -L ${LIBTORCH_DIR}/lib
-        ${LIBTORCH_LIBS_LINKER_ARGS}
-        --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
+        # -M ${PROJECT_ROOT_DIR}/lib
+        ${CHAI_LINKER_ARGS}
 )
 # chpl test/tiny/layer_test.chpl -M lib bridge/include/bridge.h build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,libtorch/lib"
 

@@ -1,9 +1,3 @@
-// import Utilities as utils;
-// import Bridge;
-
-// use NDArray;
-// use Layer;
-
 use Tensor;
 use Layer;
 import Utilities as utils;
@@ -56,46 +50,68 @@ export proc globalLoadModel() {
         modelLayer = new shared TorchModule(modelPath);
     else
         modelLayer = new shared StyleTransfer(modelPath);
-
-    // const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
-    // var model = Bridge.load_model(fpPtr);
 }
 
 
 var lastFrame = startTime;
 
+param chaiImpl = true;
+
+
+const windowSize = 20;
+var frameCount = 0;
+var runningSum: real = 0;
+var windowSum: real = 0;
+var fpsBuffer: [0..<windowSize] real;
+
+
+
 export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels: int): [] real(32) {
 
     const t = getTime() - startTime;
     const dt = getTime() - lastFrame;
-    writeln("FPS: ", 1.0 / dt);
+    const fps = 1.0 / dt;
+
+    runningSum += fps;
+    frameCount += 1;
+    const overallAvgFPS = runningSum / frameCount;
+    const idx = (frameCount - 1) % windowSize;
+    if frameCount <= windowSize {
+        // still filling the buffer
+        windowSum += fps;
+    } else {
+        // subtract the old value at this slot, then add the new one
+        windowSum += fps - fpsBuffer[idx];
+    }
+    fpsBuffer[idx] = fps;
+    const currentWindowSize = min(frameCount, windowSize);
+    const windowAvgFPS = windowSum / currentWindowSize;
+    writeln("FPS: ", fps, " avg FPS: ", windowAvgFPS);
+
     const shape = (height,width,channels);
     const frameDom = utils.domainFromShape((...shape));
     // const frameArr = reshape(frame,frameDom);
-    const dtInput = (new dynamicTensor(frame)).reshape((...shape));
-    const dtOutput = modelLayer!.forward(dtInput);
-    const outputFrame = dtOutput.flatten().toArray(1);
 
+    if chaiImpl {
+        const dtInput = (new dynamicTensor(frame)).reshape((...shape));
+        const dtOutput = modelLayer!.forward(dtInput);
+        const outputFrame = dtOutput.flatten().toArray(1);
+        lastFrame = getTime();
+        return outputFrame;
+    } else {
 
-    lastFrame = getTime();
-    return outputFrame;
-
-/*
-    var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
-    var bt: Bridge.bridge_tensor_t;
-    if modelPath == "sobel.pt" then
-        bt = Bridge.model_forward(model,btFrame);
-    else
-        bt = Bridge.model_forward_style_transfer(model,btFrame);
-    
-
-
-    const nextNDFrame = bt : ndarray(3, real(32));
-    const flattenedNextFrame = nextNDFrame.flatten().data;
-    lastFrame = getTime();
-    return flattenedNextFrame;
-    */
-
+        var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
+        var bt: Bridge.bridge_tensor_t;
+        if modelPath == "sobel.pt" then
+            bt = Bridge.model_forward(model,btFrame);
+        else
+            bt = Bridge.model_forward_style_transfer(model,btFrame);
+        
+        const nextNDFrame = bt : ndarray(3, real(32));
+        const flattenedNextFrame = nextNDFrame.flatten().data;
+        lastFrame = getTime();
+        return flattenedNextFrame;
+    }
 
     // forall i in 0..<frame.size {
     //     const idx = utils.indexAt(i,(...shape));

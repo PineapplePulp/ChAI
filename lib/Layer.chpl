@@ -243,7 +243,8 @@ module Layer {
         proc init(modulePath: string) do
             super.init(defaultEltType,modulePath);
         
-        override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) {
+        override proc forward(input: dynamicTensor(eltType)): 
+                dynamicTensor(eltType) {
             const btInput: Bridge.tensorHandle(eltType) = input : Bridge.tensorHandle(eltType);
             const btOutput = Bridge.model_forward_style_transfer(this.moduleHandle, btInput);
             return btOutput : dynamicTensor(eltType);

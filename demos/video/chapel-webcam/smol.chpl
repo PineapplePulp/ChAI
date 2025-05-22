@@ -1,6 +1,6 @@
 use Tensor;
 use Layer;
-import Utilities as utils;
+import Utilities as util;
 
 
 export proc square(x: int): int {
@@ -64,6 +64,7 @@ var runningSum: real = 0;
 var windowSum: real = 0;
 var fpsBuffer: [0..<windowSize] real;
 
+config const copyStrat: int = 1;
 
 
 export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels: int): [] real(32) {
@@ -86,19 +87,51 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     fpsBuffer[idx] = fps;
     const currentWindowSize = min(frameCount, windowSize);
     const windowAvgFPS = windowSum / currentWindowSize;
-    writeln("FPS: ", fps, " avg FPS: ", windowAvgFPS);
+    writeln("FPS: ", fps, " avg FPS: ", windowAvgFPS, "max window FPS: ", max reduce fpsBuffer);
 
     const shape = (height,width,channels);
-    const frameDom = utils.domainFromShape((...shape));
+    const frameDom = util.domainFromShape((...shape));
     // const frameArr = reshape(frame,frameDom);
 
     if chaiImpl {
-        const dtInput = (new dynamicTensor(frame)).reshape((...shape));
+
+        var ndframe = new ndarray(real(32),shape);
+        ref ndframeData = ndframe.data;
+        forall idx in frameDom do
+            ndframeData[idx] = frame[util.linearIdx(shape,idx)];
+        const dtInput = new dynamicTensor(ndframe); // 20 fps
         const dtOutput = modelLayer!.forward(dtInput);
-        // const outputFrame = dtOutput.rankedData(1);
         const outputFrame = dtOutput.flatten().toArray(1);
         lastFrame = getTime();
         return outputFrame;
+
+        // 2 (no)
+        // if copyStrat == 1 {
+        //     var ndframe = new ndarray(real(32),shape);
+        //     ref ndframeData = ndframe.data;
+        //     forall idx in frameDom do
+        //         ndframeData[idx] = frame[util.linearIdx(shape,idx)];
+        //     const dtInput = new dynamicTensor(ndframe); // 20 fps
+        //     const dtOutput = modelLayer!.forward(dtInput);
+        //     const outputFrame = dtOutput.flatten().toArray(1);
+        //     lastFrame = getTime();
+        //     return outputFrame;
+        // } else {
+        //     const dtInput = (new dynamicTensor(frame)).reshape((...shape));
+        //     const dtOutput = modelLayer!.forward(dtInput);
+        //     const outputFrame = dtOutput.flatten().toArray(1);
+        //     lastFrame = getTime();
+        //     return outputFrame;
+        // }
+
+
+        // const dtInput = new dynamicTensor(reshape(frame,frameDom)); // Way slower
+
+        // const dtOutput = modelLayer!.forward(dtInput);
+        // // const outputFrame = dtOutput.rankedData(1);
+        // const outputFrame = dtOutput.flatten().toArray(1);
+        // lastFrame = getTime();
+        // return outputFrame;
     } else {
         var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
         var bt: Bridge.bridge_tensor_t;

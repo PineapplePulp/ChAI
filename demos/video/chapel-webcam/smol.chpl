@@ -1,7 +1,13 @@
+// import Utilities as utils;
+// import Bridge;
+
+// use NDArray;
+// use Layer;
+
+use Tensor;
+use Layer;
 import Utilities as utils;
 
-use NDArray;
-import Bridge;
 
 export proc square(x: int): int {
     writeln(x, " * ", x, " = ", x * x);
@@ -38,11 +44,18 @@ const startTime = getTime();
 config const modelPath: string = "../style-transfer/models/exports/mps/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
 var model : Bridge.bridge_pt_model_t;
 
+var modelLayer : shared TorchModule(real(32))?;
+
+
 use CTypes;
 
 export proc globalLoadModel() {
     const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
     model = Bridge.load_model(fpPtr);
+    if modelPath == "sobel.pt" then
+        modelLayer = new shared TorchModule(modelPath);
+    else
+        modelLayer = new shared StyleTransfer(modelPath);
 
     // const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
     // var model = Bridge.load_model(fpPtr);
@@ -58,7 +71,16 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     writeln("FPS: ", 1.0 / dt);
     const shape = (height,width,channels);
     const frameDom = utils.domainFromShape((...shape));
+    // const frameArr = reshape(frame,frameDom);
+    const dtInput = (new dynamicTensor(frame)).reshape((...shape));
+    const dtOutput = modelLayer!.forward(dtInput);
+    const outputFrame = dtOutput.flatten().toArray(1);
 
+
+    lastFrame = getTime();
+    return outputFrame;
+
+/*
     var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
     var bt: Bridge.bridge_tensor_t;
     if modelPath == "sobel.pt" then
@@ -72,6 +94,8 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     const flattenedNextFrame = nextNDFrame.flatten().data;
     lastFrame = getTime();
     return flattenedNextFrame;
+    */
+
 
     // forall i in 0..<frame.size {
     //     const idx = utils.indexAt(i,(...shape));

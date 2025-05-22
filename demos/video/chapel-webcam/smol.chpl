@@ -55,10 +55,10 @@ export proc globalLoadModel() {
 
 var lastFrame = startTime;
 
-param chaiImpl = true;
+config const chaiImpl = true;
 
 
-const windowSize = 20;
+const windowSize = 5;
 var frameCount = 0;
 var runningSum: real = 0;
 var windowSum: real = 0;
@@ -95,11 +95,11 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     if chaiImpl {
         const dtInput = (new dynamicTensor(frame)).reshape((...shape));
         const dtOutput = modelLayer!.forward(dtInput);
+        // const outputFrame = dtOutput.rankedData(1);
         const outputFrame = dtOutput.flatten().toArray(1);
         lastFrame = getTime();
         return outputFrame;
     } else {
-
         var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
         var bt: Bridge.bridge_tensor_t;
         if modelPath == "sobel.pt" then

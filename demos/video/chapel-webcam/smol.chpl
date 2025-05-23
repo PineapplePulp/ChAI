@@ -72,7 +72,7 @@ const startTime = getTime();
 // ../style-transfer/models/exports/mps/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt // This is the one
 // ../style-transfer/models/exports/cpu/mosaic_float16.pt
 config const modelPath: string = "../style-transfer/models/exports/cpu/mosaic_float16.pt";
-var model : Bridge.bridge_pt_model_t;
+var model : Bridge.torchModuleHandle;
 
 var modelLayer : shared TorchModule(real(32))?;
 
@@ -80,10 +80,9 @@ var modelLayer : shared TorchModule(real(32))?;
 use CTypes;
 
 export proc globalLoadModel() {
-    const fpPtr: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
-    model = Bridge.load_model(fpPtr);
+    model = Bridge.loadModel(modelPath);
     if modelPath == "sobel.pt" then
-        modelLayer = new shared TorchModule(modelPath);
+        modelLayer = new shared LoadedTorchModel(modelPath);
     else
         modelLayer = new shared StyleTransfer(modelPath);
 }
@@ -173,9 +172,9 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
         var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
         var bt: Bridge.bridge_tensor_t;
         if modelPath == "sobel.pt" then
-            bt = Bridge.model_forward(model,btFrame);
+            bt = Bridge.modelForward(model,btFrame);
         else
-            bt = Bridge.model_forward_style_transfer(model,btFrame);
+            bt = Bridge.modelForwardStyleTransfer(model,btFrame);
         
         const nextNDFrame = bt : ndarray(3, real(32));
         const flattenedNextFrame = nextNDFrame.flatten().data;

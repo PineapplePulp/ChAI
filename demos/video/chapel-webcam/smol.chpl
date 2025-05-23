@@ -109,6 +109,7 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     const dt = getTime() - lastFrame;
     const fps = 1.0 / dt;
 
+    /*
     runningSum += fps;
     frameCount += 1;
     const overallAvgFPS = runningSum / frameCount;
@@ -124,6 +125,8 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     const currentWindowSize = min(frameCount, windowSize);
     const windowAvgFPS = windowSum / currentWindowSize;
     writeln("FPS: ", fps, " avg FPS: ", windowAvgFPS, "max window FPS: ", max reduce fpsBuffer);
+    */
+    // writeln("FPS: ", fps);
     lastFrame = getTime();
 
 

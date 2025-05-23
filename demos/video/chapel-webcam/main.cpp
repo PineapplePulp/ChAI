@@ -117,6 +117,9 @@ int mirror() {
     cv::Size processed_frame_size;
 
     while (true) {
+
+        uint64_t start = cv::getTickCount();
+
         // Capture a new frame from webcam
         cap >> frame;
         if (frame.empty()) {
@@ -142,10 +145,13 @@ int mirror() {
         cv::imshow(windowName, next_frame);
 
         // Wait for 30ms or until 'q' key is pressed
-        char key = static_cast<char>(cv::waitKey(30));
+        char key = static_cast<char>(cv::waitKey(1));
         if (key == 'q' || key == 27) { // 'q' or ESC to quit
             break;
         }
+
+        double fps = cv::getTickFrequency() / (cv::getTickCount() - start);
+        std::cout << "\rcv::FPS : " << fps << "\t\r" << std::flush;
     }
 
     // Release the camera and destroy all windows

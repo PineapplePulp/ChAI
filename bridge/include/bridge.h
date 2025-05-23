@@ -51,10 +51,13 @@ bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tensor_t input)
 
 bridge_pt_model_t load_model(const uint8_t* model_path);
 
+bool_t accelerator_available(void);
+
 bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input);
-
-
 bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input);
+
+uint64_t get_cpu_frame_width(uint64_t width, float32_t scale_factor);
+uint64_t get_cpu_frame_height(uint64_t height, float32_t scale_factor);
 
 bridge_tensor_t resize(bridge_tensor_t input,int height,int width);
 bridge_tensor_t imagenet_normalize(bridge_tensor_t input);

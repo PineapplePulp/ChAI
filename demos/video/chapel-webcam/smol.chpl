@@ -2,6 +2,19 @@ use Tensor;
 use Layer;
 import Utilities as util;
 
+config const cpuScaleFactor: real(32) = 0.2;
+
+writeln("CPU Scale Factor: ", cpuScaleFactor);
+
+export proc acceleratorAvailable(): bool do
+    return Bridge.acceleratorAvailable();
+
+export proc getCPUFrameWidth(width: int): int do
+    return Bridge.getCPUFrameWidth(width,cpuScaleFactor : real(32));
+
+export proc getCPUFrameHeight(height: int): int do
+    return Bridge.getCPUFrameHeight(height,cpuScaleFactor : real(32));
+
 
 export proc square(x: int): int {
     writeln(x, " * ", x, " = ", x * x);
@@ -35,7 +48,9 @@ const startTime = getTime();
 
 // ../style-transfer/models/exports/mps/nature_oil_painting_ep4_bt4_sw1e10_cw_1e5_float32.pt
 // ../style-transfer/models/exports/mps/udnie_float32.pt
-config const modelPath: string = "../style-transfer/models/exports/mps/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt";
+// ../style-transfer/models/exports/mps/starry_ep3_bt4_sw1e11_cw_1e5_float32.pt // This is the one
+// ../style-transfer/models/exports/cpu/mosaic_float16.pt
+config const modelPath: string = "../style-transfer/models/exports/cpu/mosaic_float16.pt";
 var model : Bridge.bridge_pt_model_t;
 
 var modelLayer : shared TorchModule(real(32))?;

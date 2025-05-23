@@ -31,6 +31,9 @@ void chpl__init_ndarrayRandom(int64_t _ln,
                               int32_t _fn);
 void chpl__init_smol(int64_t _ln,
                      int32_t _fn);
+chpl_bool acceleratorAvailable(void);
+int64_t getCPUFrameWidth(int64_t width);
+int64_t getCPUFrameHeight(int64_t height);
 int64_t square(int64_t x);
 void printArray(chpl_external_array * a);
 void globalLoadModel(void);

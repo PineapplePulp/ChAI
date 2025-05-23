@@ -29,8 +29,47 @@
 
 
 
+// Globals
+
+
+torch::Device get_best_device();
+torch::ScalarType get_best_dtype();
+
+auto best_device = get_best_device();
+auto best_dtype = get_best_dtype();
+
 torch::NoGradGuard no_grad;
 torch::AutoGradMode enable_grad(false);
+
+
+
+
+
+
+torch::Device get_best_device() {
+    if (torch::hasMPS()) {
+        return torch::Device(torch::kMPS);
+    } else if (torch::hasCUDA()) {
+        return torch::Device(torch::kCUDA);
+    } else {
+        return torch::Device(torch::kCPU);
+    }
+}
+
+extern "C" bool_t accelerator_available() {
+    return false;
+    // return torch::hasMPS() || torch::hasCUDA();
+}
+
+torch::ScalarType get_best_dtype() {
+    if (torch::hasMPS()) {
+        return torch::kFloat16;
+    } else if (torch::hasCUDA()) {
+        return torch::kFloat16;
+    } else {
+        return torch::kFloat32;
+    }
+}
 
 int bridge_tensor_elements(bridge_tensor_t &bt) {
     int size = 1;
@@ -149,8 +188,6 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
 }
 
 
-#define DEVICE torch::kMPS
-#define DTYPE torch::kFloat16
 
 
 extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
@@ -163,7 +200,7 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
 
     try {
         auto* module = new torch::jit::Module(torch::jit::load(path));
-        module->to(DEVICE,DTYPE,false);
+        module->to(best_device,best_dtype,false);
         module->eval();
         std::cout << "Model loaded successfully!" << std::endl;
         std::cout.flush();
@@ -183,24 +220,24 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
 
 
 bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bool is_vgg_based_model) {
-    auto tn_mps = bridge_to_torch(input,DEVICE,true,DTYPE);
-    tn_mps = tn_mps.permute({2, 0, 1}).contiguous();
-    tn_mps.unsqueeze_(0);//.contiguous();
-    // auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
+    auto tn_mps = bridge_to_torch(input,best_device,true,best_dtype);
+    // tn_mps = tn_mps.permute({2, 0, 1}).contiguous();
+    // tn_mps.unsqueeze_(0);//.contiguous();
+    auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
 
     std::vector<torch::jit::IValue> ins;
-    ins.push_back(tn_mps);
+    ins.push_back(tn);
 
     auto* module = static_cast<torch::jit::Module*>(model.pt_module);
     auto o = module->forward(ins).toTensor();
-    auto tn_out = o.squeeze(0).permute({1, 2, 0}).contiguous();
-    // auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
+    // auto tn_out = o.squeeze(0).permute({1, 2, 0}).contiguous();
+    auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
 
     if (is_vgg_based_model) {
         tn_out.div_(255.0);
     }
 
-    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,false);
+    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
 
     return torch_to_bridge(tn_out_cpu);
 
@@ -212,6 +249,22 @@ extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_
 
 extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input) {
     return model_forward(model, input, true);
+}
+
+std::tuple<uint64_t, uint64_t> get_cpu_frame_size(uint64_t width, uint64_t height, float32_t scale_factor) {
+    // if (best_device == torch::kMPS || best_device == torch::kCUDA)
+    if (accelerator_available())
+        return std::make_tuple(width, height);
+    uint64_t new_width = static_cast<uint64_t>(width * scale_factor);
+    uint64_t new_height = static_cast<uint64_t>(height * scale_factor);
+    return std::make_tuple(new_width, new_height);
+}
+
+extern "C" uint64_t get_cpu_frame_width(uint64_t width,float32_t scale_factor) {
+    return std::get<0>(get_cpu_frame_size(width, 0, scale_factor));
+}
+extern "C" uint64_t get_cpu_frame_height(uint64_t height,float32_t scale_factor) {
+    return std::get<1>(get_cpu_frame_size(0, height, scale_factor));
 }
 
 

@@ -71,6 +71,14 @@ module Bridge {
         in model: bridge_pt_model_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 
+    extern "accelerator_available" 
+        proc acceleratorAvailable(): bool;
+
+    extern "get_cpu_frame_width" 
+        proc getCPUFrameWidth(width: int(64), scale_factor: real(32)): int(64);
+    extern "get_cpu_frame_height" 
+        proc getCPUFrameHeight(height: int(64), scale_factor: real(32)): int(64);
+
 
     extern proc convolve2d(
         in input: bridge_tensor_t, 

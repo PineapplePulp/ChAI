@@ -113,6 +113,9 @@ int mirror() {
     const std::string windowName = "Webcam Feed";
     cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
 
+    cv::Size frame_size;
+    cv::Size new_frame_size;
+
     while (true) {
         // Capture a new frame from webcam
         cap >> frame;
@@ -120,7 +123,24 @@ int mirror() {
             std::cerr << "Error: Empty frame captured.\n";
             break;
         }
+        frame_size = frame.size();
+        if (!acceleratorAvailable()) {
+            const auto width = getCPUFrameWidth(frame_size.width);
+            const auto height = getCPUFrameHeight(frame_size.height);
+            new_frame_size = cv::Size(width, height);
+        } else {
+            new_frame_size = frame_size;
+        }
+        
+        cv::resize(frame, frame, new_frame_size);
+
+        std::cout << "Frame size: " << frame.size() << std::endl;
+        std::cout << "New frame size: " << new_frame_size << std::endl;
+
         cv::Mat next_frame = new_frame(frame);
+
+        cv::resize(next_frame, next_frame, frame_size);
+
         // Display the captured frame
         cv::imshow(windowName, next_frame);
 

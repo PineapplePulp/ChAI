@@ -124,6 +124,8 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
     const currentWindowSize = min(frameCount, windowSize);
     const windowAvgFPS = windowSum / currentWindowSize;
     writeln("FPS: ", fps, " avg FPS: ", windowAvgFPS, "max window FPS: ", max reduce fpsBuffer);
+    lastFrame = getTime();
+
 
     const shape = (height,width,channels);
     const frameDom = util.domainFromShape((...shape));
@@ -138,7 +140,6 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
         const dtInput = new dynamicTensor(ndframe); // 20 fps
         const dtOutput = modelLayer!.forward(dtInput);
         const outputFrame = dtOutput.flatten().toArray(1);
-        lastFrame = getTime();
         return outputFrame;
 
         // 2 (no)
@@ -150,13 +151,11 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
         //     const dtInput = new dynamicTensor(ndframe); // 20 fps
         //     const dtOutput = modelLayer!.forward(dtInput);
         //     const outputFrame = dtOutput.flatten().toArray(1);
-        //     lastFrame = getTime();
         //     return outputFrame;
         // } else {
         //     const dtInput = (new dynamicTensor(frame)).reshape((...shape));
         //     const dtOutput = modelLayer!.forward(dtInput);
         //     const outputFrame = dtOutput.flatten().toArray(1);
-        //     lastFrame = getTime();
         //     return outputFrame;
         // }
 
@@ -166,7 +165,6 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
         // const dtOutput = modelLayer!.forward(dtInput);
         // // const outputFrame = dtOutput.rankedData(1);
         // const outputFrame = dtOutput.flatten().toArray(1);
-        // lastFrame = getTime();
         // return outputFrame;
     } else {
         var btFrame: Bridge.bridge_tensor_t = Bridge.createBridgeTensorWithShape(frame,shape);
@@ -178,7 +176,6 @@ export proc getNewFrame(ref frame: [] real(32),height: int, width: int,channels:
         
         const nextNDFrame = bt : ndarray(3, real(32));
         const flattenedNextFrame = nextNDFrame.flatten().data;
-        lastFrame = getTime();
         return flattenedNextFrame;
     }
 

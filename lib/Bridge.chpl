@@ -71,6 +71,10 @@ module Bridge {
         in model: bridge_pt_model_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 
+    extern "accelerator_available" 
+        proc acceleratorAvailable(): bool;
+
+    extern "debug_cpu_only_mode" proc debugCpuOnlyMode(mode: bool): void;
 
     extern proc convolve2d(
         in input: bridge_tensor_t, 

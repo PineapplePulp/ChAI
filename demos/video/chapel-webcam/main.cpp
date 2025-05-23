@@ -113,22 +113,45 @@ int mirror() {
     const std::string windowName = "Webcam Feed";
     cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
 
+    cv::Size original_frame_size;
+    cv::Size processed_frame_size;
+
     while (true) {
+
+        uint64_t start = cv::getTickCount();
+
         // Capture a new frame from webcam
         cap >> frame;
         if (frame.empty()) {
             std::cerr << "Error: Empty frame captured.\n";
             break;
         }
+        
+        original_frame_size = frame.size();
+
+        const auto width = getScaledFrameWidth(original_frame_size.width);
+        const auto height = getScaledFrameHeight(original_frame_size.height);
+        processed_frame_size = cv::Size(width, height);
+        cv::resize(frame, frame, processed_frame_size);
+
+        // std::cout << "Frame size: " << frame.size() << std::endl;
+        // std::cout << "New frame size: " << processed_frame_size << std::endl;
+
         cv::Mat next_frame = new_frame(frame);
+
+        cv::resize(next_frame, next_frame, original_frame_size);
+
         // Display the captured frame
         cv::imshow(windowName, next_frame);
 
         // Wait for 30ms or until 'q' key is pressed
-        char key = static_cast<char>(cv::waitKey(30));
+        char key = static_cast<char>(cv::waitKey(1));
         if (key == 'q' || key == 27) { // 'q' or ESC to quit
             break;
         }
+
+        double fps = cv::getTickFrequency() / (cv::getTickCount() - start);
+        std::cout << "\rcv::FPS : " << fps << "\t\r" << std::flush;
     }
 
     // Release the camera and destroy all windows

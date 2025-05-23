@@ -1,6 +1,8 @@
 #include <bridge.h>
 
 #include <torch/torch.h>
+#include <Aten/ATen.h>
+
 #include <torch/script.h>
 
 // #include <torch/script.h>
@@ -27,6 +29,58 @@
 
 
 
+// Globals
+
+
+torch::Device get_best_device();
+torch::ScalarType get_best_dtype();
+
+auto best_device = get_best_device();
+auto best_dtype = get_best_dtype();
+
+torch::NoGradGuard no_grad;
+torch::AutoGradMode enable_grad(false);
+
+bool debug_cpu_only = false;
+
+
+
+torch::Device get_best_device() {
+    if (debug_cpu_only) 
+        return torch::Device(torch::kCPU);
+    
+    if (torch::hasMPS()) {
+        return torch::Device(torch::kMPS);
+    } else if (torch::hasCUDA()) {
+        return torch::Device(torch::kCUDA);
+    } else {
+        return torch::Device(torch::kCPU);
+    }
+}
+
+extern "C" void debug_cpu_only_mode(bool_t mode) {
+    debug_cpu_only = mode;
+    if (debug_cpu_only) {
+        best_device = torch::Device(torch::kCPU);
+    } else {
+        best_device = get_best_device();
+    }
+}
+
+extern "C" bool_t accelerator_available() {
+    return (best_device == torch::Device(torch::kCUDA) || best_device == torch::Device(torch::kMPS));
+}
+
+torch::ScalarType get_best_dtype() {
+    if (torch::hasMPS()) {
+        return torch::kFloat16;
+    } else if (torch::hasCUDA()) {
+        return torch::kFloat16;
+    } else {
+        return torch::kFloat32;
+    }
+}
+
 int bridge_tensor_elements(bridge_tensor_t &bt) {
     int size = 1;
     for (int i = 0; i < bt.dim; ++i) {
@@ -39,14 +93,14 @@ size_t bridge_tensor_size(bridge_tensor_t &bt) {
     return sizeof(float32_t) * bridge_tensor_elements(bt);
 }
 
-void store_tensor(torch::Tensor &input, float32_t* dest) {
+void store_tensor(at::Tensor &input, float32_t* dest) {
     float32_t * data = input.data_ptr<float32_t>();
     size_t bytes_size = sizeof(float32_t) * input.numel();
     // std::memmove(dest,data,bytes_size);
     std::memcpy(dest,data,bytes_size);
 }
 
-bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
+bridge_tensor_t torch_to_bridge(at::Tensor &tensor) {
     bridge_tensor_t result;
     result.created_by_c = true;
     result.dim = tensor.dim();
@@ -59,13 +113,13 @@ bridge_tensor_t torch_to_bridge(torch::Tensor &tensor) {
     return result;
 }
 
-torch::Tensor bridge_to_torch(bridge_tensor_t &bt) {
+at::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = torch::IntArrayRef(sizes_vec);
     return torch::from_blob(bt.data, shape, torch::kFloat);
 }
 
-torch::Tensor bridge_to_torch(bridge_tensor_t &bt,torch::Device device, bool copy,torch::ScalarType dtype = torch::kFloat32) {
+at::Tensor bridge_to_torch(bridge_tensor_t &bt,torch::Device device, bool copy,torch::ScalarType dtype = torch::kFloat32) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = torch::IntArrayRef(sizes_vec);
     auto t = torch::from_blob(bt.data, shape, torch::kFloat);
@@ -144,6 +198,8 @@ extern "C" bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tens
 }
 
 
+
+
 extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
 
     std::cout << "Begin loading model from path: " << model_path << std::endl;
@@ -153,21 +209,12 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
     std::cout.flush();
 
     try {
-
         auto* module = new torch::jit::Module(torch::jit::load(path));
-        module->to(torch::kMPS,torch::kFloat16,false);
+        module->to(best_device,best_dtype,false);
         module->eval();
         std::cout << "Model loaded successfully!" << std::endl;
         std::cout.flush();
         return { static_cast<void*>(module) };
-
-        // torch::jit::Module tmp = torch::jit::load(path);
-        // std::cout << "Model loaded successfully!" << std::endl;
-        // std::cout.flush();
-        // auto* module = new torch::jit::Module(std::move(tmp));
-        // std::cout << "Model moved successfully!" << std::endl;
-        // std::cout.flush();
-        // return { static_cast<void*>(module) };
     } catch (const c10::Error& e) {
         std::cerr << "error loading the model\n" << e.msg();
         std::cout << "error loading the model\n" << e.msg();
@@ -178,35 +225,14 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
     std::cout.flush();
 
     return { nullptr };
-
-
-
-    // bridge_pt_model_t model_wrapper;
-    // torch::jit::Module* pt_module = new torch::jit::Module(); // = (torch::jit::Module*) model_wrapper.pt_module;
-    // try {
-    //     *pt_module = torch::jit::load(mp);
-    //     std::cout << "Model loaded successfully!" << std::endl;
-    //     std::cout.flush();
-    //     model_wrapper.pt_module = pt_module;
-    // } catch (const c10::Error& e) {
-    //     std::cerr << "error loading the model\n" << e.msg();
-    //     std::cout << "error loading the model\n" << e.msg();
-    //     std::cout.flush();
-    //     std::cerr.flush();
-    // }
-
-    // std::cout << pt_module->dump_to_str(false,false,false) << std::endl;
-    // std::cout.flush();
-
-    // return model_wrapper;
 }
 
 
 
 bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bool is_vgg_based_model) {
-
-    auto tn_mps = bridge_to_torch(input,torch::kMPS,true,torch::kFloat16);
-    // auto tn_mps = tn.to(torch::kMPS,false,true);
+    auto tn_mps = bridge_to_torch(input,best_device,true,best_dtype);
+    // tn_mps = tn_mps.permute({2, 0, 1}).contiguous();
+    // tn_mps.unsqueeze_(0);//.contiguous();
     auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
 
     std::vector<torch::jit::IValue> ins;
@@ -214,13 +240,15 @@ bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bo
 
     auto* module = static_cast<torch::jit::Module*>(model.pt_module);
     auto o = module->forward(ins).toTensor();
+    // auto tn_out = o.squeeze(0).permute({1, 2, 0}).contiguous();
     auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
 
     if (is_vgg_based_model) {
-        tn_out = tn_out / 255.0;
+        tn_out.div_(255.0);
     }
 
     auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
+
     return torch_to_bridge(tn_out_cpu);
 
 }
@@ -232,6 +260,22 @@ extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_
 extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input) {
     return model_forward(model, input, true);
 }
+
+// std::tuple<uint64_t, uint64_t> get_cpu_frame_size(uint64_t width, uint64_t height, float32_t scale_factor) {
+//     // if (best_device == torch::kMPS || best_device == torch::kCUDA)
+//     if (accelerator_available())
+//         return std::make_tuple(width, height);
+//     uint64_t new_width = static_cast<uint64_t>(width * scale_factor);
+//     uint64_t new_height = static_cast<uint64_t>(height * scale_factor);
+//     return std::make_tuple(new_width, new_height);
+// }
+
+// extern "C" uint64_t get_cpu_frame_width(uint64_t width,float32_t scale_factor) {
+//     return std::get<0>(get_cpu_frame_size(width, 0, scale_factor));
+// }
+// extern "C" uint64_t get_cpu_frame_height(uint64_t height,float32_t scale_factor) {
+//     return std::get<1>(get_cpu_frame_size(0, height, scale_factor));
+// }
 
 
 extern "C" void hello_world(void) {

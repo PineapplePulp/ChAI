@@ -7,6 +7,8 @@ use Utilities.Standard;
 
 use Env;
 
+import Bridge;
+
 type tensor = staticTensor(?);
 
 record staticTensor : serializable {
@@ -102,6 +104,10 @@ operator :(in t: staticTensor(?rank,?eltType), type toType): staticTensor(rank,t
 
     return new staticTensor(newTR);
 }
+
+operator :(in t: staticTensor(?rank,?eltType),
+           type btType: Bridge.tensorHandle(eltType)): Bridge.tensorHandle(eltType) do
+    return t.array : Bridge.tensorHandle(eltType);
 
 proc staticTensor.shapeArray(): [] int {
     var sa: [0..<this.rank] int;

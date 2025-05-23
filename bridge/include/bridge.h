@@ -17,6 +17,8 @@ typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 
+void debug_cpu_only_mode(bool_t mode);
+
 typedef struct bridge_tensor_t {
     float* data;
     int* sizes;
@@ -51,9 +53,9 @@ bridge_tensor_t load_run_model(const uint8_t* model_path, bridge_tensor_t input)
 
 bridge_pt_model_t load_model(const uint8_t* model_path);
 
+bool_t accelerator_available(void);
+
 bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input);
-
-
 bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input);
 
 bridge_tensor_t resize(bridge_tensor_t input,int height,int width);

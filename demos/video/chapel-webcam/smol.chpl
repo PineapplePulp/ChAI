@@ -2,18 +2,39 @@ use Tensor;
 use Layer;
 import Utilities as util;
 
-config const cpuScaleFactor: real(32) = 0.2;
+config const cpuScale: real = 0.2;
+config const accelScale: real = 0.45;
+config const debugCPUOnly: bool = false;
 
-writeln("CPU Scale Factor: ", cpuScaleFactor);
+
+const cpuScaleFactor = cpuScale;
+const acceleratorScaleFactor = accelScale;
+
 
 export proc acceleratorAvailable(): bool do
     return Bridge.acceleratorAvailable();
 
-export proc getCPUFrameWidth(width: int): int do
-    return Bridge.getCPUFrameWidth(width,cpuScaleFactor : real(32));
 
-export proc getCPUFrameHeight(height: int): int do
-    return Bridge.getCPUFrameHeight(height,cpuScaleFactor : real(32));
+export proc getScaledFrameWidth(width: int): int do
+    if acceleratorAvailable() then
+        return (width:real * acceleratorScaleFactor):int;
+    else
+        return (width:real * cpuScaleFactor):int;
+
+export proc getScaledFrameHeight(height: int): int do
+    if acceleratorAvailable() then
+        return (height:real * acceleratorScaleFactor):int;
+    else
+        return (height:real * cpuScaleFactor):int;
+
+
+if debugCPUOnly then
+    writeln("Debugging CPU only!");
+Bridge.debugCpuOnlyMode(debugCPUOnly);
+
+writeln("CPU Scale Factor: ", cpuScaleFactor);
+writeln("Accelerator Scale Factor: ", acceleratorScaleFactor);
+writeln("Accelerator Available: ", acceleratorAvailable());
 
 
 export proc square(x: int): int {

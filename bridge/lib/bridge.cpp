@@ -41,12 +41,14 @@ auto best_dtype = get_best_dtype();
 torch::NoGradGuard no_grad;
 torch::AutoGradMode enable_grad(false);
 
-
-
+bool debug_cpu_only = false;
 
 
 
 torch::Device get_best_device() {
+    if (debug_cpu_only) 
+        return torch::Device(torch::kCPU);
+    
     if (torch::hasMPS()) {
         return torch::Device(torch::kMPS);
     } else if (torch::hasCUDA()) {
@@ -56,9 +58,17 @@ torch::Device get_best_device() {
     }
 }
 
+extern "C" void debug_cpu_only_mode(bool_t mode) {
+    debug_cpu_only = mode;
+    if (debug_cpu_only) {
+        best_device = torch::Device(torch::kCPU);
+    } else {
+        best_device = get_best_device();
+    }
+}
+
 extern "C" bool_t accelerator_available() {
-    return false;
-    // return torch::hasMPS() || torch::hasCUDA();
+    return (best_device == torch::Device(torch::kCUDA) || best_device == torch::Device(torch::kMPS));
 }
 
 torch::ScalarType get_best_dtype() {
@@ -251,21 +261,21 @@ extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model,
     return model_forward(model, input, true);
 }
 
-std::tuple<uint64_t, uint64_t> get_cpu_frame_size(uint64_t width, uint64_t height, float32_t scale_factor) {
-    // if (best_device == torch::kMPS || best_device == torch::kCUDA)
-    if (accelerator_available())
-        return std::make_tuple(width, height);
-    uint64_t new_width = static_cast<uint64_t>(width * scale_factor);
-    uint64_t new_height = static_cast<uint64_t>(height * scale_factor);
-    return std::make_tuple(new_width, new_height);
-}
+// std::tuple<uint64_t, uint64_t> get_cpu_frame_size(uint64_t width, uint64_t height, float32_t scale_factor) {
+//     // if (best_device == torch::kMPS || best_device == torch::kCUDA)
+//     if (accelerator_available())
+//         return std::make_tuple(width, height);
+//     uint64_t new_width = static_cast<uint64_t>(width * scale_factor);
+//     uint64_t new_height = static_cast<uint64_t>(height * scale_factor);
+//     return std::make_tuple(new_width, new_height);
+// }
 
-extern "C" uint64_t get_cpu_frame_width(uint64_t width,float32_t scale_factor) {
-    return std::get<0>(get_cpu_frame_size(width, 0, scale_factor));
-}
-extern "C" uint64_t get_cpu_frame_height(uint64_t height,float32_t scale_factor) {
-    return std::get<1>(get_cpu_frame_size(0, height, scale_factor));
-}
+// extern "C" uint64_t get_cpu_frame_width(uint64_t width,float32_t scale_factor) {
+//     return std::get<0>(get_cpu_frame_size(width, 0, scale_factor));
+// }
+// extern "C" uint64_t get_cpu_frame_height(uint64_t height,float32_t scale_factor) {
+//     return std::get<1>(get_cpu_frame_size(0, height, scale_factor));
+// }
 
 
 extern "C" void hello_world(void) {

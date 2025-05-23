@@ -168,14 +168,6 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
         std::cout << "Model loaded successfully!" << std::endl;
         std::cout.flush();
         return { static_cast<void*>(module) };
-
-        // torch::jit::Module tmp = torch::jit::load(path);
-        // std::cout << "Model loaded successfully!" << std::endl;
-        // std::cout.flush();
-        // auto* module = new torch::jit::Module(std::move(tmp));
-        // std::cout << "Model moved successfully!" << std::endl;
-        // std::cout.flush();
-        // return { static_cast<void*>(module) };
     } catch (const c10::Error& e) {
         std::cerr << "error loading the model\n" << e.msg();
         std::cout << "error loading the model\n" << e.msg();
@@ -186,37 +178,18 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
     std::cout.flush();
 
     return { nullptr };
-
-
-
-    // bridge_pt_model_t model_wrapper;
-    // torch::jit::Module* pt_module = new torch::jit::Module(); // = (torch::jit::Module*) model_wrapper.pt_module;
-    // try {
-    //     *pt_module = torch::jit::load(mp);
-    //     std::cout << "Model loaded successfully!" << std::endl;
-    //     std::cout.flush();
-    //     model_wrapper.pt_module = pt_module;
-    // } catch (const c10::Error& e) {
-    //     std::cerr << "error loading the model\n" << e.msg();
-    //     std::cout << "error loading the model\n" << e.msg();
-    //     std::cout.flush();
-    //     std::cerr.flush();
-    // }
-
-    // std::cout << pt_module->dump_to_str(false,false,false) << std::endl;
-    // std::cout.flush();
-
-    // return model_wrapper;
 }
 
 
 
 bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bool is_vgg_based_model) {
     auto tn_mps = bridge_to_torch(input,DEVICE,true,DTYPE);
-    auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
+    tn_mps = tn_mps.permute({2, 0, 1}).contiguous();
+    tn_mps.unsqueeze_(0);//.contiguous();
+    // auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
 
     std::vector<torch::jit::IValue> ins;
-    ins.push_back(tn);
+    ins.push_back(tn_mps);
 
     auto* module = static_cast<torch::jit::Module*>(model.pt_module);
     auto o = module->forward(ins).toTensor();
@@ -227,8 +200,8 @@ bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bo
         tn_out.div_(255.0);
     }
 
-    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
-    
+    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,false);
+
     return torch_to_bridge(tn_out_cpu);
 
 }

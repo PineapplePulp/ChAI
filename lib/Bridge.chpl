@@ -44,6 +44,8 @@ module Bridge {
         }
     }
 
+    proc torchModuleHandle type do return bridge_pt_model_t;
+
     extern proc unsafe(const ref arr: [] real(32)): c_ptr(real(32));
 
     // extern proc load_tensor_from_file(file_path: c_ptrConst(u_char)): bridge_tensor_t; // Working
@@ -61,13 +63,17 @@ module Bridge {
         model_path: string_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 
-    extern proc load_model(model_path: string_t): bridge_pt_model_t;
+    extern "load_model" proc loadModelC(model_path: string_t): bridge_pt_model_t;
+    proc loadModel(modelPath: string): torchModuleHandle {
+        const model_path: c_ptr(uint(8)) = c_ptrToConst(modelPath) : c_ptr(uint(8));
+        return loadModelC(model_path);
+    }
 
-    extern proc model_forward(
+    extern "model_forward" proc modelForward(
         in model: bridge_pt_model_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 
-    extern proc model_forward_style_transfer(
+    extern "model_forward_style_transfer" proc modelForwardStyleTransfer(
         in model: bridge_pt_model_t,
         in input: bridge_tensor_t): bridge_tensor_t;
 

@@ -14,6 +14,8 @@ use List only list;
 
 import LoadNumpy;
 
+import Bridge;
+
 param defaultDetachedMode = true;
 
 type Tensor = dynamicTensor(?);
@@ -139,10 +141,10 @@ record dynamicTensor : serializable {
         return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).grad;
 
     inline proc ref rankedData(param rank: int) ref : [] eltType do
-        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).data;
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).array.data;
 
     inline proc rankedData(param rank: int): [] eltType do
-        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).data;
+        return (this.meta.borrow() : borrowed BaseTensorResource(eltType, rank)).array.data;
 
 
     proc toNDArray(param rank: int) : ndarray(rank,eltType) {
@@ -154,8 +156,10 @@ record dynamicTensor : serializable {
         return nda;
     }
 
-    proc toArray(param rank: int) : [] eltType do
-        return toNDArray(rank).data;
+    proc toArray(param rank: int) : [] eltType {
+        const data = toNDArray(rank).data;
+        return data;
+    }
 
     proc detach(): dynamicTensor(eltType) {
         for param rank in 1..maxRank do
@@ -181,6 +185,26 @@ operator :(in t: dynamicTensor(?eltType), type toType: ndarray(?rank,?toEltType)
     else
         return t.toNDArray(rank) : toEltType;
 }
+
+operator :(in t: dynamicTensor(?eltType), type btType: Bridge.tensorHandle(eltType)): Bridge.tensorHandle(eltType) {
+    for param rank in 1..maxRank do
+        if t.checkRank(rank) then
+            return t.forceRank(rank).array : btType;
+    halt("Could not identify rank for this: ", t);
+}
+
+operator :(bt: Bridge.tensorHandle(real(32)), type tType: dynamicTensor(?eltType)): dynamicTensor(eltType) {
+    for param rank in 1..maxRank do
+        if bt.dim == rank then
+            return new dynamicTensor(bt : ndarray(rank,eltType));
+    halt("Could not identify rank for this: ", tType:string);
+}
+
+// proc type dynamicTensor.fromBridgeTensor(handle: Bridge.tensorHandle(defaultEltType)): dynamicTensor(defaultEltType) {
+//     for param rank in 1..maxRank do
+//         if bt.dim == rank then
+//             return 
+// }
 
 proc type dynamicTensor.detachMode() param : bool {
     return defaultDetachedMode;

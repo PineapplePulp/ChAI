@@ -1,0 +1,17 @@
+CHPL_RUNTIME_LIB = /opt/homebrew/Cellar/chapel/2.4.0_1/libexec/lib
+
+CHPL_RUNTIME_INCL = /opt/homebrew/Cellar/chapel/2.4.0_1/libexec/runtime/include
+
+CHPL_THIRD_PARTY = /opt/homebrew/Cellar/chapel/2.4.0_1/libexec/third-party
+
+CHPL_HOME = /opt/homebrew/Cellar/chapel/2.4.0_1/libexec
+
+CHPL_CFLAGS = -Ilib -Wno-unused -Wno-uninitialized -Wno-pointer-sign -Wno-incompatible-pointer-types -Wno-tautological-compare -I/opt/homebrew/Cellar/chapel/2.4.0_1/libexec/modules/internal -I/opt/homebrew/Cellar/chapel/2.4.0_1/libexec/modules/packages -I../../../lib -I$(CHPL_RUNTIME_INCL)/localeModels/flat -I$(CHPL_RUNTIME_INCL)/localeModels -I$(CHPL_RUNTIME_INCL)/comm/none -I$(CHPL_RUNTIME_INCL)/comm -I$(CHPL_RUNTIME_INCL)/tasks/qthreads -I$(CHPL_RUNTIME_INCL)/. -I$(CHPL_RUNTIME_INCL)/./qio -I$(CHPL_RUNTIME_INCL)/./atomics/cstdlib -I$(CHPL_RUNTIME_INCL)/./mem/jemalloc -I$(CHPL_THIRD_PARTY)/utf8-decoder -I$(CHPL_THIRD_PARTY)/qthread/install/darwin-arm64-native-llvm-none-flat-jemalloc-system/include -Wno-error=unused-variable -I$(CHPL_THIRD_PARTY)/re2/install/darwin-arm64-native-llvm-none/include -I. -I/opt/homebrew/Cellar/gmp/6.3.0/include -I/opt/homebrew/Cellar/hwloc/2.12.0/include -I/opt/homebrew/Cellar/jemalloc/5.3.0/include -I/opt/homebrew/include
+
+CHPL_LDFLAGS = -Llib -lsmol -ltorch -ltorch_cpu -lc10 -ltorch_global_deps -lbridge_objs -L$(CHPL_RUNTIME_LIB)/darwin/llvm/arm64/cpu-native/loc-flat/comm-none/tasks-qthreads/tmr-generic/unwind-none/mem-jemalloc/atomics-cstdlib/hwloc-system/re2-bundled/fs-none/lib_pic-none/san-none -lchpl -L$(CHPL_THIRD_PARTY)/qthread/install/darwin-arm64-native-llvm-none-flat-jemalloc-system/lib -Wl,-rpath,$(CHPL_THIRD_PARTY)/qthread/install/darwin-arm64-native-llvm-none-flat-jemalloc-system/lib -lqthread -L/opt/homebrew/Cellar/hwloc/2.12.0/lib -L$(CHPL_THIRD_PARTY)/re2/install/darwin-arm64-native-llvm-none/lib -lre2 -Wl,-rpath,$(CHPL_THIRD_PARTY)/re2/install/darwin-arm64-native-llvm-none/lib -lm -lpthread -L/opt/homebrew/Cellar/gmp/6.3.0/lib -lgmp -L/opt/homebrew/Cellar/hwloc/2.12.0/lib -Wl,-rpath,/opt/homebrew/Cellar/hwloc/2.12.0/lib -lhwloc -L/opt/homebrew/Cellar/jemalloc/5.3.0/lib -Wl,-rpath,/opt/homebrew/Cellar/jemalloc/5.3.0/lib -ljemalloc -L/opt/homebrew/lib
+
+CHPL_COMPILER = /opt/homebrew/Cellar/llvm@19/19.1.7/bin/clang
+
+CHPL_LINKER = /opt/homebrew/Cellar/llvm@19/19.1.7/bin/clang++
+
+CHPL_LINKERSHARED = /opt/homebrew/Cellar/llvm@19/19.1.7/bin/clang++ -shared

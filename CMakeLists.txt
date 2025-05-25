@@ -131,8 +131,22 @@ target_include_directories(
 )
 
 
+add_library(bridge_objs STATIC $<TARGET_OBJECTS:bridge>)
+set_target_properties(bridge_objs
+    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+
+
 set(BRIDGE_OBJECT_FILES $<TARGET_OBJECTS:bridge>)
 
+# add_custom_command(
+#     TARGET bridge
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#             "${CMAKE_CURRENT_SOURCE_DIR}/style-transfer/models"
+#             "$<TARGET_FILE_DIR:StyleTransfer>/style-transfer/models"
+#     COMMENT "NOT! Copying ${PROJECT_ROOT_DIR}/examples/vgg/images to $<TARGET_FILE_DIR:vgg>/images"
+# )
 
 
 
@@ -214,12 +228,8 @@ add_dependencies(TinyLayerTest ChAI)
 target_link_options(TinyLayerTest
     PRIVATE
         --main-module layer_test.chpl
-        -M ${PROJECT_ROOT_DIR}/lib
-        ${BRIDGE_DIR}/include/bridge.h
-        ${BRIDGE_OBJECT_FILES}
-        -L ${LIBTORCH_DIR}/lib
-        ${LIBTORCH_LIBS_LINKER_ARGS}
-        --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
+        # -M ${PROJECT_ROOT_DIR}/lib
+        ${CHAI_LINKER_ARGS}
 )
 # chpl test/tiny/layer_test.chpl -M lib bridge/include/bridge.h build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,libtorch/lib"
 
@@ -237,7 +247,8 @@ set(CHAI_LINKER_ARGS
     ${BRIDGE_OBJECT_FILES}
     -L ${LIBTORCH_DIR}/lib
     ${LIBTORCH_LIBS_LINKER_ARGS}
-    --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
+    --ccflags "-I${BRIDGE_DIR}/include -L${PROJECT_ROOT_DIR}/build"
+    --ldflags "-L${PROJECT_ROOT_DIR}/build -Wl,-rpath,${LIBTORCH_DIR}/lib"
 )
 
 

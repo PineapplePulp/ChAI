@@ -211,4 +211,44 @@ module Layer {
         }
     }
 
+    import CTypes;
+    class TorchModule : Module(?) {
+        var modulePath: string;
+        var moduleHandle: Bridge.bridge_pt_model_t;
+
+        proc init(type eltType, modulePath: string) {
+            super.init(eltType);
+            this.modulePath = modulePath;
+            const fpPtr: CTypes.c_ptr(uint(8)) = CTypes.c_ptrToConst(modulePath) : CTypes.c_ptr(uint(8));
+            this.moduleHandle = Bridge.load_model(fpPtr);
+            init this;
+            this.moduleName = "TorchModule";
+        }
+
+        proc init(modulePath: string) do
+            this.init(defaultEltType,modulePath);
+
+        override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) {
+            const btInput: Bridge.tensorHandle(eltType) = input : Bridge.tensorHandle(eltType);
+            const btOutput = Bridge.model_forward(this.moduleHandle, btInput);
+            return btOutput : dynamicTensor(eltType);
+        }
+    }
+
+    class StyleTransfer : TorchModule(?) {
+
+        proc init(type eltType, modulePath: string) do
+            super.init(eltType,modulePath);
+        
+        proc init(modulePath: string) do
+            super.init(defaultEltType,modulePath);
+        
+        override proc forward(input: dynamicTensor(eltType)): 
+                dynamicTensor(eltType) {
+            const btInput: Bridge.tensorHandle(eltType) = input : Bridge.tensorHandle(eltType);
+            const btOutput = Bridge.model_forward_style_transfer(this.moduleHandle, btInput);
+            return btOutput : dynamicTensor(eltType);
+        }
+    }
+
 }

@@ -210,7 +210,7 @@ set(CHAI_LINKER_ARGS
 )
 
 
-add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
+add_executable(TorchBridge ${PROJECT_ROOT_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
 add_dependencies(TorchBridge ChAI)
 add_dependencies(TorchBridge bridge_objs)

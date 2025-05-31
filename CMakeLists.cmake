@@ -229,86 +229,37 @@ target_link_options(TorchBridge
         ${CHAI_LINKER_ARGS}
 )
 
-function(chai_add_executable TARGET MAIN_CHPL)
-    # (1) Create the executable with the .chpl file + CHAI libs
-    add_executable(${TARGET}
-        ${MAIN_CHPL}
-        ${CHAI_LIB_FILES}
-    )
-
-    # (2) Add the standard ChAI/bridge-related dependencies
-    add_dependencies(${TARGET}
-        bridge
-        ChAI
-        bridge_objs
-    )
-
-    # (3) Extract just the filename (e.g. "my_test.chpl") for --main-module
-    get_filename_component(_main_base ${MAIN_CHPL} NAME)
-
-    # (4) Build a list of all "-M <dir>" flags:
-    #     First, always include ${PROJECT_ROOT_DIR}/lib.
-    set(_module_dirs "${PROJECT_ROOT_DIR}/lib")
-    #     Then, if the caller passed any extra dirs (ARGN), append them.
-    if(ARGN)
-        list(APPEND _module_dirs ${ARGN})
-    endif()
-
-    # Now turn each entry in _module_dirs into a "-M <that-dir>" pair.
-    set(_m_flags "")
-    foreach(_d       IN LISTS _module_dirs)
-        list(APPEND _m_flags "-M" "${_d}")
-    endforeach()
-
-    # (5) Finally, attach --main-module, all -M flags, and any CHAI_LINKER_ARGS.
-    target_link_options(${TARGET}
-        PRIVATE
-        --main-module ${_main_base}
-        ${_m_flags}
-        ${CHAI_LINKER_ARGS}
-    )
-endfunction()
 
 
-# add_executable(TinyLayerTest 
-#     ${PROJECT_ROOT_DIR}/test/tiny/layer_test.chpl
-#     ${CHAI_LIB_FILES}
-#     )
-# add_dependencies(TinyLayerTest bridge)
-# add_dependencies(TinyLayerTest ChAI)
-# target_link_options(TinyLayerTest
-#     PRIVATE
-#         --main-module layer_test.chpl
-#         -M ${PROJECT_ROOT_DIR}/lib
-#         ${CHAI_LINKER_ARGS}
-# )
 
-chai_add_executable(TinyLayerTest 
+add_executable(TinyLayerTest 
     ${PROJECT_ROOT_DIR}/test/tiny/layer_test.chpl
-    ${PROJECT_ROOT_DIR}/lib
+    ${CHAI_LIB_FILES}
+    )
+add_dependencies(TinyLayerTest bridge)
+add_dependencies(TinyLayerTest ChAI)
+target_link_options(TinyLayerTest
+    PRIVATE
+        --main-module layer_test.chpl
+        -M ${PROJECT_ROOT_DIR}/lib
+        ${CHAI_LINKER_ARGS}
 )
 
 
-# add_executable(TinyBridgeSystemTest 
-#     ${PROJECT_ROOT_DIR}/test/tiny/bridge_system_test.chpl
-#     ${CHAI_LIB_FILES}
-#     )
-# add_dependencies(TinyBridgeSystemTest bridge)
-# add_dependencies(TinyBridgeSystemTest ChAI)
-# add_dependencies(TinyBridgeSystemTest bridge_objs)
-# add_dependencies(TinyBridgeSystemTest TorchBridge)
-# target_link_options(TinyBridgeSystemTest
-#     PRIVATE
-#         --main-module bridge_system_test.chpl
-#         -M ${PROJECT_ROOT_DIR}/lib
-#         ${CHAI_LINKER_ARGS}
-# )
-
-chai_add_executable(TinyBridgeSystemTest 
+add_executable(TinyBridgeSystemTest 
     ${PROJECT_ROOT_DIR}/test/tiny/bridge_system_test.chpl
-    ${PROJECT_ROOT_DIR}/lib
+    ${CHAI_LIB_FILES}
+    )
+add_dependencies(TinyBridgeSystemTest bridge)
+add_dependencies(TinyBridgeSystemTest ChAI)
+add_dependencies(TinyBridgeSystemTest bridge_objs)
+add_dependencies(TinyBridgeSystemTest TorchBridge)
+target_link_options(TinyBridgeSystemTest
+    PRIVATE
+        --main-module bridge_system_test.chpl
+        -M ${PROJECT_ROOT_DIR}/lib
+        ${CHAI_LINKER_ARGS}
 )
-
 
 
 # chpl test/tiny/layer_test.chpl -M lib bridge/include/bridge.h build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,libtorch/lib"

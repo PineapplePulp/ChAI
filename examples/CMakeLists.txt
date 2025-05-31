@@ -2,7 +2,4 @@
 
 add_subdirectory(my_example)
 
-add_subdirectory(torch_model_loading)
-
-
-add_subdirectory(split_loop)
+add_subdirectory(torch-tensor-loading)

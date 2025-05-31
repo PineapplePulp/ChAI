@@ -2600,7 +2600,7 @@ proc ndarray.dropout(p : real = 0.5, training : bool = false) {
    :rtype: ndarray(rank, eltType)
  */
 proc ndarray.alphaDropout(p : real = 0.5, training : bool = false) {
-    return Bridge.alphaDroput(
+    return Bridge.alphaDropout(
         this : Bridge.tensorHandle(eltType),
         p, training
     ) : ndarray(rank, eltType);

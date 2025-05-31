@@ -685,7 +685,7 @@ extern "C" bridge_tensor_t softplus(
             .beta(beta)
             .threshold(threshold));
 
-    return torch_to_bridge(t_output)
+    return torch_to_bridge(t_output);
 }
 
 
@@ -695,11 +695,7 @@ extern "C" bridge_tensor_t threshold(
     float value
 ) {
     auto t_input = bridge_to_torch(input);
-    auto t_output = tnf::threshold(t_input,
-        tnf::ThresholdFuncOptions()
-            .threshold(threshold)
-            .value(value));
-
+    auto t_output = tnf::threshold(t_input,tnf::ThresholdFuncOptions(threshold,value));
     return torch_to_bridge(t_output);
 }
 
@@ -713,7 +709,7 @@ extern "C" bridge_tensor_t celu(
         tnf::CELUFuncOptions()
             .alpha(alpha));
 
-    return t_output;
+    return torch_to_bridge(t_output);
 }
 
 
@@ -772,7 +768,7 @@ extern "C" bridge_tensor_t dropout(
     bool training
 ) {
     auto t_input = bridge_to_torch(input);
-    auto t_output = tnf::dropout(
+    auto t_output = tnf::dropout(t_input,
         tnf::DropoutFuncOptions()
             .p(p)
             .training(training));
@@ -787,7 +783,7 @@ extern "C" bridge_tensor_t alpha_dropout(
     bool training
 ) {
     auto t_input = bridge_to_torch(input);
-    auto t_output = tnf::alpha_dropout(
+    auto t_output = tnf::alpha_dropout(t_input,
         tnf::AlphaDropoutFuncOptions()
             .p(p)
             .training(training));
@@ -802,7 +798,7 @@ extern "C" bridge_tensor_t feature_alpha_dropout(
     bool training
 ) {
     auto t_input = bridge_to_torch(input);
-    auto t_output = tnf::feature_alpha_dropout(
+    auto t_output = tnf::feature_alpha_dropout(t_input,
         tnf::FeatureAlphaDropoutFuncOptions()
             .p(p)
             .training(training));
@@ -817,7 +813,7 @@ extern "C" bridge_tensor_t dropout2d(
     bool training
 ) {
     auto t_input = bridge_to_torch(input);
-    auto t_output = tnf::dropout2d(
+    auto t_output = tnf::dropout2d(t_input,
         tnf::Dropout2dFuncOptions()
             .p(p)
             .training(training));
@@ -832,7 +828,7 @@ extern "C" bridge_tensor_t dropout3d(
     bool training
 ) {
     auto t_input = bridge_to_torch(input);
-    auto t_output = tnf::dropout3d(
+    auto t_output = tnf::dropout3d(t_input,
         tnf::Dropout3dFuncOptions()
             .p(p)
             .training(training));

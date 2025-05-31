@@ -15,5 +15,9 @@ module Env {
     // Maximum rank of dynamicTensor
     config param maxRank = if developmentAndTesting then minRankNeeded else maxRankNeeded;
 
-    import Bridge.acceleratorAvailable;
+    private import Bridge;
+
+    inline proc acceleratorAvailable(): bool do
+        return Bridge.acceleratorAvailable();
+
 }

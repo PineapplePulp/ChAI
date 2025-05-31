@@ -4,6 +4,7 @@ module Layer {
     private use Env;
     private import Utilities as util;
     private use OrderedDict;
+    private import Bridge;
 
     class ReLU : Module(?) {
 

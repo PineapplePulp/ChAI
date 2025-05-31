@@ -130,10 +130,10 @@ int main(int argc, char* argv[]) {
 
     int code = mirror();
 
-    std::size_t start = cv::getTickCount();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    std::size_t end = cv::getTickCount();
-    std::cout << "Total time taken: " << (end - start) / cv::getTickFrequency() << " seconds" << std::endl;
+    // std::size_t start = cv::getTickCount();
+    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    // std::size_t end = cv::getTickCount();
+    // std::cout << "Total time taken: " << (end - start) / cv::getTickFrequency() << " seconds" << std::endl;
 
 
     chpl_library_finalize();

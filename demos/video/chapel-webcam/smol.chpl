@@ -12,13 +12,13 @@ const acceleratorScaleFactor = accelScale;
 
 
 export proc getScaledFrameWidth(width: int): int do
-    if Bridge.acceleratorAvailable() then
+    if Env.acceleratorAvailable() then
         return (width:real * acceleratorScaleFactor):int;
     else
         return (width:real * cpuScaleFactor):int;
 
 export proc getScaledFrameHeight(height: int): int do
-    if Bridge.acceleratorAvailable() then
+    if Env.acceleratorAvailable() then
         return (height:real * acceleratorScaleFactor):int;
     else
         return (height:real * cpuScaleFactor):int;
@@ -26,11 +26,11 @@ export proc getScaledFrameHeight(height: int): int do
 
 // if debugCPUOnly then
 //     writeln("Debugging CPU only!");
-// Bridge.debugCpuOnlyMode(debugCPUOnly);
+// Env.debugCpuOnlyMode(debugCPUOnly);
 
 writeln("CPU Scale Factor: ", cpuScaleFactor);
 writeln("Accelerator Scale Factor: ", acceleratorScaleFactor);
-writeln("Accelerator Available: ", Bridge.acceleratorAvailable());
+writeln("Accelerator Available: ", Env.acceleratorAvailable());
 
 
 use Time;

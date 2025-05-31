@@ -67,6 +67,8 @@ extern "C" void debug_cpu_only_mode(bool_t mode) {
     } else {
         best_device = get_best_device();
     }
+    std::cout << "Debug CPU only mode: " << (debug_cpu_only ? "ON" : "OFF") << std::endl;
+    std::cout.flush();
 }
 
 extern "C" bool_t accelerator_available() {
@@ -131,20 +133,19 @@ extern "C" void free_bridge_tensor(bridge_tensor_t bt) {
 at::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = torch::IntArrayRef(sizes_vec);
-    return torch::from_blob(bt.data, shape, torch::kFloat32);
+    return torch::from_blob(bt.data, shape, torch::kFloat);
 }
 
 at::Tensor bridge_to_torch(bridge_tensor_t &bt,torch::Device device, bool copy,torch::ScalarType dtype = torch::kFloat32) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = torch::IntArrayRef(sizes_vec);
-    auto t = torch::from_blob(bt.data, shape, torch::kFloat32);
+    auto t = torch::from_blob(bt.data, shape, torch::kFloat);
     if (device != torch::kCPU)
         copy = true;
     if (copy)
         return t.to(device, dtype, /*non_blocking=*/false, /*copy=*/true);
     else
         return t.to(device, dtype, /*non_blocking=*/false, /*copy=*/false);
-    
 }
 
 extern "C" float32_t* unsafe(const float32_t* arr) {

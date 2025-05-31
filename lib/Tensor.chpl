@@ -9,5 +9,6 @@ module Tensor {
     public import Utilities as util;
     public import Utilities.Standard;
     public import Testing;
-    public import Bridge;
+    // public import Bridge;
+    public import Env;
 }

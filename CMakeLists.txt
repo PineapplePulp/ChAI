@@ -199,10 +199,21 @@ set(LIBTORCH_LIBS_LINKER_ARGS
 )
 cmake_print_variables(LIBTORCH_LIBS_LINKER_ARGS)
 
+set(CHAI_LINKER_ARGS
+    -M ${PROJECT_ROOT_DIR}/lib
+    ${BRIDGE_DIR}/include/bridge.h
+    ${BRIDGE_OBJECT_FILES}
+    -L ${LIBTORCH_DIR}/lib
+    ${LIBTORCH_LIBS_LINKER_ARGS}
+    --ccflags "-I${BRIDGE_DIR}/include -L${PROJECT_ROOT_DIR}/build"
+    --ldflags "-L${PROJECT_ROOT_DIR}/build -Wl,-rpath,${LIBTORCH_DIR}/lib"
+)
+
 
 add_executable(TorchBridge ${BRIDGE_DIR}/lib/Bridge.chpl)
 add_dependencies(TorchBridge bridge)
 add_dependencies(TorchBridge ChAI)
+add_dependencies(TorchBridge bridge_objs)
 target_link_options(TorchBridge
     PRIVATE
         ${BRIDGE_DIR}/include/bridge.h
@@ -228,9 +239,27 @@ add_dependencies(TinyLayerTest ChAI)
 target_link_options(TinyLayerTest
     PRIVATE
         --main-module layer_test.chpl
-        # -M ${PROJECT_ROOT_DIR}/lib
+        -M ${PROJECT_ROOT_DIR}/lib
         ${CHAI_LINKER_ARGS}
 )
+
+
+add_executable(TinyBridgeSystemTest 
+    ${PROJECT_ROOT_DIR}/test/tiny/bridge_system_test.chpl
+    ${CHAI_LIB_FILES}
+    )
+add_dependencies(TinyBridgeSystemTest bridge)
+add_dependencies(TinyBridgeSystemTest ChAI)
+add_dependencies(TinyBridgeSystemTest bridge_objs)
+add_dependencies(TinyBridgeSystemTest TorchBridge)
+target_link_options(TinyBridgeSystemTest
+    PRIVATE
+        --main-module bridge_system_test.chpl
+        -M ${PROJECT_ROOT_DIR}/lib
+        ${CHAI_LINKER_ARGS}
+)
+
+
 # chpl test/tiny/layer_test.chpl -M lib bridge/include/bridge.h build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,libtorch/lib"
 
 # chpl --fast -o vgg test.chpl -M ../../lib /Users/iainmoncrief/Documents/Github/ChAI/bridge/include/bridge.h /Users/iainmoncrief/Documents/Github/ChAI/build/CMakeFiles/bridge.dir/bridge/lib/bridge.cpp.o -L /Users/iainmoncrief/Documents/Github/ChAI/libtorch/lib -ltorch -ltorch_cpu -lc10 -ltorch_global_deps --ldflags "-Wl,-rpath,/Users/iainmoncrief/Documents/Github/ChAI/libtorch/lib"
@@ -241,15 +270,7 @@ target_link_options(TinyLayerTest
 
 
 
-set(CHAI_LINKER_ARGS
-    -M ${PROJECT_ROOT_DIR}/lib
-    ${BRIDGE_DIR}/include/bridge.h
-    ${BRIDGE_OBJECT_FILES}
-    -L ${LIBTORCH_DIR}/lib
-    ${LIBTORCH_LIBS_LINKER_ARGS}
-    --ccflags "-I${BRIDGE_DIR}/include -L${PROJECT_ROOT_DIR}/build"
-    --ldflags "-L${PROJECT_ROOT_DIR}/build -Wl,-rpath,${LIBTORCH_DIR}/lib"
-)
+
 
 
 

@@ -14,9 +14,11 @@
 #include <sstream>
 #include <cstdlib>
 #include <vector>
-#include <cstdint>
 #include <chrono>
 #include <thread>
+#include <cstdio>
+#include <cstdint>
+#include <cstdlib>
 
 
 
@@ -81,9 +83,9 @@ torch::ScalarType get_best_dtype() {
     }
 }
 
-int bridge_tensor_elements(bridge_tensor_t &bt) {
-    int size = 1;
-    for (int i = 0; i < bt.dim; ++i) {
+std::size_t bridge_tensor_elements(bridge_tensor_t &bt) {
+    std::size_t size = 1;
+    for (std::size_t i = 0; i < bt.dim; ++i) {
         size *= bt.sizes[i];
     }
     return size;
@@ -95,7 +97,7 @@ size_t bridge_tensor_size(bridge_tensor_t &bt) {
 
 void store_tensor(at::Tensor &input, float32_t* dest) {
     float32_t * data = input.data_ptr<float32_t>();
-    size_t bytes_size = sizeof(float32_t) * input.numel();
+    std::size_t bytes_size = sizeof(float32_t) * input.numel();
     // std::memmove(dest,data,bytes_size);
     std::memcpy(dest,data,bytes_size);
 }
@@ -103,15 +105,30 @@ void store_tensor(at::Tensor &input, float32_t* dest) {
 bridge_tensor_t torch_to_bridge(at::Tensor &tensor) {
     bridge_tensor_t result;
     result.created_by_c = true;
+    result.was_freed    = false;
+
     result.dim = tensor.dim();
-    result.sizes = new int32_t[result.dim];
-    for (int i = 0; i < result.dim; ++i) {
-        result.sizes[i] = tensor.size(i);
+
+    std::size_t sizes_bytes = sizeof(uint32_t) * result.dim;
+    result.sizes = static_cast<uint32_t*>(malloc(sizes_bytes));
+    for (uint32_t i = 0; i < result.dim; ++i) {
+        result.sizes[i] = static_cast<uint32_t>(tensor.size(i));
     }
-    result.data = new float32_t[bridge_tensor_elements(result)];
+
+    std::size_t data_bytes = sizeof(float32_t) * tensor.numel();
+    result.data = static_cast<float32_t*>(malloc(data_bytes));
     store_tensor(tensor, result.data);
     return result;
 }
+
+extern "C" void free_bridge_tensor(bridge_tensor_t bt) {
+    if (bt.created_by_c && !bt.was_freed) {
+        free(bt.sizes);
+        free(bt.data);
+        bt.was_freed = true;
+    }
+}
+
 
 at::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
@@ -229,7 +246,7 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
 
 
 
-bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bool is_vgg_based_model) {
+extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
     auto tn_mps = bridge_to_torch(input,best_device,true,best_dtype);
     // tn_mps = tn_mps.permute({2, 0, 1}).contiguous();
     // tn_mps.unsqueeze_(0);//.contiguous();
@@ -243,22 +260,10 @@ bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input, bo
     // auto tn_out = o.squeeze(0).permute({1, 2, 0}).contiguous();
     auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
 
-    if (is_vgg_based_model) {
-        tn_out.div_(255.0);
-    }
-
     auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
 
     return torch_to_bridge(tn_out_cpu);
 
-}
-
-extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
-    return model_forward(model, input, false);
-}
-
-extern "C" bridge_tensor_t model_forward_style_transfer(bridge_pt_model_t model, bridge_tensor_t input) {
-    return model_forward(model, input, true);
 }
 
 // std::tuple<uint64_t, uint64_t> get_cpu_frame_size(uint64_t width, uint64_t height, float32_t scale_factor) {

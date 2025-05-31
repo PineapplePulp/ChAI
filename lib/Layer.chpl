@@ -248,6 +248,7 @@ module Layer {
             this.init(defaultEltType,modelPath);
     }
 
+    /*
     class StyleTransfer : LoadedTorchModel(?) {
         proc init(type eltType, modelPath: string) {
             super.init(eltType,modelPath);
@@ -265,7 +266,7 @@ module Layer {
                 = Bridge.modelForwardStyleTransfer(this.torchModuleHandle,th);
             return thOutput : dynamicTensor(eltType);
         }
-    }
+    }*/
 
 
 

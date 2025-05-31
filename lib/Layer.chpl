@@ -4,6 +4,7 @@ module Layer {
     private use Env;
     private import Utilities as util;
     private use OrderedDict;
+    private import Bridge;
 
     class ReLU : Module(?) {
 
@@ -227,7 +228,7 @@ module Layer {
 
         override proc forward(input: dynamicTensor(eltType)): 
                 dynamicTensor(eltType) {
-            const th = input : Bridge.tensorHandle(eltType);
+            const th = input.bridgeTensorHandle();
             const thOutput = Bridge.modelForward(this.torchModuleHandle,th);
             return thOutput : dynamicTensor(eltType);
         }
@@ -248,6 +249,7 @@ module Layer {
             this.init(defaultEltType,modelPath);
     }
 
+    /*
     class StyleTransfer : LoadedTorchModel(?) {
         proc init(type eltType, modelPath: string) {
             super.init(eltType,modelPath);
@@ -265,7 +267,7 @@ module Layer {
                 = Bridge.modelForwardStyleTransfer(this.torchModuleHandle,th);
             return thOutput : dynamicTensor(eltType);
         }
-    }
+    }*/
 
 
 

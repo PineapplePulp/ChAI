@@ -263,7 +263,7 @@ module Bridge {
     ) : bridge_tensor_t;
 
     extern proc softmax(
-        in input : bridge tensor_t,
+        in input : bridge_tensor_t,
         param dim : int(64)
     ) : bridge_tensor_t;
 

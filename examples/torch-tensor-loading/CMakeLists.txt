@@ -19,9 +19,9 @@ target_link_options(TorchLoad
 
 add_custom_command(TARGET TorchLoad POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-          "${CMAKE_CURRENT_SOURCE_DIR}/models"
-          "${CMAKE_BINARY_DIR}/TorchLoad_models"
-  COMMENT "Copying model folder"
+          "${CMAKE_CURRENT_SOURCE_DIR}/tensors"
+          "${CMAKE_BINARY_DIR}/examples/TorchLoad/tensors"
+  COMMENT "Copying tensor folder"
 )
 
 set_target_properties(TorchLoad PROPERTIES

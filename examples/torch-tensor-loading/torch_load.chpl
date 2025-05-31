@@ -14,7 +14,6 @@ proc main(args: [] string) {
     var batchedImage = ndarray.loadPyTorchTensor(3,args[1],real(32)).unsqueeze(0);
     writeln("Batched image: ", batchedImage.shape);
 
-    // batchedImage = batchedImage.resize(224,224);
     writeln("Batched image resized: ", batchedImage.shape);
 
     image = batchedImage.squeeze(3).imageNetNormalize();

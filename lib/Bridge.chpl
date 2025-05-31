@@ -18,62 +18,6 @@ module Bridge {
         var was_freed: bool;
     }
 
-    // proc getSizeArray(const ref arr: [] ?eltType): [] int(32) {
-    //     var sizes: [0..<arr.rank] int(32);
-    //     for i in 0..<arr.rank do
-    //         sizes[i] = arr.dim(i).size : int(32);
-    //     return sizes;
-    // }
-
-    // proc createBridgeTensor(const ref data: [] real(32)): bridge_tensor_t {
-    //     var result: bridge_tensor_t;
-    //     result.data = c_ptrToConst(data) : c_ptr(real(32));
-    //     result.sizes = allocate(uint(32),data.rank);
-    //     result.created_by_c = false;
-    //     const sizeArr = getSizeArray(data);
-    //     for i in 0..<data.rank do
-    //         result.sizes[i] = sizeArr[i];
-
-    //     result.dim = data.rank;
-    //     return result;
-    // }
-
-    class BridgeTensor {
-        var handle: bridge_tensor_t;
-
-        proc init(bt: bridge_tensor_t) do
-            this.handle = bt;
-        
-        proc init(const ref data: [] real(32)) {
-            var bt: bridge_tensor_t;
-            bt.data = c_ptrToConst(data) : c_ptr(real(32));
-            bt.sizes = allocate(uint(32),data.rank);
-            bt.created_by_c = false;
-            bt.was_freed = false;
-            const sizeArr = getSizeArray(data);
-            for i in 0..<data.rank do
-                bt.sizes[i] = bt[i];
-            bt.dim = data.rank;
-            this.init(bt);
-        }
-
-        proc deinit() {
-            if this.handle.was_freed then
-                util.err("BridgeTensor: Tensor has already been freed");
-            if this.handle.created_by_c && !this.handle.was_freed {
-                freeBridgeTensorHandle(this.handle);
-                this.handle.was_freed = true;
-            }
-        }
-        
-        proc getShape(param dim: int): dim*int {
-            var shape: dim*int;
-            for i in 0..<dim do
-                shape[i] = handle.sizes[i] : int;
-            return shape;
-        }
-    }
-
     extern "free_bridge_tensor" proc freeBridgeTensorHandle(
         in tensor: bridge_tensor_t): void;
 
@@ -259,6 +203,42 @@ module Bridge {
             result.sizes[i] = shape(i) : int(32);
         result.dim = rank;
         return result;
+    }
+
+    class BridgeTensor {
+        var handle: bridge_tensor_t;
+
+        proc init(bt: bridge_tensor_t) do
+            this.handle = bt;
+        
+        proc init(const ref data: [] real(32)) {
+            var bt: bridge_tensor_t;
+            bt.data = c_ptrToConst(data) : c_ptr(real(32));
+            bt.sizes = allocate(uint(32),data.rank);
+            bt.created_by_c = false;
+            bt.was_freed = false;
+            const sizeArr = getSizeArray(data);
+            for i in 0..<data.rank do
+                bt.sizes[i] = bt[i];
+            bt.dim = data.rank;
+            this.init(bt);
+        }
+
+        proc deinit() {
+            if this.handle.was_freed then
+                util.err("BridgeTensor: Tensor has already been freed");
+            if this.handle.created_by_c && !this.handle.was_freed {
+                freeBridgeTensorHandle(this.handle);
+                this.handle.was_freed = true;
+            }
+        }
+        
+        proc getShape(param dim: int): dim*int {
+            var shape: dim*int;
+            for i in 0..<dim do
+                shape[i] = handle.sizes[i] : int;
+            return shape;
+        }
     }
 
 

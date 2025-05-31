@@ -3,7 +3,7 @@ use Layer;
 import Utilities as util;
 
 config const cpuScale: real = 0.2;
-config const accelScale: real = 0.45;
+config const accelScale: real = 0.8;
 config const debugCPUOnly: bool = false;
 
 

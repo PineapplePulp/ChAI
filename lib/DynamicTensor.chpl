@@ -193,6 +193,13 @@ operator :(in t: dynamicTensor(?eltType), type btType: Bridge.tensorHandle(eltTy
     halt("Could not identify rank for this: ", t);
 }
 
+proc dynamicTensor.bridgeTensorHandle() {
+    for param rank in 1..maxRank do
+        if this.checkRank(rank) then
+            return this.forceRank(rank).array.bridgeTensorHandle();
+    halt("Could not identify rank for this: ", this);
+}
+
 operator :(bt: Bridge.tensorHandle(real(32)), type tType: dynamicTensor(?eltType)): dynamicTensor(eltType) {
     for param rank in 1..maxRank do
         if bt.dim == rank then

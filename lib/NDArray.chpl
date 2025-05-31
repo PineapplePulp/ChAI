@@ -1268,7 +1268,10 @@ proc ndarray.degenerateFlatten(): [] eltType {
     return flat;
 }
 
-proc ndarray.toBridgeTensor(): Bridge.tensorHandle(eltType) do
+inline proc ndarray.bridgeTensorHandle(): Bridge.tensorHandle(eltType) do
+    return this.toBridgeTensor();
+
+inline proc ndarray.toBridgeTensor(): Bridge.tensorHandle(eltType) do
     return Bridge.createBridgeTensor(this.data);
 
 proc type ndarray.fromBridgeTensor(param rank: int, handle: Bridge.tensorHandle(real(32))): ndarray(rank,real(32)) {

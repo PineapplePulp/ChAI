@@ -227,7 +227,7 @@ module Layer {
 
         override proc forward(input: dynamicTensor(eltType)): 
                 dynamicTensor(eltType) {
-            const th = input : Bridge.tensorHandle(eltType);
+            const th = input.bridgeTensorHandle();
             const thOutput = Bridge.modelForward(this.torchModuleHandle,th);
             return thOutput : dynamicTensor(eltType);
         }

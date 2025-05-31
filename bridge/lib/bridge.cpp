@@ -83,20 +83,9 @@ torch::ScalarType get_best_dtype() {
     }
 }
 
-std::size_t bridge_tensor_elements(bridge_tensor_t &bt) {
-    std::size_t size = 1;
-    for (std::size_t i = 0; i < bt.dim; ++i) {
-        size *= bt.sizes[i];
-    }
-    return size;
-}
-
-size_t bridge_tensor_size(bridge_tensor_t &bt) {
-    return sizeof(float32_t) * bridge_tensor_elements(bt);
-}
 
 void store_tensor(at::Tensor &input, float32_t* dest) {
-    float32_t * data = input.data_ptr<float32_t>();
+    const float32_t * data = input.const_data_ptr<float32_t>();
     std::size_t bytes_size = sizeof(float32_t) * input.numel();
     // std::memmove(dest,data,bytes_size);
     std::memcpy(dest,data,bytes_size);
@@ -125,7 +114,16 @@ extern "C" void free_bridge_tensor(bridge_tensor_t bt) {
     if (bt.created_by_c && !bt.was_freed) {
         free(bt.sizes);
         free(bt.data);
-        bt.was_freed = true;
+        return;
+    } else if (!bt.created_by_c) {
+        std::cerr << "Warning: Attempting to free a tensor not created by C code." << std::endl;
+        std::cerr.flush();
+    } else if (bt.was_freed) {
+        std::cerr << "Warning: Attempting to free a tensor that has already been freed." << std::endl;
+        std::cerr.flush();
+    } else {
+        std::cerr << "Warning: Attempting to free a tensor with an unknown state." << std::endl;
+        std::cerr.flush();
     }
 }
 
@@ -133,13 +131,13 @@ extern "C" void free_bridge_tensor(bridge_tensor_t bt) {
 at::Tensor bridge_to_torch(bridge_tensor_t &bt) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = torch::IntArrayRef(sizes_vec);
-    return torch::from_blob(bt.data, shape, torch::kFloat);
+    return torch::from_blob(bt.data, shape, torch::kFloat32);
 }
 
 at::Tensor bridge_to_torch(bridge_tensor_t &bt,torch::Device device, bool copy,torch::ScalarType dtype = torch::kFloat32) {
     std::vector<int64_t> sizes_vec(bt.sizes, bt.sizes + bt.dim);
     auto shape = torch::IntArrayRef(sizes_vec);
-    auto t = torch::from_blob(bt.data, shape, torch::kFloat);
+    auto t = torch::from_blob(bt.data, shape, torch::kFloat32);
     if (device != torch::kCPU)
         copy = true;
     if (copy)
@@ -247,7 +245,7 @@ extern "C" bridge_pt_model_t load_model(const uint8_t* model_path) {
 
 
 extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_t input) {
-    auto tn_mps = bridge_to_torch(input,best_device,true,best_dtype);
+    auto tn_mps = bridge_to_torch(input,best_device,false,best_dtype);
     // tn_mps = tn_mps.permute({2, 0, 1}).contiguous();
     // tn_mps.unsqueeze_(0);//.contiguous();
     auto tn = tn_mps.permute({2, 0, 1}).unsqueeze(0).contiguous();
@@ -260,7 +258,7 @@ extern "C" bridge_tensor_t model_forward(bridge_pt_model_t model, bridge_tensor_
     // auto tn_out = o.squeeze(0).permute({1, 2, 0}).contiguous();
     auto tn_out = o.squeeze(0).contiguous().permute({1, 2, 0}).contiguous();
 
-    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,true);
+    auto tn_out_cpu = tn_out.to(torch::kCPU,torch::kFloat32,false,false);
 
     return torch_to_bridge(tn_out_cpu);
 

@@ -105,9 +105,8 @@ operator :(in t: staticTensor(?rank,?eltType), type toType): staticTensor(rank,t
     return new staticTensor(newTR);
 }
 
-operator :(in t: staticTensor(?rank,?eltType),
-           type btType: Bridge.tensorHandle(eltType)): Bridge.tensorHandle(eltType) do
-    return t.array : Bridge.tensorHandle(eltType);
+proc staticTensor.bridgeTensorHandle() do
+    return this.array.bridgeTensorHandle();
 
 proc staticTensor.shapeArray(): [] int {
     var sa: [0..<this.rank] int;

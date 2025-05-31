@@ -30,12 +30,14 @@ typedef unsigned long long uint64_t;
 void debug_cpu_only_mode(bool_t mode);
 
 typedef struct bridge_tensor_t {
-    float* data;
-    int* sizes;
-    int dim;
+    float32_t* data;
+    uint32_t* sizes;
+    uint32_t dim;
     bool_t created_by_c;
+    bool_t was_freed;
 } bridge_tensor_t;
 
+void free_bridge_tensor(bridge_tensor_t bt);
 
 typedef struct bridge_pt_model_t {
     void* pt_module;

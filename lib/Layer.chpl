@@ -4,6 +4,7 @@ module Layer {
     private use Env;
     private import Utilities as util;
     private use OrderedDict;
+    private import Bridge;
 
     class ReLU : Module(?) {
 
@@ -211,44 +212,63 @@ module Layer {
         }
     }
 
-    import CTypes;
-    class TorchModule : Module(?) {
-        var modulePath: string;
-        var moduleHandle: Bridge.bridge_pt_model_t;
 
-        proc init(type eltType, modulePath: string) {
+    class TorchModule : Module(?) {
+        var torchModuleHandle: Bridge.torchModuleHandle;
+
+        proc init(type eltType, torchModuleHandle: Bridge.torchModuleHandle) {
             super.init(eltType);
-            this.modulePath = modulePath;
-            const fpPtr: CTypes.c_ptr(uint(8)) = CTypes.c_ptrToConst(modulePath) : CTypes.c_ptr(uint(8));
-            this.moduleHandle = Bridge.load_model(fpPtr);
+            this.torchModuleHandle = torchModuleHandle;
             init this;
             this.moduleName = "TorchModule";
         }
 
-        proc init(modulePath: string) do
-            this.init(defaultEltType,modulePath);
+        proc init(torchModuleHandle: Bridge.torchModuleHandle) do
+            this.init(defaultEltType,torchModuleHandle);
 
-        override proc forward(input: dynamicTensor(eltType)): dynamicTensor(eltType) {
-            const btInput: Bridge.tensorHandle(eltType) = input : Bridge.tensorHandle(eltType);
-            const btOutput = Bridge.model_forward(this.moduleHandle, btInput);
-            return btOutput : dynamicTensor(eltType);
+        override proc forward(input: dynamicTensor(eltType)): 
+                dynamicTensor(eltType) {
+            const th = input.bridgeTensorHandle();
+            const thOutput = Bridge.modelForward(this.torchModuleHandle,th);
+            return thOutput : dynamicTensor(eltType);
         }
     }
 
-    class StyleTransfer : TorchModule(?) {
+    class LoadedTorchModel : TorchModule(?) {
+        var modelPath: string;
 
-        proc init(type eltType, modulePath: string) do
-            super.init(eltType,modulePath);
+        proc init(type eltType, modelPath: string) {
+            var torchModuleHandle = Bridge.loadModel(modelPath);
+            super.init(eltType,torchModuleHandle);
+            this.modelPath = modelPath;
+            init this;
+            this.moduleName = "LoadedTorchModel";
+        }
+
+        proc init(modelPath: string) do
+            this.init(defaultEltType,modelPath);
+    }
+
+    /*
+    class StyleTransfer : LoadedTorchModel(?) {
+        proc init(type eltType, modelPath: string) {
+            super.init(eltType,modelPath);
+            init this;
+            this.moduleName = "StyleTransferLoadedTorchModel";
+        }
         
-        proc init(modulePath: string) do
-            super.init(defaultEltType,modulePath);
+        proc init(modelPath: string) do
+            this.init(defaultEltType,modelPath);
         
         override proc forward(input: dynamicTensor(eltType)): 
                 dynamicTensor(eltType) {
-            const btInput: Bridge.tensorHandle(eltType) = input : Bridge.tensorHandle(eltType);
-            const btOutput = Bridge.model_forward_style_transfer(this.moduleHandle, btInput);
-            return btOutput : dynamicTensor(eltType);
+            const th = input : Bridge.tensorHandle(eltType);
+            const thOutput 
+                = Bridge.modelForwardStyleTransfer(this.torchModuleHandle,th);
+            return thOutput : dynamicTensor(eltType);
         }
-    }
+    }*/
+
+
 
 }

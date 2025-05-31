@@ -100,3 +100,5 @@ add_custom_command(
             "$<TARGET_FILE_DIR:StyleTransfer>/style-transfer/models"
     COMMENT "NOT! Copying ${PROJECT_ROOT_DIR}/examples/vgg/images to $<TARGET_FILE_DIR:vgg>/images"
 )
+
+add_subdirectory(cpp-model-construction)

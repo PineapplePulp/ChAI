@@ -139,7 +139,19 @@ while True:
 
 
 
-    frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+
+    height, width = frame_bgr.shape[:2]
+
+    scale_factor = 0.5
+    
+    # Calculate the new dimensions
+    new_width = int(width * scale_factor)
+    new_height = int(height * scale_factor)
+
+
+
+    frame_rgb = cv2.cvtColor(cv2.resize(frame_bgr,(new_width,new_height)), cv2.COLOR_BGR2RGB)
+
 
     # 3) Ensure the array is contiguous (torch needs it) -------------------------
     frame_rgb = np.ascontiguousarray(frame_rgb)
@@ -185,6 +197,7 @@ while True:
 
     # frame_bgr_out = tensor_to_bgr(output_tensor, undo_normalise=True,mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     frame_bgr_out = utils.tensor_to_bgr(output_tensor)
+    frame_bgr_out = cv2.resize(frame_bgr_out, (width, height))
 
 
     if args.show_output or args.use_webcam:

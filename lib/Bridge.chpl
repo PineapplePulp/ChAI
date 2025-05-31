@@ -194,6 +194,114 @@ module Bridge {
         return result;
     }
 
+    extern proc gelu(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc logsigmoid(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc mish(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc relu(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc relu6(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc selu(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc silu(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc softsign(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc tanhshrink(in input: bridge_tensor_t): bridge_tensor_t;
+
+    extern proc rrelu(
+        in input: bridge_tensor_t,
+        in lower: real(32),
+        in upper: real(32),
+        in training: bool
+    ) : bridge_tensor_t;
+
+    extern proc hardshrink(
+        in input: bridge_tensor_t,
+        in alpha: real(32)
+    ) : bridge_tensor_t;
+
+    extern proc hardtanh(
+        in input: bridge_tensor_t,
+        in minVal : real(32),
+        in maxVal : real(32)
+    ) : bridge_tensor_t;
+
+    extern proc elu(
+        in input: bridge_tensor_t,
+        in alpha: real(32)
+    ) : bridge_tensor_t;
+
+    extern proc softplus(
+        in input : bridge_tensor_t,
+        in beta : real(32),
+        in threshold : real(32)
+    ) : bridge_tensor_t;
+
+    extern proc threshold(
+        in input : bridge_tensor_t,
+        in threshold : real(32),
+        in value : real(32)
+    ) : bridge_tensor_t;
+
+    extern proc celu(
+        in input : bridge_tensor_t,
+        in alpha : real(32)
+    ) : bridge_tensor_t;
+
+    extern "leaky_relu" proc leakyRelu(
+        in input : bridge_tensor_t,
+        in negativeSlope : real(32)
+    ) : bridge_tensor_t;
+
+    extern proc softshrink(
+        in input : bridge_tensor_t,
+        in alpha : real(32)
+    ) : bridge_tensor_t;
+
+    extern proc softmax(
+        in input : bridge tensor_t,
+        param dim : int(64)
+    ) : bridge_tensor_t;
+
+    extern proc softmin(
+        in input : bridge_tensor_t,
+        param dim : int(64)
+    ) : bridge_tensor_t;
+
+    extern proc dropout(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern "alpha_dropout" proc alphaDropout(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern "feature_alpha_dropout" proc featureAlphaDropout(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern proc dropout2d(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+
+    extern proc dropout3d(
+        in input : bridge_tensor_t,
+        in p : real,
+        in training : bool
+    ) : bridge_tensor_t;
+    
     proc createBridgeTensorWithShape(const ref data: [] real(32),shape: ?rank*int): bridge_tensor_t {
         var result: bridge_tensor_t;
         result.data = c_ptrToConst(data) : c_ptr(real(32));
@@ -240,6 +348,4 @@ module Bridge {
             return shape;
         }
     }
-
-
 }

@@ -216,6 +216,7 @@ add_dependencies(TorchBridge ChAI)
 add_dependencies(TorchBridge bridge_objs)
 target_link_options(TorchBridge
     PRIVATE
+        -M ${PROJECT_ROOT_DIR}/lib
         ${BRIDGE_DIR}/include/bridge.h
         ${BRIDGE_OBJECT_FILES}
         -L ${LIBTORCH_DIR}/lib
@@ -225,6 +226,7 @@ target_link_options(TorchBridge
         "-ltorch_global_deps"
         ${LIBTORCH_LIBS_LINKER_ARGS}
         --ldflags "-Wl,-rpath,${LIBTORCH_DIR}/lib"
+        ${CHAI_LINKER_ARGS}
 )
 
 

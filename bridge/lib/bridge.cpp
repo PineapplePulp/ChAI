@@ -94,7 +94,8 @@ void store_tensor(at::Tensor &input, float32_t* dest) {
     std::memcpy(dest,data,bytes_size);
 }
 
-bridge_tensor_t torch_to_bridge(at::Tensor &tensor) {
+bridge_tensor_t torch_to_bridge(at::Tensor tensor_) {
+    at::Tensor tensor = tensor_.contiguous().to(torch::kCPU,torch::kFloat32,false,false);
     bridge_tensor_t result;
     result.created_by_c = true;
     result.was_freed    = false;
@@ -170,7 +171,9 @@ extern "C" bridge_tensor_t load_tensor_from_file(const uint8_t* file_path) {
     std::string fp(reinterpret_cast<const char*>(file_path));
     std::vector<char> f = get_the_bytes(fp);
     torch::IValue x = torch::pickle_load(f);
-    torch::Tensor t = x.toTensor();
+    at::Tensor t = x.toTensor();
+    std::cout << "Tensor loaded from file: " << t.sizes() << std::endl;
+    std::cout.flush();
     return torch_to_bridge(t);
 }
 

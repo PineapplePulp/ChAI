@@ -2320,8 +2320,8 @@ proc ref ndarray.loadChData(fr: IO.fileReader(?)) throws {
 proc type ndarray.loadPyTorchTensor(param rank: int,in filePath: string,type eltType = defaultEltType): ndarray(rank,eltType) {
     use CTypes;
     const fpPtr: c_ptr(uint(8)) = c_ptrTo(filePath);
-    var th = Bridge.load_tensor_from_file(fpPtr);
-    return ndarray.fromBridgeTensor(rank,th) : ndarray(rank,eltType);
+    const th = Bridge.load_tensor_from_file(fpPtr);
+    return th : ndarray(rank,eltType);
 }
 
 proc type ndarray.loadPyTorchTensorDictWithKey(param rank: int,in filePath: string,in tensorKey: string,type eltType = defaultEltType): ndarray(rank,eltType) {

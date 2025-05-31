@@ -3,6 +3,16 @@
 
 #include <stdio.h>
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
+
+#ifdef __cplusplus
+#include <cstdint>
+#else
+#include <stdint.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -106,31 +116,8 @@ bridge_tensor_t max_pool2d(
     int dilation
 );
 
-proto_bridge_simple(relu);
-
-proto_bridge_simple(relu6);
-
-proto_bridge_simple(gelu);
-
-proto_bridge_simple(logsigmoid);
-
-proto_bridge_simple(mish);
-
-proto_bridge_simple(selu);
-
-proto_bridge_simple(silu);
-
-proto_bridge_simple(softmax);
-
-proto_bridge_simple(softmin);
-
-proto_bridge_simple(softsign);
-
-proto_bridge_simple(tanhshrink);
-
 void split_loop(int64_t idx, int64_t n);
 void split_loop_filler(int64_t n,int64_t* ret);
-
 
 
 // bridge_tensor_t conv2d(
@@ -141,11 +128,69 @@ void split_loop_filler(int64_t n,int64_t* ret);
 //     nil_scalar_tensor_t padding
 // );
 
+proto_bridge_simple(gelu);
 
+proto_bridge_simple(logsigmoid);
+
+proto_bridge_simple(mish);
+
+proto_bridge_simple(relu);
+
+proto_bridge_simple(relu6);
+
+proto_bridge_simple(selu);
+
+proto_bridge_simple(silu);
+
+proto_bridge_simple(softsign);
+
+proto_bridge_simple(tanhshrink);
+
+
+bridge_tensor_t rrelu(bridge_tensor_t input, float lower, float upper, bool training);
+
+bridge_tensor_t hardshrink(bridge_tensor_t input, float lambda);
+
+bridge_tensor_t hardtanh(bridge_tensor_t input, float min_val, float max_val);
+
+bridge_tensor_t elu(bridge_tensor_t input, float alpha);
+
+bridge_tensor_t softplus(bridge_tensor_t input, float beta, float threhsold);
+
+bridge_tensor_t threshold(bridge_tensor_t input, float threshold, float value);
+
+bridge_tensor_t celu(bridge_tensor_t input, float alpha);
+
+bridge_tensor_t leaky_relu(bridge_tensor_t input, float negative_slope);
+
+bridge_tensor_t softshrink(bridge_tensor_t input, float lambda);
+
+#ifdef __cplusplus
+bridge_tensor_t softmax(bridge_tensor_t input, std::int64_t dim);
+#else
+bridge_tensor_t softmax(bridge_tensor_t input, int64_t dim);
+#endif
+
+#ifdef __cplusplus
+bridge_tensor_t softmin(bridge_tensor_t input, std::int64_t dim);
+#else
+bridge_tensor_t softmin(bridge_tensor_t input, int64_t dim);
+#endif
+
+bridge_tensor_t dropout(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t alpha_dropout(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t feature_alpha_dropout(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t dropout2d(bridge_tensor_t input, double p, bool training);
+
+bridge_tensor_t dropout3d(bridge_tensor_t input, double p, bool training);
+
+#undef proto_bridge_simple
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif // BRIDGE_H
-//hello

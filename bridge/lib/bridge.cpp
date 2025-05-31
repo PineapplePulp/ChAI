@@ -22,14 +22,15 @@
 
 
 
+namespace tnf = torch::nn::functional;
+
+
 #define def_bridge_simple(Name) \
     extern "C" bridge_tensor_t Name(bridge_tensor_t input) { \
         auto t_input = bridge_to_torch(input); \
-        auto t_output = torch::Name(t_input); \
+        auto t_output = torch::nn::functional::Name(t_input); \
         return torch_to_bridge(t_output); \
     }
-
-
 
 // Globals
 
@@ -591,6 +592,250 @@ extern "C" void split_loop_filler(int64_t n,int64_t* ret) {
 //         }
 //     }
 
-//     cap.release();
-//     cv::destroyAllWindows();
-// }
+
+// Simple activation function defs
+
+def_bridge_simple(gelu);
+
+def_bridge_simple(logsigmoid);
+
+def_bridge_simple(mish);
+
+def_bridge_simple(relu);
+
+def_bridge_simple(relu6);
+
+def_bridge_simple(selu);
+
+def_bridge_simple(silu);
+
+def_bridge_simple(softsign);
+
+def_bridge_simple(tanhshrink);
+
+
+// More complex activation functions with scary parameters
+
+extern "C" bridge_tensor_t rrelu(
+    bridge_tensor_t input,
+    float lower,
+    float upper,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::rrelu(t_input,
+        tnf::RReLUFuncOptions()
+            .lower(lower)
+            .upper(upper)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t hardshrink(
+    bridge_tensor_t input,
+    float lambda
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::hardshrink(t_input,
+        tnf::HardshrinkFuncOptions()
+            .lambda(lambda));
+    
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t hardtanh(
+    bridge_tensor_t input,
+    float min_val,
+    float max_val
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::hardtanh(t_input,
+        tnf::HardtanhFuncOptions()
+            .min_val(min_val)
+            .max_val(max_val));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t elu(
+    bridge_tensor_t input,
+    float alpha
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::elu(t_input,
+        tnf::ELUFuncOptions()
+            .alpha(alpha));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t softplus(
+    bridge_tensor_t input,
+    float beta,
+    float threshold
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::softplus(t_input,
+        tnf::SoftplusFuncOptions()
+            .beta(beta)
+            .threshold(threshold));
+
+    return torch_to_bridge(t_output)
+}
+
+
+extern "C" bridge_tensor_t threshold(
+    bridge_tensor_t input,
+    float threshold,
+    float value
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::threshold(t_input,
+        tnf::ThresholdFuncOptions()
+            .threshold(threshold)
+            .value(value));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t celu(
+    bridge_tensor_t input,
+    float alpha
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::celu(t_input,
+        tnf::CELUFuncOptions()
+            .alpha(alpha));
+
+    return t_output;
+}
+
+
+extern "C" bridge_tensor_t leaky_relu(
+    bridge_tensor_t input,
+    float negative_slope
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::leaky_relu(t_input,
+        tnf::LeakyReLUFuncOptions()
+            .negative_slope(negative_slope));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t softshrink(
+    bridge_tensor_t input,
+    float lambda
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::softshrink(t_input,
+        tnf::SoftshrinkFuncOptions(lambda));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t softmax(
+    bridge_tensor_t input,
+    std::int64_t dim
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::softmax(t_input,
+        tnf::SoftmaxFuncOptions(dim));
+    
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t softmin(
+    bridge_tensor_t input,
+    std::int64_t dim
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::softmin(t_input,
+        tnf::SoftminFuncOptions(dim));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t dropout(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::dropout(
+        tnf::DropoutFuncOptions()
+            .p(p)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t alpha_dropout(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::alpha_dropout(
+        tnf::AlphaDropoutFuncOptions()
+            .p(p)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t feature_alpha_dropout(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::feature_alpha_dropout(
+        tnf::FeatureAlphaDropoutFuncOptions()
+            .p(p)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t dropout2d(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::dropout2d(
+        tnf::Dropout2dFuncOptions()
+            .p(p)
+            .training(training));
+    
+    return torch_to_bridge(t_output);
+}
+
+
+extern "C" bridge_tensor_t dropout3d(
+    bridge_tensor_t input,
+    double p,
+    bool training
+) {
+    auto t_input = bridge_to_torch(input);
+    auto t_output = tnf::dropout3d(
+        tnf::Dropout3dFuncOptions()
+            .p(p)
+            .training(training));
+
+    return torch_to_bridge(t_output);
+}

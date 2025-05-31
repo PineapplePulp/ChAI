@@ -270,17 +270,22 @@ function(chai_add_executable TARGET MAIN_CHPL)
 endfunction()
 
 
-add_executable(TinyLayerTest 
+# add_executable(TinyLayerTest 
+#     ${PROJECT_ROOT_DIR}/test/tiny/layer_test.chpl
+#     ${CHAI_LIB_FILES}
+#     )
+# add_dependencies(TinyLayerTest bridge)
+# add_dependencies(TinyLayerTest ChAI)
+# target_link_options(TinyLayerTest
+#     PRIVATE
+#         --main-module layer_test.chpl
+#         -M ${PROJECT_ROOT_DIR}/lib
+#         ${CHAI_LINKER_ARGS}
+# )
+
+chai_add_executable(TinyLayerTest 
     ${PROJECT_ROOT_DIR}/test/tiny/layer_test.chpl
-    ${CHAI_LIB_FILES}
-    )
-add_dependencies(TinyLayerTest bridge)
-add_dependencies(TinyLayerTest ChAI)
-target_link_options(TinyLayerTest
-    PRIVATE
-        --main-module layer_test.chpl
-        -M ${PROJECT_ROOT_DIR}/lib
-        ${CHAI_LINKER_ARGS}
+    ${PROJECT_ROOT_DIR}/lib
 )
 
 
